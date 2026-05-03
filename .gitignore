@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.*.local
+.playwright-browsers/
+data/*.json
+data/*.db
+data/*.db-shm
+data/*.db-wal
+!data/.gitkeep
+pdfs/
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Fichiers de spec / brouillons à la racine (ne pas versionner)
+/*.docx
+/*.pdf

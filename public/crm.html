@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ola Flight — Pipeline Commercial</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,200;0,300;1,200;1,300&family=Montserrat:wght@200;300;400&display=swap');
+:root{
+  --b:#0a0a0a;--b2:#111;--b3:#161616;--b4:#1a1a1a;
+  --w:#f5f3ef;--g:rgba(245,243,239,0.38);--g2:rgba(245,243,239,0.2);
+  --l:rgba(245,243,239,0.09);--l2:rgba(245,243,239,0.15);
+  --green:rgba(74,222,128,0.12);--green-t:#4ade80;
+  --yellow:rgba(250,204,21,0.12);--yellow-t:#facc15;
+  --orange:rgba(251,146,60,0.12);--orange-t:#fb923c;
+  --blue:rgba(96,165,250,0.12);--blue-t:#60a5fa;
+  --red:rgba(248,113,113,0.12);--red-t:#f87171;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;font-weight:300;overflow-x:hidden;}
+
+/* ─── TOP BAR ─── */
+.topbar{height:56px;background:var(--b2);border-bottom:1px solid var(--l);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:100;}
+.tb-brand{display:flex;align-items:center;gap:12px;}
+.tb-logo{width:24px;height:24px;background:var(--l2);border:1px solid var(--l2);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--w);}
+.tb-name{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:var(--w);}
+.tb-nav{display:flex;gap:0;}
+.tb-tab{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);padding:0 24px;height:56px;display:flex;align-items:center;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+.tb-tab:hover{color:var(--w);}
+.tb-tab.active{color:var(--w);border-bottom-color:var(--w);}
+.tb-right{display:flex;align-items:center;gap:16px;}
+.tb-user{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);}
+.tb-add{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--b);background:var(--w);padding:8px 18px;cursor:pointer;border:none;transition:opacity .2s;}
+.tb-add:hover{opacity:.8;}
+
+/* ─── VIEWS ─── */
+.view{display:none;}
+.view.active{display:block;}
+
+/* ─── DASHBOARD ─── */
+#v-dashboard{padding:40px 32px;}
+.dash-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:200;color:var(--w);margin-bottom:8px;}
+.dash-sub{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:40px;}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--l);border:1px solid var(--l);margin-bottom:32px;}
+.kpi{background:var(--b);padding:28px 24px;}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:200;color:var(--w);line-height:1;margin-bottom:6px;}
+.kpi-label{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);}
+.kpi-delta{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;color:var(--green-t);margin-top:6px;}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--l);}
+.dash-card{background:var(--b2);padding:28px;}
+.dc-title{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--l);}
+.lead-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--l);}
+.lead-row:last-child{border-bottom:none;}
+.lr-left{}
+.lr-name{font-size:15px;color:var(--w);font-weight:300;}
+.lr-dest{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-top:3px;}
+.lr-right{display:flex;align-items:center;gap:12px;}
+.status-pill{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;padding:4px 10px;}
+.sp-new{background:var(--blue);color:var(--blue-t);}
+.sp-contact{background:var(--yellow);color:var(--yellow-t);}
+.sp-offer{background:var(--orange);color:var(--orange-t);}
+.sp-nego{background:rgba(168,85,247,0.12);color:#c084fc;}
+.sp-won{background:var(--green);color:var(--green-t);}
+.sp-lost{background:var(--red);color:var(--red-t);}
+.lr-val{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:1px;color:var(--w);}
+.comm-bar{margin-top:20px;}
+.cb-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--l);}
+.cb-row:last-child{border-bottom:none;}
+.cb-name{font-size:14px;color:var(--w);}
+.cb-num{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:1px;color:var(--g);}
+.cb-val{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:200;color:var(--green-t);}
+.bar-wrap{margin-top:10px;}
+.bar-bg{height:3px;background:var(--l2);width:100%;margin-top:6px;}
+.bar-fill{height:3px;background:var(--green-t);}
+
+/* ─── PIPELINE KANBAN ─── */
+#v-pipeline{padding:32px;}
+.pipeline-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.ph-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w);}
+.ph-actions{display:flex;gap:12px;}
+.filter-btn{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);border:1px solid var(--l);padding:8px 16px;background:none;cursor:pointer;transition:all .2s;}
+.filter-btn.active,.filter-btn:hover{color:var(--w);border-color:var(--l2);}
+.kanban{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;align-items:start;}
+.k-col{background:var(--b2);border:1px solid var(--l);}
+.k-head{padding:14px 16px;border-bottom:1px solid var(--l);display:flex;justify-content:space-between;align-items:center;}
+.k-title{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;}
+.k-count{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;background:var(--l);padding:2px 8px;color:var(--g);}
+.k-col[data-status="new"] .k-title{color:var(--blue-t);}
+.k-col[data-status="contacted"] .k-title{color:var(--yellow-t);}
+.k-col[data-status="offer"] .k-title{color:var(--orange-t);}
+.k-col[data-status="nego"] .k-title{color:#c084fc;}
+.k-col[data-status="won"] .k-title{color:var(--green-t);}
+.k-col[data-status="lost"] .k-title{color:var(--red-t);}
+.k-cards{padding:12px;display:flex;flex-direction:column;gap:8px;min-height:120px;}
+.k-card{background:var(--b3);border:1px solid var(--l);padding:14px;cursor:pointer;transition:border-color .2s;}
+.k-card:hover{border-color:var(--l2);}
+.kc-name{font-size:14px;color:var(--w);margin-bottom:4px;}
+.kc-dest{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px;}
+.kc-meta{display:flex;justify-content:space-between;align-items:center;}
+.kc-budget{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;color:var(--g);}
+.kc-sdr{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:1px;text-transform:uppercase;color:rgba(245,243,239,0.2);}
+.kc-date{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;color:rgba(245,243,239,0.2);margin-top:6px;}
+.kc-urgent{border-left:2px solid var(--yellow-t);}
+.kc-hot{border-left:2px solid var(--green-t);}
+
+/* ─── LEAD DETAIL MODAL ─── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;display:none;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--b2);border:1px solid var(--l2);width:640px;max-height:85vh;overflow-y:auto;}
+.modal-head{padding:24px;border-bottom:1px solid var(--l);display:flex;justify-content:space-between;align-items:start;}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w);}
+.modal-close{background:none;border:none;color:var(--g);cursor:pointer;font-size:20px;padding:4px;transition:color .2s;}
+.modal-close:hover{color:var(--w);}
+.modal-body{padding:24px;}
+.modal-section{margin-bottom:24px;}
+.ms-title{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--l);}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.mf{display:flex;flex-direction:column;gap:4px;}
+.mf-label{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);}
+.mf-val{font-size:15px;color:var(--w);}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px;padding-top:20px;border-top:1px solid var(--l);}
+.ma-btn{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:2px;text-transform:uppercase;padding:10px 18px;cursor:pointer;transition:all .2s;border:none;}
+.ma-primary{background:var(--w);color:var(--b);}
+.ma-ghost{background:none;border:1px solid var(--l2);color:var(--g);}
+.ma-ghost:hover{color:var(--w);border-color:var(--w);}
+.ma-danger{background:none;border:1px solid rgba(248,113,113,0.3);color:var(--red-t);}
+.status-select{background:var(--b3);border:1px solid var(--l2);color:var(--w);padding:10px 14px;font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;outline:none;cursor:pointer;}
+
+/* ─── NOUVEAU LEAD FORM ─── */
+.new-lead-panel{position:fixed;right:0;top:0;bottom:0;width:480px;background:var(--b2);border-left:1px solid var(--l2);z-index:200;transform:translateX(100%);transition:transform .3s ease;overflow-y:auto;}
+.new-lead-panel.open{transform:translateX(0);}
+.nlp-head{padding:24px;border-bottom:1px solid var(--l);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--b2);z-index:10;}
+.nlp-title{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:var(--w);}
+.nlp-body{padding:24px;}
+.form-group{margin-bottom:20px;}
+.form-label{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);display:block;margin-bottom:8px;}
+.form-label span{color:var(--red-t);}
+.form-input{width:100%;background:var(--b3);border:1px solid var(--l);color:var(--w);padding:12px 14px;font-family:'Cormorant Garamond',serif;font-size:15px;outline:none;transition:border-color .2s;}
+.form-input:focus{border-color:var(--l2);}
+.form-input::placeholder{color:var(--g);}
+.form-select{width:100%;background:var(--b3);border:1px solid var(--l);color:var(--w);padding:12px 14px;font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;outline:none;cursor:pointer;}
+.form-select option{background:var(--b2);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-btn{width:100%;background:var(--w);color:var(--b);border:none;padding:16px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:opacity .2s;margin-top:8px;}
+.form-btn:hover{opacity:.8;}
+.form-textarea{width:100%;background:var(--b3);border:1px solid var(--l);color:var(--w);padding:12px 14px;font-family:'Cormorant Garamond',serif;font-size:15px;outline:none;resize:vertical;min-height:80px;transition:border-color .2s;}
+.form-textarea:focus{border-color:var(--l2);}
+
+/* ─── COMMISSIONS ─── */
+#v-commissions{padding:40px 32px;}
+.comm-header{display:flex;justify-content:space-between;align-items:start;margin-bottom:32px;}
+.comm-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--l);border:1px solid var(--l);margin-bottom:32px;}
+.ck{background:var(--b2);padding:32px 28px;}
+.ck-label{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:12px;}
+.ck-val{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:200;color:var(--w);line-height:1;}
+.ck-sub{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;color:var(--g);margin-top:8px;}
+.ck-green{color:var(--green-t);}
+.comm-table-wrap{background:var(--b2);border:1px solid var(--l);}
+.ct-header{padding:16px 24px;border-bottom:1px solid var(--l);display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:16px;}
+.ct-th{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);}
+.ct-row{padding:16px 24px;border-bottom:1px solid var(--l);display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:16px;transition:background .2s;}
+.ct-row:hover{background:var(--b3);}
+.ct-row:last-child{border-bottom:none;}
+.ct-cell{font-size:14px;color:var(--w);}
+.ct-cell.green{color:var(--green-t);}
+.ct-cell.muted{color:var(--g);font-size:13px;}
+
+/* ─── APPORTEUSES ─── */
+#v-apporteuses{padding:40px 32px;}
+.ap-header{margin-bottom:40px;}
+.ap-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:200;color:var(--w);margin-bottom:8px;}
+.ap-sub{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);}
+.ap-layout{display:grid;grid-template-columns:1fr 1fr;gap:32px;}
+.ap-form-card{background:var(--b2);border:1px solid var(--l);padding:32px;}
+.ap-form-title{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:var(--w);margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--l);}
+.ap-list-card{background:var(--b2);border:1px solid var(--l);}
+.ap-list-head{padding:20px 24px;border-bottom:1px solid var(--l);}
+.ap-list-title{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:var(--w);}
+.ap-row{padding:16px 24px;border-bottom:1px solid var(--l);display:flex;justify-content:space-between;align-items:center;}
+.ap-row:last-child{border-bottom:none;}
+.ap-row-left{}
+.ap-row-name{font-size:16px;color:var(--w);}
+.ap-row-meta{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-top:3px;}
+.ap-row-right{text-align:right;}
+.ap-row-deals{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:200;color:var(--green-t);}
+.ap-row-comm{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-top:2px;}
+.success-msg{background:var(--green);border:1px solid rgba(74,222,128,0.2);color:var(--green-t);padding:14px 18px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:2px;text-transform:uppercase;display:none;margin-bottom:16px;}
+
+/* SHARED */
+.section-divider{height:1px;background:var(--l);margin:24px 0;}
+</style>
+<meta name="ola-required-roles" content="admin,closeuse,dalsim">
+<script src="/auth-gate.js"></script>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tb-brand">
+    <div class="tb-logo">✦</div>
+    <div class="tb-name">Ola Flight · CRM</div>
+  </div>
+  <div class="tb-nav">
+    <div class="tb-tab active" onclick="switchView('dashboard',this)">Dashboard</div>
+    <div class="tb-tab" onclick="switchView('pipeline',this)">Pipeline</div>
+    <div class="tb-tab" onclick="switchView('commissions',this)">Commissions</div>
+    <div class="tb-tab" onclick="switchView('apporteuses',this)">Apporteuses</div>
+  </div>
+  <div class="tb-right">
+    <div class="tb-user">Closer 1</div>
+    <button class="tb-add" onclick="openNewLead()">+ Nouveau lead</button>
+  </div>
+</div>
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div class="view active" id="v-dashboard">
+  <div id="v-dashboard-inner"></div>
+</div>
+
+<!-- ═══════════════ PIPELINE ═══════════════ -->
+<div class="view" id="v-pipeline">
+  <div style="padding:32px;">
+    <div class="pipeline-header">
+      <div class="ph-title">Pipeline</div>
+      <div class="ph-actions">
+        <button class="filter-btn active" onclick="filterPipeline('all',this)">Tous</button>
+        <button class="filter-btn" onclick="filterPipeline('mine',this)">Mes leads</button>
+        <button class="filter-btn" onclick="filterPipeline('urgent',this)">Relances</button>
+      </div>
+    </div>
+    <div class="kanban" id="kanban-board"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ COMMISSIONS ═══════════════ -->
+<div class="view" id="v-commissions">
+  <div id="v-commissions-inner"></div>
+</div>
+
+<!-- ═══════════════ APPORTEUSES ═══════════════ -->
+<div class="view" id="v-apporteuses">
+  <div id="v-apporteuses-inner"></div>
+</div>
+
+<!-- MODAL LEAD DETAIL -->
+<div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- NEW LEAD PANEL -->
+<div class="new-lead-panel" id="new-lead-panel">
+  <div class="nlp-head">
+    <div class="nlp-title">Nouveau lead</div>
+    <button class="modal-close" onclick="closeNewLead()">✕</button>
+  </div>
+  <div class="nlp-body">
+    <div class="form-group">
+      <label class="form-label">Nom du client <span>*</span></label>
+      <input class="form-input" id="nl-name" placeholder="Prénom Nom ou alias">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Instagram / WhatsApp <span>*</span></label>
+      <input class="form-input" id="nl-contact" placeholder="@handle ou +33…">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Source</label>
+      <select class="form-select" id="nl-source">
+        <option value="">Sélectionner</option>
+        <option>WhatsApp</option>
+        <option>Instagram DM</option>
+        <option>Site web</option>
+        <option>Recommandation</option>
+        <option>Apporteuse</option>
+        <option>Raya</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Apporteuse (si applicable)</label>
+      <input class="form-input" id="nl-apporteuse" placeholder="Nom de l'apporteuse">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Destination <span>*</span></label>
+        <input class="form-input" id="nl-dest" placeholder="Dubai, NYC…">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dates</label>
+        <input class="form-input" id="nl-dates" placeholder="15–22 juin">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Type de service</label>
+      <select class="form-select" id="nl-type">
+        <option value="">Sélectionner</option>
+        <option>Business / First Class</option>
+        <option>Jet privé</option>
+        <option>Hôtel & Séjour</option>
+        <option>Expérience complète</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Budget estimé</label>
+      <select class="form-select" id="nl-budget">
+        <option value="">Sélectionner</option>
+        <option>2 000 – 5 000 €</option>
+        <option>5 000 – 10 000 €</option>
+        <option>10 000 – 20 000 €</option>
+        <option>20 000 €+</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Valeur du deal (€)</label>
+      <input class="form-input" id="nl-value" type="number" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Prochain suivi</label>
+      <input class="form-input" id="nl-followup" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="nl-notes" placeholder="Contexte, préférences, détails…"></textarea>
+    </div>
+    <button class="form-btn" onclick="saveNewLead()">Enregistrer le lead</button>
+  </div>
+</div>
+
+<script>
+// ─── DATA (API / SQLite) — pas de données fictives ───
+let leads = [];
+let apporteuses = [];
+
+const statusLabels = { new: 'Nouveau', contacted: 'Contacté', offer: 'Offre envoyée', nego: 'Négociation', won: 'Gagné', lost: 'Perdu' };
+const statusClass = { new: 'sp-new', contacted: 'sp-contact', offer: 'sp-offer', nego: 'sp-nego', won: 'sp-won', lost: 'sp-lost' };
+
+const API_STATUS_OPTIONS = [
+  ['qualification', 'Qualification'],
+  ['new', 'Nouveau'],
+  ['contacted', 'Contacté'],
+  ['devis_pending', 'Devis à préparer'],
+  ['devis_sent', 'Devis envoyé'],
+  ['interested', 'Intéressé'],
+  ['call_booked', 'Appel booké'],
+  ['offer', 'Offre'],
+  ['nego', 'Négociation'],
+  ['won', 'Gagné'],
+  ['lost', 'Perdu'],
+];
+
+function kanbanColumn(apiStatus) {
+  const s = apiStatus || 'qualification';
+  if (['qualification', 'new', 'devis_pending'].includes(s)) return 'new';
+  if (s === 'contacted') return 'contacted';
+  if (['devis_sent', 'offer'].includes(s)) return 'offer';
+  if (['interested', 'call_booked', 'nego'].includes(s)) return 'nego';
+  if (s === 'won') return 'won';
+  return 'lost';
+}
+
+function normalizeApiLead(l) {
+  return {
+    id: l.id,
+    apiStatus: l.status,
+    name: l.client_name || 'Client',
+    contact: l.client_contact || '—',
+    source: l.canal === 'instagram' ? 'Instagram DM' : 'WhatsApp',
+    apporteuse: l.apporteur_name || '',
+    dest: l.destination || '—',
+    dates: l.dates || '',
+    type: l.classe || '',
+    budget: '—',
+    value: Number(l.value) || 0,
+    margin: Number(l.margin) || 0,
+    status: kanbanColumn(l.status),
+    sdr: l.closer_name || '—',
+    followup: l.next_followup,
+    notes: l.notes || '',
+    urgent: !!l.urgent,
+  };
+}
+
+function fmtFollowup(f) {
+  if (f == null || f === '') return '';
+  const d = typeof f === 'number' ? new Date(f) : new Date(f);
+  if (Number.isNaN(d.getTime())) return String(f);
+  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function currentUserLabel() {
+  const u = window.OlaAuth && window.OlaAuth.user;
+  return (u && (u.name || u.email)) || 'Équipe';
+}
+
+function escapeHtmlCrm(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ─── VIEW SWITCH ───
+function switchView(id, el) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tb-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('v-'+id).classList.add('active');
+  el.classList.add('active');
+  if(id==='dashboard') renderDashboard();
+  if(id==='pipeline') renderKanban();
+  if(id==='commissions') renderCommissions();
+  if(id==='apporteuses') fetchApporteurs().then(() => renderApporteuses());
+}
+
+// ─── DASHBOARD ───
+function renderDashboard() {
+  const won = leads.filter(l=>l.status==='won');
+  const active = leads.filter(l=>!['won','lost'].includes(l.status));
+  const totalCA = won.reduce((s,l)=>s+l.value,0);
+  const me = window.OlaAuth && window.OlaAuth.user && window.OlaAuth.user.email;
+  const myWon = me ? won.filter(l => l.sdr === me) : won;
+  const totalComm1 = myWon.reduce((s,l)=>s+l.margin*0.2,0);
+  const pipeline = active.reduce((s,l)=>s+l.value,0);
+  const today = leads.filter(l => {
+    if (l.followup == null || l.followup === '') return false;
+    const d = new Date(typeof l.followup === 'number' ? l.followup : l.followup);
+    if (Number.isNaN(d.getTime())) return false;
+    const t = new Date();
+    return d.getFullYear()===t.getFullYear() && d.getMonth()===t.getMonth() && d.getDate()===t.getDate();
+  });
+
+  document.getElementById('v-dashboard-inner').innerHTML = `
+  <div style="padding:40px 32px;">
+    <div class="dash-title">Bonjour, ${escapeHtmlCrm(currentUserLabel())}</div>
+    <div class="dash-sub">${new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-val">${leads.filter(l=>l.status==='new').length}</div><div class="kpi-label">Nouveaux leads</div><div class="kpi-delta">↑ aujourd'hui</div></div>
+      <div class="kpi"><div class="kpi-val">${active.length}</div><div class="kpi-label">Leads actifs</div></div>
+      <div class="kpi"><div class="kpi-val">${won.length}</div><div class="kpi-label">Deals gagnés</div><div class="kpi-delta" style="color:var(--green-t)">ce mois</div></div>
+      <div class="kpi"><div class="kpi-val">${pipeline.toLocaleString('fr-FR')} €</div><div class="kpi-label">Pipeline total</div></div>
+      <div class="kpi"><div class="kpi-val" style="color:var(--green-t)">${Math.round(totalComm1).toLocaleString('fr-FR')} €</div><div class="kpi-label">Mes commissions</div></div>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-card">
+        <div class="dc-title">Leads récents</div>
+        ${leads.slice(0,5).map(l=>`
+        <div class="lead-row" onclick="openLeadModal('${String(l.id).replace(/'/g, "\\'")}')" style="cursor:pointer">
+          <div class="lr-left"><div class="lr-name">${l.name}</div><div class="lr-dest">${l.dest} · ${l.dates||'dates à confirmer'}</div></div>
+          <div class="lr-right">
+            <span class="status-pill ${statusClass[l.status]}">${statusLabels[l.status]}</span>
+            <span class="lr-val">${l.value>0?l.value.toLocaleString('fr-FR')+' €':'—'}</span>
+          </div>
+        </div>`).join('')}
+      </div>
+      <div class="dash-card">
+        <div class="dc-title">Commissions · Ce mois</div>
+        <div class="comm-bar">
+          ${leads.filter(l=>l.status==='won').map(l=>`
+          <div class="cb-row">
+            <div><div class="cb-name">${l.name}</div><div class="cb-num">${l.dest}</div></div>
+            <div class="cb-val">+${Math.round(l.margin*0.2).toLocaleString('fr-FR')} €</div>
+          </div>`).join('')}
+          ${leads.filter(l=>l.status==='won').length===0?'<div style="color:var(--g);font-size:14px;padding:20px 0;">Aucun deal closé ce mois.</div>':''}
+        </div>
+        <div style="border-top:1px solid var(--l);margin-top:16px;padding-top:16px;display:flex;justify-content:space-between;">
+          <div class="kpi-label">Total commissions</div>
+          <div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:300;color:var(--green-t)">${Math.round(totalComm1).toLocaleString('fr-FR')} €</div>
+        </div>
+      </div>
+    </div>
+    ${today.length>0?`
+    <div style="margin-top:24px;background:rgba(250,204,21,0.06);border:1px solid rgba(250,204,21,0.15);padding:20px 24px;">
+      <div style="font-family:Montserrat,sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--yellow-t);margin-bottom:12px;">⚡ Relances du jour (${today.length})</div>
+      ${today.map(l=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(250,204,21,0.08)"><span style="font-size:15px;color:var(--w)">${l.name}</span><span style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--yellow-t)">${l.dest}</span></div>`).join('')}
+    </div>`:''}
+  </div>`;
+}
+
+// ─── KANBAN ───
+function renderKanban(filter='all') {
+  const statuses = ['new','contacted','offer','nego','won','lost'];
+  const board = document.getElementById('kanban-board');
+  board.innerHTML = statuses.map(s=>{
+    let cards = leads.filter(l=>l.status===s);
+    if(filter==='mine') {
+      const me = window.OlaAuth && window.OlaAuth.user && window.OlaAuth.user.email;
+      cards = me ? cards.filter(l=>l.sdr===me) : cards;
+    }
+    if(filter==='urgent') cards = cards.filter(l=>l.urgent);
+    return `
+    <div class="k-col" data-status="${s}">
+      <div class="k-head">
+        <div class="k-title">${statusLabels[s]}</div>
+        <div class="k-count">${cards.length}</div>
+      </div>
+      <div class="k-cards">
+        ${cards.map(l=>`
+        <div class="k-card ${l.urgent?'kc-urgent':''} ${l.status==='won'?'kc-hot':''}" onclick="openLeadModal('${String(l.id).replace(/'/g, "\\'")}')">
+          <div class="kc-name">${l.name}</div>
+          <div class="kc-dest">${l.dest}</div>
+          <div class="kc-meta">
+            <div class="kc-budget">${l.budget||'Budget ?'}</div>
+            <div class="kc-sdr">${l.sdr}</div>
+          </div>
+          <div class="kc-date">${l.dates||'Dates à confirmer'}${l.apporteuse?' · via '+l.apporteuse:''}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterPipeline(f, el) {
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderKanban(f);
+}
+
+// ─── LEAD MODAL ───
+function openLeadModal(id) {
+  const l = leads.find(x => String(x.id) === String(id));
+  if(!l) return;
+  const content = document.getElementById('modal-content');
+  content.innerHTML = `
+  <div class="modal-head">
+    <div>
+      <div class="modal-title">${l.name}</div>
+      <div style="font-family:Montserrat,sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-top:6px">${l.dest} · ${l.source}</div>
+    </div>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="modal-section">
+      <div class="ms-title">Statut du lead</div>
+      <select class="status-select" onchange="updateStatus('${String(l.id).replace(/'/g, "\\'")}',this.value)">
+        ${API_STATUS_OPTIONS.map(([k,v]) => `<option value="${k}" ${k===l.apiStatus?'selected':''}>${v}</option>`).join('')}
+      </select>
+    </div>
+    <div class="modal-section">
+      <div class="ms-title">Informations client</div>
+      <div class="modal-grid">
+        <div class="mf"><div class="mf-label">Nom</div><div class="mf-val">${l.name}</div></div>
+        <div class="mf"><div class="mf-label">Contact</div><div class="mf-val">${l.contact}</div></div>
+        <div class="mf"><div class="mf-label">Source</div><div class="mf-val">${l.source}</div></div>
+        <div class="mf"><div class="mf-label">Apporteuse</div><div class="mf-val">${l.apporteuse||'—'}</div></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="ms-title">Détails du voyage</div>
+      <div class="modal-grid">
+        <div class="mf"><div class="mf-label">Destination</div><div class="mf-val">${l.dest}</div></div>
+        <div class="mf"><div class="mf-label">Dates</div><div class="mf-val">${l.dates||'—'}</div></div>
+        <div class="mf"><div class="mf-label">Type</div><div class="mf-val">${l.type||'—'}</div></div>
+        <div class="mf"><div class="mf-label">Budget</div><div class="mf-val">${l.budget||'—'}</div></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="ms-title">Business</div>
+      <div class="modal-grid">
+        <div class="mf"><div class="mf-label">Valeur du deal</div><div class="mf-val">${l.value>0?l.value.toLocaleString('fr-FR')+' €':'À définir'}</div></div>
+        <div class="mf"><div class="mf-label">Marge</div><div class="mf-val">${l.margin>0?l.margin.toLocaleString('fr-FR')+' €':'—'}</div></div>
+        <div class="mf"><div class="mf-label">Commission SDR (15%)</div><div class="mf-val" style="color:var(--green-t)">${l.margin>0?Math.round(l.margin*0.15).toLocaleString('fr-FR')+' €':'—'}</div></div>
+        <div class="mf"><div class="mf-label">Commission Closer (20%)</div><div class="mf-val" style="color:var(--green-t)">${l.margin>0?Math.round(l.margin*0.2).toLocaleString('fr-FR')+' €':'—'}</div></div>
+      </div>
+    </div>
+    ${l.notes?`<div class="modal-section"><div class="ms-title">Notes</div><div style="font-size:15px;color:var(--g);line-height:1.8">${l.notes}</div></div>`:''}
+    ${l.followup?`<div class="modal-section"><div class="ms-title">Prochain suivi</div><div style="font-family:Montserrat,sans-serif;font-size:9px;font-weight:300;color:var(--yellow-t)">${fmtFollowup(l.followup)}</div></div>`:''}
+    <div class="modal-actions">
+      <button class="ma-btn ma-primary" onclick="alert('Lien WhatsApp : wa.me/${l.contact.replace('@','')}')">Contacter sur WhatsApp</button>
+      <button class="ma-btn ma-ghost">Envoyer une offre</button>
+      <button class="ma-btn ma-ghost">Programmer relance</button>
+      <button class="ma-btn ma-danger" onclick="updateStatus('${String(l.id).replace(/'/g, "\\'")}','lost');closeModal();">Marquer perdu</button>
+    </div>
+  </div>`;
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function updateStatus(id, status) {
+  fetch('/api/leads/' + encodeURIComponent(id), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  }).then(r => {
+    if (!r.ok) return alert('Sauvegarde impossible');
+    return fetchLeadsFromApi();
+  }).catch(() => alert('Réseau indisponible'));
+}
+
+function closeModal(e) {
+  if(!e || e.target===document.getElementById('modal-bg')) {
+    document.getElementById('modal-bg').classList.remove('open');
+  }
+}
+
+// ─── NEW LEAD ───
+function openNewLead() { document.getElementById('new-lead-panel').classList.add('open'); }
+function closeNewLead() { document.getElementById('new-lead-panel').classList.remove('open'); }
+
+function saveNewLead() {
+  const name = document.getElementById('nl-name').value.trim();
+  if (!name) return alert('Le nom du client est obligatoire.');
+  const fu = document.getElementById('nl-followup').value;
+  const next_followup = fu ? Date.parse(fu + 'T12:00:00') : null;
+  const u = window.OlaAuth && window.OlaAuth.user;
+  const payload = {
+    client_name: name,
+    client_contact: document.getElementById('nl-contact').value,
+    canal: (document.getElementById('nl-source').value || '').toLowerCase().includes('instagram') ? 'instagram' : 'whatsapp',
+    destination: document.getElementById('nl-dest').value,
+    dates: document.getElementById('nl-dates').value,
+    classe: document.getElementById('nl-type').value,
+    apporteur_name: document.getElementById('nl-apporteuse').value || null,
+    closer_name: u && u.role === 'closeuse' ? u.email : (u && u.email) || null,
+    next_followup: Number.isFinite(next_followup) ? next_followup : null,
+    notes: document.getElementById('nl-notes').value,
+    value: parseInt(document.getElementById('nl-value').value, 10) || 0,
+    status: 'qualification',
+    urgent: false,
+  };
+  fetch('/api/leads', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).then(r => {
+    if (!r.ok) return alert('Impossible de créer le lead');
+    closeNewLead();
+    ['nl-name','nl-contact','nl-dest','nl-dates','nl-notes','nl-value'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('nl-followup').value = '';
+    return fetchLeadsFromApi();
+  }).catch(() => alert('Réseau indisponible'));
+}
+
+// ─── COMMISSIONS ───
+function renderCommissions() {
+  const me = window.OlaAuth && window.OlaAuth.user && window.OlaAuth.user.email;
+  const wonLeads = leads.filter(l => l.status === 'won');
+  const myWon = me ? wonLeads.filter(l => l.sdr === me) : wonLeads;
+  const totalCA = myWon.reduce((s,l)=>s+l.value,0);
+  const totalMargin = myWon.reduce((s,l)=>s+l.margin,0);
+  const myComm = myWon.reduce((s,l)=>s+l.margin*0.2,0);
+
+  document.getElementById('v-commissions-inner').innerHTML = `
+  <div style="padding:40px 32px;">
+    <div class="comm-header">
+      <div><div class="dash-title">Commissions</div><div class="dash-sub">Récapitulatif mensuel</div></div>
+    </div>
+    <div class="comm-kpis">
+      <div class="ck"><div class="ck-label">Chiffre d'affaires total</div><div class="ck-val">${totalCA.toLocaleString('fr-FR')} €</div><div class="ck-sub">${myWon.length} deals closés</div></div>
+      <div class="ck"><div class="ck-label">Marge totale</div><div class="ck-val">${totalMargin.toLocaleString('fr-FR')} €</div><div class="ck-sub">${totalCA>0?Math.round(totalMargin/totalCA*100):0}% de marge</div></div>
+      <div class="ck"><div class="ck-label">Commissions (20%)</div><div class="ck-val ck-green">${Math.round(myComm).toLocaleString('fr-FR')} €</div><div class="ck-sub">${me ? 'Vos deals' : 'Tous closers'}</div></div>
+    </div>
+    <div class="comm-table-wrap">
+      <div class="ct-header">
+        <div class="ct-th">Client</div>
+        <div class="ct-th">Destination</div>
+        <div class="ct-th">Valeur deal</div>
+        <div class="ct-th">Marge</div>
+        <div class="ct-th">Commission (20%)</div>
+      </div>
+      ${myWon.length>0?myWon.map(l=>`
+      <div class="ct-row">
+        <div class="ct-cell">${l.name}</div>
+        <div class="ct-cell muted">${l.dest}</div>
+        <div class="ct-cell">${l.value.toLocaleString('fr-FR')} €</div>
+        <div class="ct-cell muted">${l.margin.toLocaleString('fr-FR')} €</div>
+        <div class="ct-cell green">+${Math.round(l.margin*0.2).toLocaleString('fr-FR')} €</div>
+      </div>`).join(''):`<div style="padding:32px;color:var(--g);font-size:15px;font-style:italic">Aucun deal closé ce mois.</div>`}
+    </div>
+    <div style="margin-top:24px;background:var(--b2);border:1px solid var(--l);padding:24px;">
+      <div style="font-family:Montserrat,sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:16px;">Structure des commissions</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--l);">
+        <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">SDR / Apporteur</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">15 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
+        <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">Closer</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">20 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
+        <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">Ola Flight</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">65 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── APPORTEUSES ───
+function renderApporteuses() {
+  document.getElementById('v-apporteuses-inner').innerHTML = `
+  <div style="padding:40px 32px;">
+    <div class="ap-header">
+      <div class="ap-title">Réseau Apporteuses</div>
+      <div class="ap-sub">Enregistrer une nouvelle apporteuse · Suivre les deals attribués</div>
+    </div>
+    <div class="ap-layout">
+      <div class="ap-form-card">
+        <div class="ap-form-title">Enregistrer une apporteuse</div>
+        <div id="ap-success" class="success-msg">✓ Apporteuse enregistrée avec succès</div>
+        <div class="form-group">
+          <label class="form-label">Nom complet <span>*</span></label>
+          <input class="form-input" id="ap-name" placeholder="Prénom Nom">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Instagram <span>*</span></label>
+          <input class="form-input" id="ap-insta" placeholder="@handle">
+        </div>
+        <div class="form-group">
+          <label class="form-label">WhatsApp / Téléphone</label>
+          <input class="form-input" id="ap-phone" placeholder="+33…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" id="ap-email" placeholder="email@domain.com" type="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description du réseau <span>*</span></label>
+          <input class="form-input" id="ap-network" placeholder="Ex: Instagram lifestyle 80k abonnés, réseau sportifs pro…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type de réseau</label>
+          <select class="form-select" id="ap-nettype">
+            <option value="">Sélectionner</option>
+            <option>Instagram / Influence</option>
+            <option>Réseau sportifs professionnels</option>
+            <option>Réseau entrepreneurs</option>
+            <option>Réseau artistes / entertainment</option>
+            <option>Réseau HNWI</option>
+            <option>Autre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Taille estimée du réseau</label>
+          <select class="form-select" id="ap-size">
+            <option value="">Sélectionner</option>
+            <option>< 50 contacts qualifiés</option>
+            <option>50 – 200 contacts</option>
+            <option>200 – 500 contacts</option>
+            <option>500+ contacts</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Taux de commission convenu</label>
+          <select class="form-select" id="ap-rate">
+            <option value="5">5% sur marge</option>
+            <option value="7">7% sur marge</option>
+            <option value="10" selected>10% sur marge</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Comment a-t-elle entendu parler d'Ola Flight ?</label>
+          <input class="form-input" id="ap-ref" placeholder="Recommandation, Instagram, réseau perso…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea class="form-textarea" id="ap-notes" placeholder="Contexte, spécificités, accords particuliers…"></textarea>
+        </div>
+        <button class="form-btn" onclick="saveApporteuse()">Enregistrer l'apporteuse</button>
+      </div>
+      <div class="ap-list-card">
+        <div class="ap-list-head">
+          <div class="ap-list-title">Apporteuses actives (${apporteuses.length})</div>
+        </div>
+        ${apporteuses.map(a=>`
+        <div class="ap-row">
+          <div class="ap-row-left">
+            <div class="ap-row-name">${a.name}</div>
+            <div class="ap-row-meta">${a.instagram} · ${a.network}</div>
+            <div class="ap-row-meta" style="margin-top:4px;color:rgba(245,243,239,0.15)">Code : ${a.code}</div>
+          </div>
+          <div class="ap-row-right">
+            <div class="ap-row-deals">${a.deals} deals</div>
+            <div class="ap-row-comm">${a.totalValue.toLocaleString('fr-FR')} € générés</div>
+            <div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--green-t);margin-top:4px">Commission due : ${a.commission.toLocaleString('fr-FR')} €</div>
+          </div>
+        </div>`).join('')}
+        <div style="padding:20px 24px;border-top:1px solid var(--l)">
+          <div style="font-family:Montserrat,sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:12px">Attribution des ventes</div>
+          <p style="font-size:14px;color:var(--g);line-height:1.8">Pour attribuer une vente à une apporteuse, indiquer son nom dans le champ <strong style="color:var(--w)">Apporteuse</strong> lors de la création du lead. La commission est calculée automatiquement sur la marge nette du deal.</p>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function saveApporteuse() {
+  const name = document.getElementById('ap-name').value.trim();
+  const insta = document.getElementById('ap-insta').value.trim();
+  if (!name || !insta) return alert('Nom et Instagram sont obligatoires.');
+  fetch('/api/apporteurs', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      nom: name,
+      instagram: insta,
+      phone: document.getElementById('ap-phone').value || null,
+      email: document.getElementById('ap-email').value || null,
+      reseau: document.getElementById('ap-network').value || null,
+      type_reseau: document.getElementById('ap-nettype').value || null,
+      taille_reseau: document.getElementById('ap-size').value || null,
+      taux_commission: Number(document.getElementById('ap-rate').value) || 10,
+      notes: (document.getElementById('ap-ref').value || '') + (document.getElementById('ap-notes').value ? '\n' + document.getElementById('ap-notes').value : ''),
+    }),
+  }).then(r => {
+    if (!r.ok) return alert('Enregistrement impossible');
+    document.getElementById('ap-success').style.display = 'block';
+    setTimeout(() => document.getElementById('ap-success').style.display = 'none', 3000);
+    ['ap-name','ap-insta','ap-phone','ap-email','ap-network','ap-ref','ap-notes'].forEach(id => document.getElementById(id).value = '');
+    return fetchLeadsFromApi();
+  }).catch(() => alert('Réseau indisponible'));
+}
+
+// ─── API SYNC (leads partagés Agent IA ↔ CRM ↔ Dalsim) ───
+async function fetchApporteurs() {
+  try {
+    const r = await fetch('/api/apporteurs', { credentials: 'include' });
+    if (!r.ok) return;
+    const data = await r.json();
+    const raw = data.items || [];
+    apporteuses = raw.map(a => {
+      const wonWith = leads.filter(l => l.apiStatus === 'won' && l.apporteuse && a.nom && l.apporteuse.trim() === a.nom.trim());
+      const totalValue = wonWith.reduce((s, l) => s + l.value, 0);
+      const deals = wonWith.length;
+      const rate = Number(a.taux_commission) || 10;
+      const commission = wonWith.reduce((s, l) => s + Math.round((l.margin || 0) * (rate / 100)), 0);
+      return {
+        id: a.id,
+        name: a.nom,
+        instagram: a.instagram || '',
+        phone: a.phone || '',
+        network: a.reseau || a.type_reseau || '—',
+        deals,
+        totalValue,
+        commission,
+        code: a.code || '',
+      };
+    });
+  } catch (e) {
+    console.warn('apporteurs', e);
+  }
+}
+
+async function fetchLeadsFromApi() {
+  try {
+    const r = await fetch('/api/leads', { credentials: 'include' });
+    if (!r.ok) return;
+    const data = await r.json();
+    leads = (data.items || []).map(normalizeApiLead);
+    await fetchApporteurs();
+    if (document.getElementById('v-dashboard').classList.contains('active')) renderDashboard();
+    if (document.getElementById('v-pipeline').classList.contains('active')) renderKanban();
+    if (document.getElementById('v-commissions').classList.contains('active')) renderCommissions();
+    if (document.getElementById('v-apporteuses').classList.contains('active')) renderApporteuses();
+  } catch (e) {
+    console.warn('API leads indisponible', e);
+  }
+}
+
+function startCrm() {
+  fetchLeadsFromApi().then(() => {
+    renderDashboard();
+    renderKanban();
+  });
+}
+if (window.OlaAuth && window.OlaAuth.user) startCrm();
+else document.addEventListener('ola:auth', startCrm, { once: true });
+setInterval(fetchLeadsFromApi, 20000);
+</script>
+</body>
+</html>

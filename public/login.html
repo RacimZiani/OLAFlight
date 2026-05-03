@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ola Flight — Connexion</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,200;0,300;1,200;1,300&family=Montserrat:wght@200;300;400&display=swap');
+:root{
+  --b:#0a0a0a;--b2:#111;--b3:#161616;
+  --w:#f5f3ef;--g:rgba(245,243,239,0.55);--g2:rgba(245,243,239,0.32);
+  --l:rgba(245,243,239,0.09);--l2:rgba(245,243,239,0.18);
+  --red-t:#f87171;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  background:radial-gradient(ellipse at top, #161616 0%, #0a0a0a 60%) #0a0a0a;
+  color:var(--w);font-family:'Cormorant Garamond',serif;font-weight:300;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.shell{width:100%;max-width:420px;}
+.brand{text-align:center;margin-bottom:48px;}
+.brand-mark{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:6px;text-transform:uppercase;color:var(--g);margin-bottom:8px;}
+.brand-name{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:200;letter-spacing:0.04em;}
+.brand-name em{font-style:italic;font-weight:300;}
+.brand-tag{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:var(--g2);margin-top:14px;}
+.card{background:var(--b2);border:1px solid var(--l);padding:40px 36px;}
+.title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:200;margin-bottom:6px;}
+.sub{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:32px;}
+.field{margin-bottom:20px;}
+.field label{display:block;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:8px;}
+.field input{
+  width:100%;background:transparent;border:none;border-bottom:1px solid var(--l2);
+  color:var(--w);font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;
+  padding:8px 0;outline:none;transition:border-color .2s;
+}
+.field input:focus{border-bottom-color:var(--w);}
+.field input::placeholder{color:var(--g2);font-style:italic;}
+.btn{
+  width:100%;margin-top:12px;background:var(--w);color:var(--b);
+  font-family:'Montserrat',sans-serif;font-size:9px;font-weight:400;letter-spacing:4px;
+  text-transform:uppercase;padding:16px;border:none;cursor:pointer;transition:opacity .2s;
+}
+.btn:hover{opacity:.85;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.error{
+  margin-top:18px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;
+  letter-spacing:1px;color:var(--red-t);min-height:14px;
+}
+.foot{text-align:center;margin-top:28px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g2);}
+.foot a{color:var(--g);text-decoration:none;border-bottom:1px solid var(--l);padding-bottom:1px;}
+.foot a:hover{color:var(--w);}
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="brand">
+      <div class="brand-mark">Ola Flight</div>
+      <div class="brand-name">Ola <em>Flight</em></div>
+      <div class="brand-tag">Espace équipe</div>
+    </div>
+    <form class="card" id="login-form" autocomplete="on">
+      <div class="title">Connexion</div>
+      <div class="sub">Admin · Dalsim · Closeuses</div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="username" required placeholder="vous@olaflight.com" />
+      </div>
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" />
+      </div>
+      <button class="btn" type="submit" id="submit">Entrer</button>
+      <div class="error" id="error"></div>
+    </form>
+    <div class="foot"><a href="/">← retour au site</a></div>
+  </div>
+<script>
+(function(){
+  const form = document.getElementById('login-form');
+  const errBox = document.getElementById('error');
+  const btn = document.getElementById('submit');
+
+  // Destination après login : ?next=... si fourni (utile depuis l'auth-gate
+  // d'une page back-office), sinon retour à la page d'accueil.
+  function destination(){
+    const params = new URLSearchParams(location.search);
+    const next = params.get('next');
+    if(next && next.startsWith('/') && !next.startsWith('//')) return next;
+    return '/';
+  }
+
+  fetch('/api/auth/me', { credentials: 'include' })
+    .then(r => r.ok ? r.json() : null)
+    .then(j => { if(j && j.user){ location.replace(destination()); } })
+    .catch(() => {});
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errBox.textContent = '';
+    btn.disabled = true;
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    try{
+      const r = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if(!r.ok){
+        errBox.textContent = j.error || 'Connexion impossible';
+        btn.disabled = false;
+        return;
+      }
+      location.replace(destination());
+    }catch(err){
+      errBox.textContent = 'Réseau indisponible';
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>

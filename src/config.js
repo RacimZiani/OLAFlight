@@ -1,0 +1,140 @@
+import "dotenv/config";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Racine du dépôt (dossier contenant package.json, public/, src/, db/).
+const ROOT_DIR = path.resolve(__dirname, "..");
+const REPO_ROOT = ROOT_DIR;
+
+function bool(v, def = false) {
+  if (v == null) return def;
+  return /^(1|true|yes|on)$/i.test(String(v).trim());
+}
+
+function num(v, def) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : def;
+}
+
+function csv(envVal) {
+  return String(envVal || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+const PORT = num(process.env.PORT, 5179);
+
+export const config = {
+  env: process.env.NODE_ENV || "development",
+  port: PORT,
+  rootDir: ROOT_DIR,
+  repoRoot: REPO_ROOT,
+  publicUrl: process.env.PUBLIC_URL || `http://localhost:${PORT}`,
+
+  staticDir: path.resolve(ROOT_DIR, "public"),
+  dataDir: path.resolve(ROOT_DIR, "data"),
+
+  anthropic: {
+    apiKey: process.env.ANTHROPIC_API_KEY || "",
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
+    maxTokens: num(process.env.ANTHROPIC_MAX_TOKENS, 600),
+  },
+
+  // Storage backend: "sqlite" (default), "json" (legacy), "supabase" (prod)
+  storage: {
+    driver: (process.env.STORAGE_DRIVER || "sqlite").toLowerCase(),
+    supabaseUrl: process.env.SUPABASE_URL || "",
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+  },
+
+  // SQLite : fichier unique data/ola-flight.db. Migrations auto au boot.
+  sqlite: {
+    dir: path.resolve(ROOT_DIR, "data"),
+    path: process.env.SQLITE_PATH || path.resolve(ROOT_DIR, "data", "ola-flight.db"),
+  },
+
+  // Auth : JWT cookie + bcrypt. JWT_SECRET DOIT être défini en prod.
+  auth: {
+    jwtSecret: process.env.JWT_SECRET || "",
+    sessionTtl: process.env.SESSION_TTL || "7d",
+    cookieName: "ola_session",
+    cookieSecure: bool(process.env.COOKIE_SECURE, false), // true en prod (HTTPS)
+    // Compte admin auto-créé sur premier boot si users vide.
+    seedEmail: process.env.ADMIN_EMAIL || "admin@olaflight.local",
+    seedPassword: process.env.ADMIN_PASSWORD || "",
+    seedName: process.env.ADMIN_NAME || "Seth",
+    // Legacy : tokens X-Admin-Token (à retirer).
+    legacyAdminTokens: csv(process.env.ADMIN_TOKENS),
+  },
+
+  // Playwright bundles its browsers next to the server so the install is portable.
+  playwrightBrowsersDir: path.resolve(ROOT_DIR, ".playwright-browsers"),
+
+  logging: {
+    level: process.env.LOG_LEVEL || "info",
+    pretty: bool(process.env.LOG_PRETTY, true),
+  },
+
+  // ─── Generation PDF (T05) ────────────────────────────────────────────
+  pdf: {
+    outDir: path.resolve(ROOT_DIR, "pdfs"),
+    publicPath: "/pdfs", // route static servie par Express
+  },
+
+  // ─── Meta WhatsApp / Instagram (T02 + T07) ────────────────────────────
+  meta: {
+    appSecret: process.env.META_APP_SECRET || "",
+    verifyToken: process.env.META_VERIFY_TOKEN || "",
+  },
+  whatsapp: {
+    token: process.env.WHATSAPP_TOKEN || "",
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
+  },
+  instagram: {
+    token: process.env.INSTAGRAM_TOKEN || "",
+    pageId: process.env.INSTAGRAM_PAGE_ID || "",
+  },
+
+  // ─── Calendly (T06) ──────────────────────────────────────────────────
+  calendly: {
+    token: process.env.CALENDLY_TOKEN || "",
+    eventTypeUri: process.env.CALENDLY_EVENT_TYPE_URI || "",
+    fallbackLink: process.env.CALENDLY_LINK || "",
+    webhookSigningKey: process.env.CALENDLY_WEBHOOK_KEY || "",
+  },
+
+  // ─── Notifications internes (T04) ────────────────────────────────────
+  notifications: {
+    dalsimWhatsapp: csv(process.env.DALSIM_WHATSAPP),
+    defaultCloserWhatsapp: process.env.DEFAULT_CLOSER_WHATSAPP || "",
+  },
+};
+
+export function assertCriticalConfig() {
+  const issues = [];
+  if (!config.anthropic.apiKey) {
+    issues.push(
+      "ANTHROPIC_API_KEY manquante — l'endpoint /api/chat répondra 500. Copier .env.example → .env."
+    );
+  }
+  if (!config.auth.jwtSecret) {
+    issues.push(
+      "JWT_SECRET manquant — auto-généré (NON-PERSISTANT, sessions invalidées à chaque restart). À fixer en .env pour la prod."
+    );
+    // En dev : on génère une clé en mémoire pour ne pas planter le boot.
+    config.auth.jwtSecret =
+      Buffer.from(`${Date.now()}-${Math.random()}-${process.pid}`).toString("base64");
+  }
+  if (config.storage.driver === "supabase") {
+    if (!config.storage.supabaseUrl || !config.storage.supabaseServiceKey) {
+      issues.push(
+        "STORAGE_DRIVER=supabase mais SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants."
+      );
+    }
+  }
+  return issues;
+}

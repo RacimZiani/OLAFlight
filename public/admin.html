@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin — Vols Ola Flight</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root{
+        --gold:#c8a55c;
+        --cream:#f2ede8;
+        --dk:#080808;
+        --dk2:#111;
+        --gray:#777;
+        --sans:"DM Sans",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+        --serif:"Playfair Display",Georgia,serif;
+      }
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{margin:0;background:var(--dk);color:var(--cream);font-family:var(--sans)}
+      a{color:inherit}
+      .wrap{max-width:1250px;margin:0 auto;padding:28px 22px}
+      .top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+      .brand{font-family:var(--serif);font-weight:300;letter-spacing:10px;font-size:26px}
+      .sub{color:var(--gray);font-size:12px;letter-spacing:2.2px;text-transform:uppercase;margin-top:6px}
+      .card{border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02)}
+      .panel{margin-top:18px;padding:18px;border-radius:14px}
+      .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+      .btn{
+        border:1px solid rgba(255,255,255,.12);
+        background:rgba(255,255,255,.03);
+        color:var(--cream);
+        padding:10px 12px;
+        border-radius:12px;
+        cursor:pointer;
+        font-size:12px;
+        letter-spacing:1.6px;
+        text-transform:uppercase;
+      }
+      .btn--gold{border-color:rgba(200,165,92,.45);color:var(--gold)}
+      .btn--fill{background:var(--gold);border-color:var(--gold);color:var(--dk)}
+      .btn:disabled{opacity:.55;cursor:not-allowed}
+      .inp,select{
+        background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.10);
+        color:var(--cream);
+        padding:10px 12px;
+        border-radius:12px;
+        outline:none;
+        font-size:13px;
+      }
+      select option{background:var(--dk2)}
+      .muted{color:rgba(242,237,232,.55)}
+      .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+      .k{padding:14px 14px;border-radius:14px}
+      .k .n{font-family:var(--serif);font-size:26px;font-weight:300}
+      .k .l{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(242,237,232,.45);margin-top:6px}
+      @media(max-width:900px){.kpi{grid-template-columns:repeat(2,1fr)}}
+      table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
+      th,td{padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+      th{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(242,237,232,.55);text-align:left}
+      .tag{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.10);font-size:11px}
+      .dot{width:7px;height:7px;border-radius:50%}
+      .dot--s{background:#60a5fa}
+      .dot--c{background:#fbbf24}
+      .dot--a{background:#34d399}
+      .dot--p{background:var(--gold)}
+      .td2{color:rgba(242,237,232,.65);font-size:12px;margin-top:4px}
+      .right{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+      .small{font-size:12px}
+      .login{max-width:520px;margin:70px auto;padding:22px;border-radius:16px}
+      .login h2{font-family:var(--serif);font-weight:300;font-size:34px;margin:0 0 8px}
+      .login p{margin:0 0 14px;color:rgba(242,237,232,.6);line-height:1.7}
+    </style>
+    <meta name="ola-required-roles" content="admin">
+    <script src="/auth-gate.js"></script>
+  </head>
+  <body>
+    <div class="wrap" id="app"></div>
+
+    <script>
+      const STATUS = [
+        { id: "scraped", label: "Scrapé", dot: "dot--s" },
+        { id: "shortlisted", label: "Shortlist", dot: "dot--c" },
+        { id: "contacted", label: "Contact client", dot: "dot--a" },
+        { id: "booked", label: "Réservé", dot: "dot--p" }
+      ];
+
+      const $ = (sel) => document.querySelector(sel);
+      const fmt = (n) => {
+        try { return new Intl.NumberFormat("fr-FR").format(n); } catch { return String(n); }
+      };
+
+      const state = {
+        items: [],
+        q: "",
+        status: "",
+        scraping: false,
+        // scrape form
+        scrape: {
+          from: "COO",
+          to: "CDG",
+          depart: "2026-06-15",
+          return: "2026-06-29",
+          adults: 1,
+          limit: 12,
+        },
+        // filters / sorting
+        filters: {
+          airline: "",
+          tripType: "",
+          stops: "",
+          priceMin: "",
+          priceMax: "",
+          departFrom: "",
+          departTo: "",
+        },
+        sort: "created_desc",
+      };
+
+      function api(path, opts = {}) {
+        const headers = Object.assign({ "Content-Type": "application/json" }, opts.headers || {});
+        return fetch(path, { ...opts, credentials: "include", headers });
+      }
+
+      function statusMeta(id) {
+        return STATUS.find(s => s.id === id) || STATUS[0];
+      }
+
+      function kpi() {
+        const by = {};
+        for (const s of STATUS) by[s.id] = 0;
+        for (const it of state.items) by[it.status] = (by[it.status] || 0) + 1;
+        return by;
+      }
+
+      function filtered() {
+        const q = state.q.trim().toLowerCase();
+        const airline = state.filters.airline.trim().toLowerCase();
+        const tripType = state.filters.tripType;
+        const stops = state.filters.stops;
+        const priceMin = state.filters.priceMin !== "" ? Number(state.filters.priceMin) : null;
+        const priceMax = state.filters.priceMax !== "" ? Number(state.filters.priceMax) : null;
+        const departFrom = state.filters.departFrom || "";
+        const departTo = state.filters.departTo || "";
+
+        return state.items.filter(it => {
+          if (state.status && it.status !== state.status) return false;
+          const r = it.route || {};
+          const meta = it.meta || {};
+
+          if (q) {
+            const hay = `${it.title || ""} ${it.source || ""} ${r.from || ""} ${r.to || ""} ${r.depart_date || ""} ${r.return_date || ""} ${meta.airline || ""}`.toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+
+          if (airline) {
+            const a = String(meta.airline || "").toLowerCase();
+            if (!a.includes(airline)) return false;
+          }
+          if (tripType) {
+            if (String(r.trip_type || "") !== tripType) return false;
+          }
+          if (stops !== "") {
+            const s = meta && typeof meta.stops === "number" ? meta.stops : null;
+            if (s == null) return false;
+            if (String(s) !== String(stops)) return false;
+          }
+
+          if (priceMin != null) {
+            if (typeof it.price !== "number" || it.price < priceMin) return false;
+          }
+          if (priceMax != null) {
+            if (typeof it.price !== "number" || it.price > priceMax) return false;
+          }
+
+          const d = String(r.depart_date || "");
+          if (departFrom && d && d < departFrom) return false;
+          if (departTo && d && d > departTo) return false;
+          return true;
+        });
+      }
+
+      const STATUS_ORDER = { scraped: 0, shortlisted: 1, contacted: 2, booked: 3 };
+
+      function sorted(items) {
+        const xs = [...items];
+        const s = state.sort;
+        if (s === "created_desc") xs.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+        if (s === "created_asc") xs.sort((a, b) => (a.created_at || 0) - (b.created_at || 0));
+        if (s === "price_asc") xs.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+        if (s === "price_desc") xs.sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity));
+        if (s === "depart_asc") xs.sort((a, b) => String((a.route && a.route.depart_date) || "").localeCompare(String((b.route && b.route.depart_date) || "")));
+        if (s === "depart_desc") xs.sort((a, b) => String((b.route && b.route.depart_date) || "").localeCompare(String((a.route && a.route.depart_date) || "")));
+        if (s === "title_asc") xs.sort((a, b) => String(a.title || "").localeCompare(String(b.title || "")));
+        if (s === "title_desc") xs.sort((a, b) => String(b.title || "").localeCompare(String(a.title || "")));
+        if (s === "status_asc") xs.sort((a, b) => (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99));
+        if (s === "status_desc") xs.sort((a, b) => (STATUS_ORDER[b.status] ?? 99) - (STATUS_ORDER[a.status] ?? 99));
+        return xs;
+      }
+
+      function sortIndicator(key) {
+        if (state.sort === `${key}_asc`) return " ↑";
+        if (state.sort === `${key}_desc`) return " ↓";
+        return "";
+      }
+
+      function esc(s) {
+        return String(s || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+      }
+
+      function detailsLine(it) {
+        const r = it.route || {};
+        const meta = it.meta || {};
+        const bits = [];
+        if (r.from && r.to) bits.push(`${r.from} → ${r.to}`);
+        if (r.depart_date) bits.push(`Départ ${r.depart_date}`);
+        if (r.return_date) bits.push(`Retour ${r.return_date}`);
+        if (meta.airline) bits.push(meta.airline);
+        if (typeof meta.stops === "number") bits.push(meta.stops === 0 ? "Direct" : `${meta.stops} escale${meta.stops > 1 ? "s" : ""}`);
+        if (meta.duration) bits.push(meta.duration);
+        if (it.source) bits.push(it.source);
+        return bits.join(" • ");
+      }
+
+      function render() {
+        const app = $("#app");
+        const by = kpi();
+
+        // Preserve focus + caret so typing in a filter doesn't "eject" after each keystroke.
+        const active = document.activeElement;
+        const preservedId = active && active.id ? active.id : null;
+        let preservedStart = null;
+        let preservedEnd = null;
+        try {
+          if (preservedId && active && "selectionStart" in active) {
+            preservedStart = active.selectionStart;
+            preservedEnd = active.selectionEnd;
+          }
+        } catch { /* inputs like number don't support selection — ignore */ }
+
+        const rows = sorted(filtered()).map(it => {
+          const st = statusMeta(it.status);
+          return `
+            <tr>
+              <td>
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                  <div style="width:76px;height:56px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.03);flex:0 0 auto">
+                    ${it.image_url ? `<img src="${it.image_url}" alt="" style="width:100%;height:100%;object-fit:cover" loading="lazy" />` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(242,237,232,.35);font-size:11px">Photo</div>`}
+                  </div>
+                  <div style="min-width:0">
+                    <div style="font-weight:600">${it.title}</div>
+                    <div class="td2">${esc(detailsLine(it) || "—")} • <span class="muted">${esc(it.source)}</span></div>
+                    <div class="td2"><a href="${it.url}" target="_blank" rel="noopener" class="muted">Voir la source</a></div>
+                  </div>
+                </div>
+              </td>
+              <td>${it.price ? fmt(it.price) : "—"} <span class="muted">${it.currency || ""}</span></td>
+              <td>
+                <span class="tag"><span class="dot ${st.dot}"></span>${st.label}</span>
+              </td>
+              <td class="right">
+                <select class="inp" data-status="${it.id}">
+                  ${STATUS.map(s => `<option value="${s.id}" ${s.id===it.status?"selected":""}>${s.label}</option>`).join("")}
+                </select>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+        app.innerHTML = `
+          <div class="top">
+            <div>
+              <div class="brand">CRM</div>
+              <div class="sub">Ōla Flight • Scraping réel (Kayak via Chromium) + statuts</div>
+            </div>
+            <div class="row">
+              <a class="btn btn--gold" href="/" title="Retour site">← Site</a>
+              <button class="btn" id="purgeDemo" title="Supprimer les anciennes entrées démo">Vider démo</button>
+              <button class="btn" id="logout">Déconnexion</button>
+            </div>
+          </div>
+
+          <div class="kpi">
+            <div class="card k">
+              <div class="n">${by.scraped || 0}</div>
+              <div class="l">Scrapés</div>
+            </div>
+            <div class="card k">
+              <div class="n">${by.shortlisted || 0}</div>
+              <div class="l">Shortlist</div>
+            </div>
+            <div class="card k">
+              <div class="n">${by.contacted || 0}</div>
+              <div class="l">Contact</div>
+            </div>
+            <div class="card k">
+              <div class="n">${by.booked || 0}</div>
+              <div class="l">Réservés</div>
+            </div>
+          </div>
+
+          <div class="card panel">
+            <div class="row" style="justify-content:space-between;align-items:flex-start">
+              <div style="flex:1;min-width:320px">
+                <div class="muted small" style="letter-spacing:2px;text-transform:uppercase">Recherche vols (scraping)</div>
+                <div class="row" style="margin-top:10px">
+                  <input class="inp" id="sf_from" placeholder="Départ (IATA: COO)" style="width:130px" value="${esc(state.scrape.from)}" />
+                  <input class="inp" id="sf_to" placeholder="Arrivée (IATA: CDG)" style="width:130px" value="${esc(state.scrape.to)}" />
+                  <input class="inp" id="sf_depart" placeholder="Départ (YYYY-MM-DD)" style="width:170px" value="${esc(state.scrape.depart)}" />
+                  <input class="inp" id="sf_return" placeholder="Retour (optionnel)" style="width:170px" value="${esc(state.scrape.return)}" />
+                  <input class="inp" id="sf_adults" placeholder="PAX" inputmode="numeric" style="width:90px" value="${esc(state.scrape.adults)}" />
+                  <input class="inp" id="sf_limit" placeholder="Résultats" inputmode="numeric" style="width:110px" value="${esc(state.scrape.limit)}" />
+                  <button class="btn btn--fill" id="scrape" ${state.scraping?"disabled":""}>${state.scraping?"Scraping…":"Scraper"}</button>
+                </div>
+              </div>
+
+              <div style="flex:1;min-width:320px">
+                <div class="muted small" style="letter-spacing:2px;text-transform:uppercase">Filtres CRM</div>
+                <div class="row" style="margin-top:10px">
+                  <input class="inp" id="q" placeholder="Recherche (route, dates, compagnie…)" style="min-width:240px" value="${esc(state.q)}" />
+                  <select class="inp" id="st">
+                    <option value="">Tous statuts</option>
+                    ${STATUS.map(s => `<option value="${s.id}" ${s.id===state.status?"selected":""}>${s.label}</option>`).join("")}
+                  </select>
+                  <select class="inp" id="sort">
+                    <option value="created_desc" ${state.sort==="created_desc"?"selected":""}>Plus récents</option>
+                    <option value="created_asc" ${state.sort==="created_asc"?"selected":""}>Plus anciens</option>
+                    <option value="price_asc" ${state.sort==="price_asc"?"selected":""}>Prix ↑</option>
+                    <option value="price_desc" ${state.sort==="price_desc"?"selected":""}>Prix ↓</option>
+                    <option value="depart_asc" ${state.sort==="depart_asc"?"selected":""}>Départ ↑</option>
+                    <option value="depart_desc" ${state.sort==="depart_desc"?"selected":""}>Départ ↓</option>
+                    <option value="title_asc" ${state.sort==="title_asc"?"selected":""}>Vol A→Z</option>
+                    <option value="title_desc" ${state.sort==="title_desc"?"selected":""}>Vol Z→A</option>
+                    <option value="status_asc" ${state.sort==="status_asc"?"selected":""}>Statut ↑</option>
+                    <option value="status_desc" ${state.sort==="status_desc"?"selected":""}>Statut ↓</option>
+                  </select>
+                </div>
+                <div class="row" style="margin-top:10px">
+                  <input class="inp" id="f_airline" placeholder="Compagnie (ex: Air…)" style="min-width:210px" value="${esc(state.filters.airline)}" />
+                  <select class="inp" id="f_trip">
+                    <option value="" ${state.filters.tripType===""?"selected":""}>A/R + Aller simple</option>
+                    <option value="ROUNDTRIP" ${state.filters.tripType==="ROUNDTRIP"?"selected":""}>Aller-retour</option>
+                    <option value="ONEWAY" ${state.filters.tripType==="ONEWAY"?"selected":""}>Aller simple</option>
+                  </select>
+                  <select class="inp" id="f_stops">
+                    <option value="" ${state.filters.stops===""?"selected":""}>Escale(s): toutes</option>
+                    <option value="0" ${state.filters.stops==="0"?"selected":""}>0</option>
+                    <option value="1" ${state.filters.stops==="1"?"selected":""}>1</option>
+                    <option value="2" ${state.filters.stops==="2"?"selected":""}>2</option>
+                  </select>
+                  <input class="inp" id="f_pmin" placeholder="Prix min" inputmode="numeric" style="width:120px" value="${esc(state.filters.priceMin)}" />
+                  <input class="inp" id="f_pmax" placeholder="Prix max" inputmode="numeric" style="width:120px" value="${esc(state.filters.priceMax)}" />
+                </div>
+                <div class="row" style="margin-top:10px">
+                  <input class="inp" id="f_dfrom" placeholder="Départ à partir de (YYYY-MM-DD)" style="min-width:240px" value="${esc(state.filters.departFrom)}" />
+                  <input class="inp" id="f_dto" placeholder="Départ jusqu’à (YYYY-MM-DD)" style="min-width:240px" value="${esc(state.filters.departTo)}" />
+                  <button class="btn" id="clearFilters">Reset</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="muted small" style="margin-top:10px">
+              Source scraping : <b>Kayak.fr</b> via Chromium headless (prix EUR réels). Fallback Booking d’abord, sinon Kayak.
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th data-sort-key="title" style="cursor:pointer;user-select:none" title="Trier par vol">Vol${sortIndicator("title")}</th>
+                  <th data-sort-key="price" style="cursor:pointer;user-select:none" title="Trier par prix">Prix${sortIndicator("price")}</th>
+                  <th data-sort-key="status" style="cursor:pointer;user-select:none" title="Trier par statut">Statut${sortIndicator("status")}</th>
+                  <th style="text-align:right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows || `<tr><td colspan="4" class="muted">Aucune donnée. Clique sur “Scraper”.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        if (preservedId) {
+          const el = document.getElementById(preservedId);
+          if (el) {
+            el.focus({ preventScroll: true });
+            try {
+              if (preservedStart != null && typeof el.setSelectionRange === "function") {
+                el.setSelectionRange(preservedStart, preservedEnd);
+              }
+            } catch { /* not all inputs support setSelectionRange */ }
+          }
+        }
+
+        $("#logout").onclick = () => {
+          if (window.OlaAuth) window.OlaAuth.logout();
+          else location.href = "/login.html";
+        };
+        $("#purgeDemo").onclick = async () => {
+          if (!confirm("Supprimer toutes les entrées de démo (scraping bloqué) ?")) return;
+          try {
+            const r = await api("/api/admin/flights/purge", { method: "POST", body: JSON.stringify({ mode: "demo" }) });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.error || "Erreur purge");
+            await load();
+            render();
+          } catch (e) {
+            alert(String(e.message || e));
+          }
+        };
+        $("#q").oninput = (e) => { state.q = e.target.value; render(); };
+        $("#st").onchange = (e) => { state.status = e.target.value; render(); };
+        $("#sort").onchange = (e) => { state.sort = e.target.value; render(); };
+        $("#f_airline").oninput = (e) => { state.filters.airline = e.target.value; render(); };
+        $("#f_trip").onchange = (e) => { state.filters.tripType = e.target.value; render(); };
+        $("#f_stops").onchange = (e) => { state.filters.stops = e.target.value; render(); };
+        $("#f_pmin").oninput = (e) => { state.filters.priceMin = e.target.value; render(); };
+        $("#f_pmax").oninput = (e) => { state.filters.priceMax = e.target.value; render(); };
+        $("#f_dfrom").oninput = (e) => { state.filters.departFrom = e.target.value; render(); };
+        $("#f_dto").oninput = (e) => { state.filters.departTo = e.target.value; render(); };
+        $("#clearFilters").onclick = () => {
+          state.q = "";
+          state.status = "";
+          state.filters = { airline: "", tripType: "", stops: "", priceMin: "", priceMax: "", departFrom: "", departTo: "" };
+          state.sort = "created_desc";
+          render();
+        };
+
+        // scrape form bindings
+        const bindUpper = (id, key, maxLen=3) => {
+          const n = $(id);
+          if (!n) return;
+          n.oninput = (e) => {
+            const v = String(e.target.value || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, maxLen);
+            e.target.value = v;
+            state.scrape[key] = v;
+          };
+        };
+        bindUpper("#sf_from", "from", 3);
+        bindUpper("#sf_to", "to", 3);
+        $("#sf_depart").oninput = (e) => { state.scrape.depart = e.target.value.trim(); };
+        $("#sf_return").oninput = (e) => { state.scrape.return = e.target.value.trim(); };
+        $("#sf_adults").oninput = (e) => {
+          const n = Math.max(1, Math.min(9, Number(String(e.target.value || "").replace(/[^\d]/g, "")) || 1));
+          state.scrape.adults = n;
+          e.target.value = String(n);
+        };
+        $("#sf_limit").oninput = (e) => {
+          const n = Math.max(1, Math.min(30, Number(String(e.target.value || "").replace(/[^\d]/g, "")) || 12));
+          state.scrape.limit = n;
+          e.target.value = String(n);
+        };
+
+            $("#scrape").onclick = async () => {
+          state.scraping = true; render();
+          try {
+            const payload = {
+              limit: state.scrape.limit,
+              from: state.scrape.from,
+              to: state.scrape.to,
+              depart: state.scrape.depart,
+              return: state.scrape.return || "",
+              adults: state.scrape.adults,
+            };
+                const r = await api("/api/admin/scrape", { method: "POST", body: JSON.stringify(payload) });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || "Erreur scraping");
+            await load();
+          } catch (e) {
+            alert(String(e.message || e));
+          } finally {
+            state.scraping = false; render();
+          }
+        };
+
+        document.querySelectorAll("th[data-sort-key]").forEach(th => {
+          th.onclick = () => {
+            const k = th.getAttribute("data-sort-key");
+            if (state.sort === `${k}_asc`) state.sort = `${k}_desc`;
+            else if (state.sort === `${k}_desc`) state.sort = `${k}_asc`;
+            else state.sort = `${k}_asc`;
+            render();
+          };
+        });
+
+        document.querySelectorAll("select[data-status]").forEach(sel => {
+          sel.onchange = async (e) => {
+            const id = e.target.getAttribute("data-status");
+            const status = e.target.value;
+            const r = await api(`/api/admin/flights/${encodeURIComponent(id)}/status`, {
+              method: "POST",
+              body: JSON.stringify({ status })
+            });
+            const data = await r.json();
+            if (!r.ok) {
+              alert(data.error || "Erreur");
+              return;
+            }
+            const idx = state.items.findIndex(x => x.id === id);
+            if (idx >= 0) state.items[idx] = data.item;
+            render();
+          };
+        });
+      }
+
+      async function load() {
+        const r = await api("/api/admin/flights");
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Erreur chargement");
+        state.items = data.items || [];
+      }
+
+      async function boot() {
+        // L'auth est gérée par /auth-gate.js (JWT cookie). On ignore l'ancien
+        // mécanisme de token localStorage : on a déjà la session.
+        try {
+          await load();
+          render();
+        } catch (e) {
+          render();
+        }
+      }
+
+      // Attend que l'auth-gate ait validé la session avant de charger.
+      if (window.OlaAuth && window.OlaAuth.user) {
+        boot();
+      } else {
+        document.addEventListener('ola:auth', boot, { once: true });
+      }
+    </script>
+  </body>
+</html>
+
