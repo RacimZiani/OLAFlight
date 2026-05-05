@@ -515,6 +515,7 @@ function openLeadModal(id) {
   const l = leads.find(x => String(x.id) === String(id));
   if(!l) return;
   const content = document.getElementById('modal-content');
+  const safeId = String(l.id).replace(/'/g, "\\'");
   content.innerHTML = `
   <div class="modal-head">
     <div>
@@ -557,16 +558,52 @@ function openLeadModal(id) {
         <div class="mf"><div class="mf-label">Commission Closer (20%)</div><div class="mf-val" style="color:var(--green-t)">${l.margin>0?Math.round(l.margin*0.2).toLocaleString('fr-FR')+' €':'—'}</div></div>
       </div>
     </div>
+    <div class="modal-section">
+      <div class="ms-title">Historique agent IA</div>
+      <div id="agent-actions" style="font-family:Montserrat,sans-serif;font-size:10px;color:var(--g);line-height:1.8">
+        Chargement…
+      </div>
+    </div>
     ${l.notes?`<div class="modal-section"><div class="ms-title">Notes</div><div style="font-size:15px;color:var(--g);line-height:1.8">${l.notes}</div></div>`:''}
     ${l.followup?`<div class="modal-section"><div class="ms-title">Prochain suivi</div><div style="font-family:Montserrat,sans-serif;font-size:9px;font-weight:300;color:var(--yellow-t)">${fmtFollowup(l.followup)}</div></div>`:''}
     <div class="modal-actions">
       <button class="ma-btn ma-primary" onclick="alert('Lien WhatsApp : wa.me/${l.contact.replace('@','')}')">Contacter sur WhatsApp</button>
       <button class="ma-btn ma-ghost">Envoyer une offre</button>
       <button class="ma-btn ma-ghost">Programmer relance</button>
-      <button class="ma-btn ma-danger" onclick="updateStatus('${String(l.id).replace(/'/g, "\\'")}','lost');closeModal();">Marquer perdu</button>
+      <button class="ma-btn ma-danger" onclick="updateStatus('${safeId}','lost');closeModal();">Marquer perdu</button>
     </div>
   </div>`;
   document.getElementById('modal-bg').classList.add('open');
+  loadAgentActions(l.id);
+}
+
+function fmtTs(ts){
+  try {
+    const d = new Date(Number(ts)||Date.now());
+    return d.toLocaleString('fr-FR', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' });
+  } catch { return ''; }
+}
+
+async function loadAgentActions(leadId){
+  const box = document.getElementById('agent-actions');
+  if(!box) return;
+  try{
+    const r = await fetch('/api/agent/actions?lead_id=' + encodeURIComponent(leadId) + '&limit=30', { credentials:'include' });
+    if(!r.ok) throw new Error('http ' + r.status);
+    const data = await r.json();
+    const items = (data.items||[]);
+    if(items.length===0){
+      box.innerHTML = '<span style="color:var(--g2)">Aucune action enregistrée.</span>';
+      return;
+    }
+    box.innerHTML = items.map(a => {
+      const st = (a.status==='error') ? `<span style="color:var(--red-t)">error</span>` : `<span style="color:var(--green-t)">ok</span>`;
+      const label = (a.action||'action').replace(/_/g,' ');
+      return `<div style="padding:10px 0;border-bottom:1px solid var(--l)"><div style="display:flex;justify-content:space-between;gap:12px"><div><span style="color:var(--w)">${label}</span> · ${st}</div><div style="color:var(--g2)">${fmtTs(a.created_at)}</div></div>${a.error?`<div style="margin-top:6px;color:var(--red-t)">${a.error}</div>`:''}</div>`;
+    }).join('');
+  }catch(e){
+    box.innerHTML = '<span style="color:var(--red-t)">Impossible de charger l’historique agent.</span>';
+  }
 }
 
 function updateStatus(id, status) {

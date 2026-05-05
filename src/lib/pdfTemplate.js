@@ -42,13 +42,11 @@ function fmtDate(ts) {
  */
 export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
   const services = Array.isArray(devis.services_inclus) ? devis.services_inclus : [];
-  const economie = Math.max(
-    0,
-    (Number(devis.prix_marche) || 0) - (Number(devis.prix_vente) || 0)
-  );
-  const economiePct = devis.prix_marche
-    ? Math.round((economie / Number(devis.prix_marche)) * 100)
-    : 0;
+  const marche = Number(devis.prix_marche) || 0;
+  const ola = Number(devis.prix_vente) || 0;
+  const showMarketCompare = marche > 0 && ola > 0 && marche > ola * 1.05; // évite un comparatif non rassurant
+  const economie = showMarketCompare ? Math.max(0, marche - ola) : 0;
+  const economiePct = showMarketCompare ? Math.round((economie / marche) * 100) : 0;
   const trajet = lead?.destination || "—";
 
   return `<!doctype html>
@@ -155,11 +153,19 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
   </div>
 
   <section class="price-block">
+    ${showMarketCompare ? `
     <div class="price-row">
-      <div class="pr-l">Prix marché</div>
+      <div class="pr-l">Référence marché (équivalent)</div>
       <div class="pr-v pr-strike">${fmtMoney(devis.prix_marche)}</div>
     </div>
     <div class="price-sep"></div>
+    ` : `
+    <div class="price-row">
+      <div class="pr-l">Pack Ola Flight</div>
+      <div class="pr-v" style="color:var(--g)">Services premium + réservation</div>
+    </div>
+    <div class="price-sep"></div>
+    `}
     <div class="price-row">
       <div class="pr-l">Tarif Ola Flight</div>
       <div class="pr-v pr-final">${fmtMoney(devis.prix_vente)}</div>

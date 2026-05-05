@@ -7,6 +7,7 @@
 
 import { getStore } from "../db/index.js";
 import { uid } from "./ids.js";
+import { config } from "../config.js";
 
 function makeKey(channel, contact) {
   return `${channel}:${String(contact || "").toLowerCase()}`;
@@ -22,6 +23,14 @@ async function getConversationsCollection() {
 async function listAllByKey(key) {
   const col = await getConversationsCollection();
   if (!col) return null;
+  // Si l'adapter supporte findByField (Supabase), on évite de lister tout.
+  if (col.findByField) {
+    try {
+      return (await col.findByField("key", key)) || null;
+    } catch {
+      // fallback ci-dessous
+    }
+  }
   const items = await col.list();
   return items.find((c) => c.key === key) || null;
 }
@@ -40,8 +49,9 @@ export async function ensureConversation({ channel, contact, lang = "fr", lead_i
   const existing = await listAllByKey(key);
   if (existing) return existing;
   const now = Date.now();
+  const isSupabase = config.storage.driver === "supabase";
   const conv = {
-    id: uid(),
+    ...(isSupabase ? {} : { id: uid() }),
     key,
     channel,
     contact: String(contact || ""),
@@ -49,11 +59,9 @@ export async function ensureConversation({ channel, contact, lang = "fr", lead_i
     lang,
     lead_id,
     messages: [],
-    created_at: now,
-    updated_at: now,
   };
-  await col.insert(conv);
-  return conv;
+  const inserted = await col.insert(conv);
+  return { ...conv, id: inserted?.id || conv.id };
 }
 
 export async function appendMessage({ channel, contact, role, content }) {

@@ -1103,6 +1103,30 @@ function applyLang(lang){
   background:var(--black3);
   display:flex; gap:10px; align-items:flex-end;
 }
+.ola-chat-choices{
+  display:flex;
+  gap:10px;
+  padding:12px 14px;
+  border-top:1px solid var(--line);
+  background:rgba(8,8,8,0.96);
+}
+.ola-choice{
+  flex:1;
+  border:1px solid var(--line2);
+  background:transparent;
+  color:var(--white);
+  font-family:'Montserrat',sans-serif;
+  font-size:9px;
+  font-weight:300;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  padding:10px 12px;
+  cursor:pointer;
+  transition:all .2s;
+}
+.ola-choice:hover{ border-color:var(--grey2); opacity:.9; }
+.ola-choice[data-choice="accept"]{ background:var(--white); color:var(--black); border-color:var(--white); }
+.ola-choice[data-choice="accept"]:hover{ opacity:.82; }
 .ola-chat-input{
   flex:1; background:var(--black); color:var(--white);
   border:1px solid var(--line2);
@@ -1156,6 +1180,11 @@ function applyLang(lang){
     <button class="ola-chat-close" id="olaChatClose" aria-label="Fermer">×</button>
   </div>
   <div class="ola-chat-body" id="olaChatBody"></div>
+  <div class="ola-chat-choices" id="olaChatChoices" style="display:none;">
+    <button class="ola-choice" data-choice="accept">Accepter</button>
+    <button class="ola-choice" data-choice="negotiate">Discuter</button>
+    <button class="ola-choice" data-choice="refuse">Pas pour moi</button>
+  </div>
   <div class="ola-chat-foot">
     <textarea class="ola-chat-input" id="olaChatInput" rows="1" placeholder="Votre destination, vos dates…" data-i18n-placeholder="chat.placeholder"></textarea>
     <button class="ola-chat-send" id="olaChatSend" aria-label="Envoyer">
@@ -1173,8 +1202,21 @@ function applyLang(lang){
   const body = document.getElementById('olaChatBody');
   const input = document.getElementById('olaChatInput');
   const send = document.getElementById('olaChatSend');
+  const choices = document.getElementById('olaChatChoices');
 
-  const state = { msgs:[], busy:false };
+  const state = { msgs:[], busy:false, convId:null, decision:false };
+  function getConvId(){
+    if (state.convId) return state.convId;
+    const k = 'ola_chat_conversation_id';
+    let v = null;
+    try { v = localStorage.getItem(k); } catch {}
+    if (!v){
+      v = 'web-' + Math.random().toString(16).slice(2) + Date.now().toString(16);
+      try { localStorage.setItem(k, v); } catch {}
+    }
+    state.convId = v;
+    return v;
+  }
 
   const GREETS = {
     fr: "Bonjour, bienvenue chez Ōla Flight. Pour vous préparer les meilleures options, c'est pour quelle destination ?",
@@ -1188,7 +1230,17 @@ function applyLang(lang){
     state.msgs.forEach(m => {
       const d = document.createElement('div');
       d.className = 'ola-msg ' + (m.role === 'assistant' ? 'ola-msg-ai' : 'ola-msg-user');
-      d.textContent = m.content;
+      // Support simple markdown-like link for PDF: [Ouvrir le devis](url)
+      const c = String(m.content || '');
+      const linkMatch = c.match(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/);
+      if (linkMatch){
+        const before = c.replace(linkMatch[0], '').trim();
+        d.innerHTML = (before ? `<div style="margin-bottom:10px">${escape(before)}</div>` : '') +
+          `<a href="${escape(linkMatch[2])}" target="_blank" rel="noopener" style="color:var(--white);text-decoration:underline;font-family:Montserrat,sans-serif;font-size:11px;letter-spacing:1px">` +
+          `${escape(linkMatch[1])}</a>`;
+      } else {
+        d.textContent = c;
+      }
       body.appendChild(d);
     });
     if (state.busy){
@@ -1197,6 +1249,12 @@ function applyLang(lang){
       t.innerHTML = '<span></span><span></span><span></span>';
       body.appendChild(t);
     }
+    // Decision mode UI
+    if (choices){
+      choices.style.display = state.decision ? 'flex' : 'none';
+    }
+    input.disabled = state.decision || state.busy;
+    send.disabled = state.decision || state.busy;
     body.scrollTop = body.scrollHeight;
   }
 
@@ -1215,6 +1273,18 @@ function applyLang(lang){
     fab.classList.remove('hidden');
   }
 
+  function detectDecisionMode(){
+    const lastAi = [...state.msgs].reverse().find(m => m.role === 'assistant');
+    const text = lastAi ? String(lastAi.content || '') : '';
+    // Heuristique: présence d'un lien PDF (devis) → on affiche les 3 choix.
+    return /\/pdfs\/devis-|Télécharger le devis|Voir le devis/i.test(text) || /\[[^\]]+\]\(https?:\/\/[^)]+\/pdfs\/devis-/i.test(text);
+  }
+
+  function setDecision(on){
+    state.decision = !!on;
+    render();
+  }
+
   async function ask(){
     const txt = input.value.trim();
     if (!txt || state.busy) return;
@@ -1230,21 +1300,36 @@ function applyLang(lang){
       const r = await fetch('/api/chat', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ lang, messages: state.msgs.slice(-12) })
+        body: JSON.stringify({ lang, conversation_id: getConvId(), messages: state.msgs.slice(-12) })
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'server error');
       state.msgs.push({role:'assistant', content: data.response || '...'});
+      // Si un devis vient d'être envoyé, on passe en mode décision.
+      setDecision(detectDecisionMode());
     } catch(e) {
       const lang = (document.documentElement.lang === 'en') ? 'en' : 'fr';
       state.msgs.push({role:'assistant', content: lang === 'en'
-        ? "Sorry, I'm having a technical issue. Please try again in a moment or reach us on WhatsApp."
-        : "Désolé, je rencontre un souci technique. Réessayez dans quelques instants ou contactez-nous sur WhatsApp."});
+        ? "Sorry, I'm having a technical issue. Please try again in a moment."
+        : "Désolé, je rencontre un souci technique. Réessayez dans quelques instants."});
     } finally {
       state.busy = false;
       send.disabled = false;
       render();
     }
+  }
+
+  function choose(kind){
+    if (!state.decision || state.busy) return;
+    const presets = {
+      accept: "Parfait, je valide. Vous pouvez lancer la réservation.",
+      negotiate: "Je suis intéressé. Est-ce qu’on peut optimiser le tarif (ou l’itinéraire) ?",
+      refuse: "Merci, je vais passer pour cette fois."
+    };
+    input.value = presets[kind] || presets.negotiate;
+    // Après accept/refuse, on laisse l'agent conclure mais on garde le mode décision.
+    if (kind === 'negotiate') setDecision(false);
+    ask();
   }
 
   fab.addEventListener('click', open);
@@ -1257,6 +1342,15 @@ function applyLang(lang){
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 100) + 'px';
   });
+
+  // Quick replies
+  if (choices){
+    choices.addEventListener('click', (e) => {
+      const btn = e.target && e.target.closest && e.target.closest('button[data-choice]');
+      if (!btn) return;
+      choose(btn.dataset.choice);
+    });
+  }
 })();
 </script>
 

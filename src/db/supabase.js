@@ -56,6 +56,12 @@ function buildCollection(table, options = {}) {
       if (error) throw error;
       return data || null;
     },
+    async findByField(field, value) {
+      const supabase = await getClient();
+      const { data, error } = await supabase.from(table).select("*").eq(field, value).maybeSingle();
+      if (error) throw error;
+      return data || null;
+    },
     async insert(row) {
       const supabase = await getClient();
       const payload = autoTimestamps
@@ -112,6 +118,8 @@ export function createSupabaseStore() {
     devis: buildCollection("devis"),
     apporteurs: buildCollection("apporteurs"),
     conversations_ola: buildCollection("conversations_ola"),
+    agent_actions: buildCollection("agent_actions"),
+    users: buildCollection("users"),
     async ready() {
       await getClient(); // throw early si conf manquante
     },

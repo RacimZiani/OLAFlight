@@ -27,6 +27,7 @@ const JSON_FIELDS = {
   devis: ["services_inclus"],
   apporteurs: [],
   conversations_ola: ["messages"],
+  agent_actions: ["input", "output"],
   users: [],
 };
 
@@ -37,6 +38,7 @@ const BOOL_FIELDS = {
   devis: ["paiement_recu"],
   apporteurs: [],
   conversations_ola: [],
+  agent_actions: [],
   users: ["active"],
 };
 
@@ -191,6 +193,7 @@ export function createSqliteStore() {
     devis:             buildCollection("devis"),
     apporteurs:        buildCollection("apporteurs"),
     conversations_ola: buildCollection("conversations_ola"),
+    agent_actions:     buildCollection("agent_actions"),
     users:             buildCollection("users", { orderBy: "created_at ASC" }),
     raw: getDb,
     async ready() {

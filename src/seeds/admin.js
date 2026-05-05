@@ -30,7 +30,15 @@ export async function seedAdminIfNeeded() {
   const store = await getStore();
   if (!store.users) return;
 
-  const existing = await store.users.list();
+  let existing;
+  try {
+    existing = await store.users.list();
+  } catch (e) {
+    // Supabase peut ne pas être encore migré (colonnes auth manquantes).
+    // On ne bloque pas le boot : l'utilisateur doit exécuter 005_users_auth_fields.sql.
+    log.warn(`seed admin skip (users schema incomplete): ${e?.message || e}`);
+    return;
+  }
   if (existing.length > 0) return;
 
   const email = config.auth.seedEmail.toLowerCase();
@@ -42,15 +50,21 @@ export async function seedAdminIfNeeded() {
   }
 
   const password_hash = await hashPassword(password);
-  await store.users.insert({
-    id: uid(),
-    email,
-    password_hash,
-    role: "admin",
-    display_name: config.auth.seedName,
-    whatsapp: null,
-    active: 1,
-  });
+  const isSupabase = config.storage.driver === "supabase";
+  try {
+    await store.users.insert({
+      ...(isSupabase ? {} : { id: uid() }),
+      email,
+      password_hash,
+      role: "admin",
+      display_name: config.auth.seedName,
+      whatsapp: null,
+      active: isSupabase ? true : 1,
+    });
+  } catch (e) {
+    log.warn(`seed admin failed (users schema incomplete?): ${e?.message || e}`);
+    return;
+  }
 
   log.info("──────────────────────────────────────────────────");
   log.info("ADMIN INITIAL CRÉÉ");

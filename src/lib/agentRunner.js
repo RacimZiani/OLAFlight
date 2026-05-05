@@ -4,17 +4,36 @@
 //   - POST /api/chat (web)
 //   - webhooks WhatsApp / Instagram
 
-import { chatComplete } from "./anthropic.js";
+import { chatComplete, chatWithTools } from "./anthropic.js";
 import { OLA_SYSTEM_PROMPT, LEAD_TRIGGER_PATTERN } from "./prompt.js";
 import { extractLeadFromConversation } from "./leadExtractor.js";
 import { getStore } from "../db/index.js";
 import { createLogger } from "../logger.js";
 import { notifyDalsimOfNewLead } from "./notifications.js";
+import { OLA_AGENT_TOOLS, runOlaTool } from "./olaAgentTools.js";
 
 const log = createLogger("agent");
 
-function buildSystem(lang) {
-  return `${OLA_SYSTEM_PROMPT}\n\nRègle additionnelle : réponds en ${
+function buildSystem(lang, context = {}) {
+  const channel = context?.channel || "web";
+  return `${OLA_SYSTEM_PROMPT}
+
+═══════════════════════════════════════
+MODE AGENT AUTONOME (WEB / OPS)
+═══════════════════════════════════════
+Tu as accès à des outils internes pour agir au lieu de promettre :
+- scrape_flights : récupère des prix publics réels (sources web) pour proposer des options.
+- create_devis_from_offer : crée un devis interne Ola Flight (et PDF optionnel).
+- handoff_whatsapp : si le client est très intéressé, bascule vers WhatsApp (lien ou message).
+
+Règles de sécurité supplémentaires :
+- Tu peux communiquer des PRIX PUBLICS issus du scraping (indicatifs), mais tu ne révèles jamais de prix_revient, marge, commissions.
+- Tu ne “fabriques” jamais un billet : tu proposes des options + un devis PDF Ola Flight pour finaliser.
+- Si un outil échoue, tu l’expliques brièvement et tu proposes une alternative (autres dates, autre aéroport, ou passage WhatsApp).
+
+Canal actuel: ${channel}.
+
+Règle additionnelle : réponds en ${
     lang === "en" ? "anglais" : "français"
   } (langue UI), sauf si l'utilisateur écrit clairement dans l'autre langue.`;
 }
@@ -39,9 +58,13 @@ export async function runAgent({ messages, lang = "fr", context = {} }) {
 
   if (trimmed.length === 0) return { text: "", lead: null };
 
-  const { text } = await chatComplete({
-    system: buildSystem(lang),
+  // V1: tool-calling activé (scrape/devis/whatsapp). Si aucun tool n'est appelé,
+  // le comportement reste équivalent à chatComplete().
+  const { text } = await chatWithTools({
+    system: buildSystem(lang, context),
     messages: trimmed,
+    tools: OLA_AGENT_TOOLS,
+    onToolUse: async ({ id: _id, name, input }) => runOlaTool({ name, input }, { context }),
   });
 
   let leadCreated = null;

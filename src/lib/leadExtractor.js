@@ -5,7 +5,7 @@ import { createLogger } from "../logger.js";
 const log = createLogger("lead-extractor");
 
 const EXTRACTION_PROMPT =
-  'Extrait les 4 infos du lead Ola Flight depuis la conversation et renvoie UNIQUEMENT un JSON minifié strict (pas de markdown), schéma : {"client_name":string,"client_contact":string,"canal":"whatsapp"|"instagram","destination":string,"dates":string,"classe":string,"passagers":number}. Si une info manque, mets une chaîne vide.';
+  'Extrait les infos du lead Ola Flight depuis la conversation et renvoie UNIQUEMENT un JSON minifié strict (pas de markdown), schéma : {"client_name":string,"first_name":string,"last_name":string,"email":string,"client_contact":string,"canal":"whatsapp"|"instagram","destination":string,"dates":string,"classe":string,"passagers":number}. Si une info manque, mets une chaîne vide.';
 
 // Reçoit l'historique conversation, demande à Claude d'en extraire les 4 infos,
 // renvoie un objet `lead` prêt à insérer (ou null si infos critiques manquantes).
@@ -32,9 +32,13 @@ export async function extractLeadFromConversation(messages) {
   }
 
   const now = Date.now();
+  const name =
+    (parsed.client_name && String(parsed.client_name).trim()) ||
+    [parsed.first_name, parsed.last_name].filter(Boolean).join(" ").trim() ||
+    "Lead Web";
   return {
     id: uid(),
-    client_name: parsed.client_name || "Lead WhatsApp",
+    client_name: name,
     client_contact: parsed.client_contact || "",
     canal: parsed.canal === "instagram" ? "instagram" : "whatsapp",
     destination: parsed.destination || "",
@@ -42,7 +46,12 @@ export async function extractLeadFromConversation(messages) {
     classe: parsed.classe || "",
     passagers: Number(parsed.passagers) || 1,
     status: "devis_pending",
-    notes: "Créé automatiquement par l'agent IA après qualification.",
+    notes: [
+      "Créé automatiquement par l'agent IA après qualification.",
+      parsed.email ? `Email: ${parsed.email}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
     value: 0,
     margin: 0,
     urgent: true,

@@ -12,6 +12,10 @@ export const chatBodySchema = z.object({
     .min(1)
     .max(50),
   lang: z.enum(["fr", "en"]).optional().default("fr"),
+  // Pour persister la conversation web côté serveur (audit + CRM).
+  conversation_id: z.string().min(6).max(80).optional(),
+  // Optionnel: rattacher directement à un lead existant.
+  lead_id: z.string().min(1).optional(),
 });
 
 // ─── /api/leads ──────────────────────────────────────────
