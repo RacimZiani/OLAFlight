@@ -27,6 +27,8 @@ function csv(envVal) {
 }
 
 const PORT = num(process.env.PORT, 5179);
+/** Vercel injecte VERCEL=1 sur les déploiements serverless. */
+const isVercel = process.env.VERCEL === "1";
 
 export const config = {
   env: process.env.NODE_ENV || "development",
@@ -81,9 +83,13 @@ export const config = {
 
   // ─── Generation PDF (T05) ────────────────────────────────────────────
   pdf: {
-    outDir: path.resolve(ROOT_DIR, "pdfs"),
+    // Sur Vercel le filesystem du bundle est en lecture seule ; /tmp est writable.
+    outDir: isVercel ? path.join("/tmp", "ola-pdfs") : path.resolve(ROOT_DIR, "pdfs"),
     publicPath: "/pdfs", // route static servie par Express
   },
+
+  /** Indique un déploiement Vercel (serverless) — Playwright souvent indisponible. */
+  isVercel,
 
   // ─── Meta WhatsApp / Instagram (T02 + T07) ────────────────────────────
   meta: {

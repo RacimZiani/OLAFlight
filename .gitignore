@@ -12,6 +12,7 @@ pdfs/
 .DS_Store
 .vscode/
 .idea/
+.vercel/
 
 # Fichiers de spec / brouillons à la racine (ne pas versionner)
 /*.docx
