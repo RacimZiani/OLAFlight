@@ -1,0 +1,20 @@
+node_modules
+npm-debug.log
+.env
+.env.*
+.git
+.gitignore
+.vercel
+.DS_Store
+.cursor
+.playwright-browsers
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.json
+!data/.gitkeep
+pdfs
+*.log
+# Réduit le contexte de build (pas nécessaires au runtime)
+*.md
+!README.md

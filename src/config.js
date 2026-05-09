@@ -30,6 +30,13 @@ const PORT = num(process.env.PORT, 5179);
 /** Vercel injecte VERCEL=1 sur les déploiements serverless. */
 const isVercel = process.env.VERCEL === "1";
 
+// Playwright : en Docker, définir PLAYWRIGHT_BROWSERS_PATH=/ms-playwright (image mcr.microsoft.com/playwright).
+const playwrightBrowsersDir =
+  process.env.PLAYWRIGHT_BROWSERS_PATH || path.resolve(ROOT_DIR, ".playwright-browsers");
+if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = playwrightBrowsersDir;
+}
+
 export const config = {
   env: process.env.NODE_ENV || "development",
   port: PORT,
@@ -73,8 +80,8 @@ export const config = {
     legacyAdminTokens: csv(process.env.ADMIN_TOKENS),
   },
 
-  // Playwright bundles its browsers next to the server so the install is portable.
-  playwrightBrowsersDir: path.resolve(ROOT_DIR, ".playwright-browsers"),
+  // Playwright : PDF + scraping (voir PLAYWRIGHT_BROWSERS_PATH en tête de fichier).
+  playwrightBrowsersDir,
 
   logging: {
     level: process.env.LOG_LEVEL || "info",

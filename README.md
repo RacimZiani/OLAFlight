@@ -151,9 +151,56 @@ Le compte admin est **créé au premier démarrage** si la table `users` est vid
 | `npm run db:print-init` | Affiche le SQL Postgres `001_init.sql` dans le terminal |
 | `npm run db:print-rls` | Affiche le SQL RLS `002_rls.sql` |
 
-### 10. Déployer sur Vercel (démo rapide)
+### 10. Déployer vite (**recommandé : Railway ou Render + Docker**)
 
-Le dépôt inclut **`vercel.json`** + **`api/index.js`** (Express via [`serverless-http`](https://github.com/dougmoscrop/serverless-http)) : tu peux importer le repo sur [Vercel](https://vercel.com) et obtenir une URL publique en quelques minutes.
+Pour une **démo complète** (chat, CRM, **PDF**, **scraping**) en **~10 minutes**, sans VPS à configurer : déploie le **`Dockerfile`** du repo. Il repose sur l’[image officielle Playwright](https://playwright.dev/docs/docker) (Chromium déjà présent).
+
+#### Prérequis (une fois)
+
+1. Projet **Supabase** avec les migrations **001 → 008** exécutées (voir §5).  
+2. Variables prêtes : `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`, etc.
+
+#### Option A — [Railway](https://railway.app) *(le plus fluide en pratique)*
+
+1. **New project** → **Deploy from GitHub** → sélectionne ce repo.  
+2. Railway détecte le **Dockerfile** et build tout seul.  
+3. Onglet **Variables** : ajoute toutes les variables (même schéma que `.env`), en particulier :
+   - `STORAGE_DRIVER=supabase`
+   - `NODE_ENV=production`
+   - `COOKIE_SECURE=true`
+   - `LOG_PRETTY=false` (logs JSON plus lisibles sur la plateforme)
+4. **Networking** → génère un domaine public (ex. `*.up.railway.app`).  
+5. Remets cette URL dans **`PUBLIC_URL`** (ex. `https://ton-service.up.railway.app`, sans slash final) → redéploie si besoin.  
+6. Ouvre l’URL → `/api/health` doit être `ok`, puis teste la home et le chat.
+
+*Note :* Railway injecte **`PORT`** automatiquement ; l’app l’utilise déjà.
+
+#### Option B — [Render](https://render.com)
+
+1. **New** → **Web Service** → connecte le repo.  
+2. **Runtime** : **Docker** (laisse Dockerfile par défaut).  
+3. **Instance** : gratuit possible (cold start ~1 min ; pour une démo live, un plan payant évite la mise en veille).  
+4. Ajoute les **Environment** comme sur Railway + `PUBLIC_URL` une fois l’URL Render connue (`https://xxx.onrender.com`).  
+
+#### Option C — [Fly.io](https://fly.io)
+
+```bash
+fly launch --copy-config --dockerfile Dockerfile
+fly secrets set STORAGE_DRIVER=supabase SUPABASE_URL=... # etc.
+fly deploy
+```
+
+(Depuis un machine avec l’CLI Fly — un peu plus long que Railway cliquer-coller.)
+
+#### Pourquoi Docker ici plutôt que « Node nu » sur la plateforme ?
+
+Sans image Playwright, il faudrait un script du type `npx playwright install --with-deps chromium` au build, sensible aux distro et aux paquets système. L’image **`mcr.microsoft.com/playwright`** évite ça : **un build, même comportement** que ta machine pour PDF + scraper.
+
+#### Rappel : Vercel (léger, sans PDF fiable)
+
+Le fichier `vercel.json` + `api/index.js` permet une **landing + API + chat + CRM** sur [Vercel](https://vercel.com), mais **PDF / scraping Playwright** y sont en général **non fiables** (serverless). Les détails sont dans la section suivante si tu veux quand même cette option.
+
+### 11. Déployer sur Vercel (démo rapide, sans PDF garanti)
 
 #### Obligatoire pour que ça tienne la route
 
@@ -176,7 +223,7 @@ Le dépôt inclut **`vercel.json`** + **`api/index.js`** (Express via [`serverle
 
 **Résumé** : Vercel = excellent pour montrer **la landing + le chat IA + le CRM** connecté à Supabase ; pour **PDF + scraper** comme en local, utiliser un hébergeur **Node classique** (toujours `npm start` + `PUBLIC_URL`).
 
-### 11. Structure du dépôt
+### 12. Structure du dépôt
 
 ```
 ├── public/          # Frontend statique (index, login, crm, admin…)
@@ -184,10 +231,12 @@ Le dépôt inclut **`vercel.json`** + **`api/index.js`** (Express via [`serverle
 ├── db/migrations/   # SQLite (*.sqlite.sql) + Postgres Supabase (*.sql)
 ├── data/            # SQLite local (gitignored, sauf .gitkeep)
 ├── pdfs/            # PDF générés (gitignored)
+├── api/             # Point d'entrée Vercel (serverless-http)
+├── Dockerfile       # Prod Playwright (Railway / Render / Fly)
 └── scripts/         # Scripts utilitaires (ex. probe scraper)
 ```
 
-### 12. Publier sur GitHub (rappel)
+### 13. Publier sur GitHub (rappel)
 
 Avant un commit, vérifier que **`git status`** ne liste pas `.env`, `data/*.db`, `pdfs/*`, ni de secrets.
 
