@@ -1,0 +1,188 @@
+% Devis complet — Projet OLA Flight (plateforme agent IA + CRM + devis PDF)
+% Compilation : pdflatex (2 passes) ou latexmk -pdf
+% Dépendances optionnelles : eurosym, booktabs (souvent déjà en full TeX Live)
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\geometry{margin=2.2cm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{eurosym}
+
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue!70!black}
+
+\title{\Large\textbf{DEVIS — Projet OLA Flight}\\[0.4em]
+\large Plateforme web, agent IA conversationnel, CRM, génération de devis et intégrations}
+\author{Prestataire : \textit{À compléter} \quad Client : \textit{À compléter}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\vspace{-0.5em}
+\noindent\rule{\textwidth}{0.4pt}
+
+\section*{Référence et validité}
+\begin{tabular}{@{}ll@{}}
+\textbf{Réf. devis :} & OLAF-PROJ-2026-001 \\
+\textbf{Date d'émission :} & \today \\
+\textbf{Validité du devis :} & 30 jours \\
+\textbf{Devise :} & Euro (€), montants \textbf{hors taxes} sauf mention contraire \\
+\textbf{Modalités de paiement :} & \textit{À compléter (acompte / échéancier)} \\
+\end{tabular}
+
+\section{Objet}
+Le présent devis couvre la \textbf{réalisation, l'intégration et la mise en production} d'une plateforme digitale complète «\,OLA Flight\,» : site vitrine premium, \textbf{agent conversationnel IA} avec exécution d'actions métier (création de leads, devis, PDF, recherche tarifs), \textbf{CRM interne} avec rôles (admin / closer), notifications, résumés de conversation, et \textbf{préparation au déploiement} (Docker, documentation, option cloud serverless).
+
+\section{Contexte et objectifs métier}
+\begin{itemize}[leftmargin=*]
+  \item Offrir une expérience \textbf{concierge premium} (style airline / luxe) sur le web.
+  \item Permettre à l'agent IA de \textbf{qualifier} le client, de \textbf{proposer plusieurs options} de voyage (Express / Confort / Premium), éventuellement \textbf{hôtels} et \textbf{chauffeur privé}, et de \textbf{générer un devis PDF} exploitable commercialement.
+  \item Assurer un \textbf{suivi CRM} équivalent à un opérateur humain : pipeline, dispatching closer, audit des actions agent, résumés pour les commerciaux.
+  \item Conserver une \textbf{piste d'audit} et un périmètre de données \textbf{conforme aux rôles} (admin vs closer).
+\end{itemize}
+
+\section{Périmètre fonctionnel détaillé}
+
+\subsection{Front-office (site public)}
+\begin{itemize}[leftmargin=*]
+  \item Landing page premium (identité typographique luxe, animations motion design type Apple/Linear via GSAP).
+  \item \textbf{Call-to-action} vers le chatbot comme canal principal (remplacement du parcours WhatsApp sur la home).
+  \item Chatbot web persisté (conversation + \texttt{conversation\_id}), fichier affichage chargement, réponses rapides post-devis (accepter / négocier / refuser).
+  \item Internationalisation FR / EN sur les éléments clés (hero, navigation, chat).
+\end{itemize}
+
+\subsection{Agent IA (Anthropic / outillage)}
+\begin{itemize}[leftmargin=*]
+  \item Orchestration \textbf{tool-calling} : recherche vols (scraping Booking / Google Flights en secours), \texttt{upsert\_lead}, \texttt{create\_devis\_from\_offer}.
+  \item Qualification structurée : identité, route, dates, classe, type de client (\textbf{particulier / pro / corporate}), hôtel (optionnel), \textbf{chauffeur (obligatoire} à la question).
+  \item Devis multi-options (jusqu'à 3 paliers) avec règles commerciales (comparatif marché masqué pour les particuliers).
+  \item Journalisation des actions dans \texttt{agent\_actions} (audit).
+  \item Résumé conversation IA pour la fiche lead (bullets actionnables).
+\end{itemize}
+
+\subsection{Back-office (CRM / admin)}
+\begin{itemize}[leftmargin=*]
+  \item Authentification JWT (cookie), rôles admin / closer, isolation des données closer.
+  \item \textbf{Pipeline Kanban} : recherche, filtres, tri, zoom par colonne de statut.
+  \item Fiche lead : statut, réassignation closer (admin), résumé IA, historique agent, liste des devis.
+  \item \textbf{Édition manuelle} d'un devis existant + régénération PDF.
+  \item Notifications in-app (cloche) sur événements métier (nouveau devis, gagné, négociation, etc.).
+  \item Page admin scraping manuel (Google Flights / Booking selon configuration).
+\end{itemize}
+
+\subsection{Devis PDF et règles financières}
+\begin{itemize}[leftmargin=*]
+  \item Génération PDF via Playwright (mise en page multi-options, extras hôtels / chauffeur).
+  \item Calcul marge / commissions (closer, apporteur) centralisé ; masquage des champs sensibles selon rôle.
+  \item Support schéma \textbf{multi-options} et colonnes extras (migrations base).
+\end{itemize}
+
+\subsection{Données et persistance}
+\begin{itemize}[leftmargin=*]
+  \item Support \textbf{SQLite} (développement / démo locale) et \textbf{Supabase} (PostgreSQL) pour production.
+  \item Migrations versionnées (notifications, options devis, champs lead extras, conversations, users, etc.).
+  \item Conversations web conservées de façon étendue (plafond technique élevé pour les particuliers).
+\end{itemize}
+
+\subsection{Scraping et recherche tarifaire}
+\begin{itemize}[leftmargin=*]
+  \item Automatisation Playwright (anti-détection, secours multi-sources).
+  \item Exposition opérateur via route admin pour tests et démos.
+\end{itemize}
+
+\subsection{Déploiement et documentation}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Dockerfile} image Playwright pour hébergement type Railway / Render / Fly.
+  \item Option \textbf{Vercel} (serverless) documentée avec limites PDF/scraper.
+  \item README : installation développeur, variables d'environnement, ordre des migrations Supabase, dépannage.
+\end{itemize}
+
+\section{Stack technique (livré)}
+\begin{tabular}{@{}ll@{}}
+\textbf{Runtime} & Node.js $\geq$ 18, ES modules \\
+\textbf{Serveur} & Express.js \\
+\textbf{IA} & Anthropic (Claude), schémas Zod pour les outils \\
+\textbf{Front statique} & HTML / CSS / JS, GSAP (CDN) \\
+\textbf{PDF / navigateur} & Playwright (+ playwright-extra / stealth selon modules) \\
+\textbf{Base de données} & SQLite (dev) ; Supabase / PostgreSQL (prod) \\
+\textbf{Auth} & JWT + bcrypt, cookies \\
+\textbf{Déploiement} & Docker ; configuration Vercel optionnelle \\
+\end{tabular}
+
+\section{Prestations hors périmètre (à chiffrer séparément)}
+\begin{itemize}[leftmargin=*]
+  \item Intégration \textbf{WhatsApp Business Cloud API} / Instagram DM (Meta) jusqu'à production (tokens, conformité, modération).
+  \item Hébergement managé, nom de domaine, certificats, SLA 24/7.
+  \item Design graphique «\,from scratch\,» hors gabarit actuel (logo, charte étendue).
+  \item Maintenance annuelle, évolutions produit (nouveaux canaux, ERP, facturation électronique).
+  \item Audit sécurité tiers, conformité RGPD / DPIA formalisée.
+  \item Formation utilisateurs en présentiel.
+\end{itemize}
+
+\section{Tarification indicative}
+
+\textit{Les montants ci-dessous sont donnés à titre d'ordre de grandeur pour un accompagnement type «\,produit livré comme sur dépôt GitHub actuel\,». Ils sont \textbf{à ajuster} selon votre TJM, le niveau de finition contractuel et les clauses de garantie.}
+
+\vspace{0.6em}
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}p{7.8cm}r@{}}
+\toprule
+\textbf{Poste} & \textbf{Montant HT} \\
+\midrule
+Conception produit, cadrage agent + parcours client & 4\,800 \\
+Développement back-end (API, auth, rôles, notifications) & 6\,200 \\
+Développement agent IA (prompts, outils, audit, résumés) & 7\,500 \\
+CRM + PDF multi-options + extras (hôtel, chauffeur) & 6\,800 \\
+Scraping / Playwright / robustesse anti-bot (itérations) & 5\,200 \\
+Front vitrine premium (motion, i18n, chat UX) & 4\,100 \\
+Migrations SQL, store Supabase/SQLite, tolérance schéma & 3\,200 \\
+Docker, déploiement cloud, README onboarding & 2\,400 \\
+Tests, corrections, mise en conformité métier (comparatif particuliers, etc.) & 3\,800 \\
+\midrule
+\textbf{Sous-total développement} & \textbf{44\,000} \\
+\textbf{Marge imprévus / coordination (10\,\%)} & 4\,400 \\
+\midrule
+\textbf{TOTAL indicatif} & \textbf{48\,400\,\euro{} HT} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textit{TVA en sus selon la législation applicable.}
+
+\section{Livrables}
+\begin{enumerate}[leftmargin=*]
+  \item Code source du dépôt \textbf{OLAFlight} (application exécutable localement et déployable via Docker).
+  \item Fichiers de migration SQL (SQLite + PostgreSQL/Supabase) et documentation d'ordre d'exécution.
+  \item Documentation développeur (\texttt{README.md}) : installation, variables, migrations, déploiement Railway/Render/Vercel.
+  \item Le présent document LaTeX (\texttt{docs/devis-projet-olaflight-complet.tex}) comme base de devis commercial.
+\end{enumerate}
+
+\section{Hypothèses et dépendances client}
+\begin{itemize}[leftmargin=*]
+  \item Fourniture d'un compte \textbf{Anthropic} (clé API) et d'un projet \textbf{Supabase} pour l'environnement cible production.
+  \item Décisions produit validées sous 5 jours ouvrés pour éviter dérive du périmètre.
+  \item Accès aux ressources nécessaires pour tests (URL publique, DNS si besoin).
+\end{itemize}
+
+\section{Propriété intellectuelle et confidentialité}
+Sauf clause contraire du contrat cadre : le code développé spécifiquement pour le client et rémunéré intégralement peut être cédé au client selon les termes du marché ; les bibliothèques open-source restent sous leurs licences respectives. Les échanges et données métier sont traités comme \textbf{confidentiels}.
+
+\section{Acceptation}
+Le présent devis vaut \textbf{offre commerciale}. Toute commande fera l'objet d'un \textbf{bon de commande} ou d'un contrat signé reprenant périmètre, montant, délais et modalités de paiement.
+
+\vspace{2em}
+\noindent\begin{tabular}{@{}p{6.5cm}p{6.5cm}@{}}
+\textbf{Le prestataire} & \textbf{Le client} \\[2.5cm]
+\rule{6cm}{0.4pt} & \rule{6cm}{0.4pt} \\
+Nom, fonction, date & Nom, fonction, date \\
+\end{tabular}
+
+\end{document}

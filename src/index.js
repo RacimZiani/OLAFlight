@@ -11,10 +11,14 @@ async function main() {
   await seedAdminIfNeeded();  // crée l'admin si users vide
 
   const app = createApp();
-  app.listen(config.port, () => {
-    logger.info(`Ola Flight server → ${config.publicUrl}`);
+  const onListen = () => {
+    const bind = config.listenHost ? `${config.listenHost}:${config.port}` : `:${config.port}`;
+    logger.info(`Ola Flight listening on ${bind}`);
+    logger.info(`PUBLIC_URL (liens PDF, cookies, etc.) → ${config.publicUrl}`);
     logger.info(`storage: ${config.storage.driver} · env: ${config.env}`);
-  });
+  };
+  if (config.listenHost) app.listen(config.port, config.listenHost, onListen);
+  else app.listen(config.port, onListen);
 }
 
 main().catch((err) => {

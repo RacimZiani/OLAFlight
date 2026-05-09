@@ -27,6 +27,11 @@ function csv(envVal) {
 }
 
 const PORT = num(process.env.PORT, 5179);
+const NODE_ENV = process.env.NODE_ENV || "development";
+/** Docker / PaaS : écouter sur toutes les interfaces ; surcharge avec LISTEN_HOST. */
+const listenHost =
+  (process.env.LISTEN_HOST && String(process.env.LISTEN_HOST).trim()) ||
+  (NODE_ENV === "production" ? "0.0.0.0" : undefined);
 /** Vercel injecte VERCEL=1 sur les déploiements serverless. */
 const isVercel = process.env.VERCEL === "1";
 
@@ -38,8 +43,9 @@ if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
 }
 
 export const config = {
-  env: process.env.NODE_ENV || "development",
+  env: NODE_ENV,
   port: PORT,
+  listenHost,
   rootDir: ROOT_DIR,
   repoRoot: REPO_ROOT,
   publicUrl: process.env.PUBLIC_URL || `http://localhost:${PORT}`,
