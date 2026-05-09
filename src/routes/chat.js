@@ -12,7 +12,10 @@ const router = Router();
 router.post("/", validate({ body: chatBodySchema }), async (req, res, next) => {
   if (!config.anthropic.apiKey) {
     return next(
-      new HttpError(500, "Missing ANTHROPIC_API_KEY. Create a .env file from .env.example and set your key.")
+      new HttpError(
+        500,
+        "Missing ANTHROPIC_API_KEY. En local : fichier .env. En prod (Railway, Render, etc.) : ajouter la variable d'environnement ANTHROPIC_API_KEY dans le tableau Variables du service."
+      )
     );
   }
   try {
