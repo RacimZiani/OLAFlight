@@ -3,7 +3,9 @@
  * Pousse le fichier .env local vers les variables du service Railway lié (`railway link`).
  * Les valeurs ne sont pas affichées (stdin par variable).
  *
- * Prérequis : `npx @railway/cli login` puis `railway link` à la racine du repo.
+ * Prérequis :
+ *   npx @railway/cli login
+ *   npx @railway/cli link    # à la racine du repo
  *
  * Usage :
  *   node scripts/push-env-railway.mjs https://ton-service.up.railway.app
@@ -80,7 +82,15 @@ for (let i = 0; i < entries.length; i++) {
   const res = railway(args, String(value));
   if (res.status !== 0) {
     console.error(`Échec pour la clé « ${key} ».`);
-    console.error(res.stderr || res.stdout || res.error);
+    const errText = `${res.stderr || ""}${res.stdout || ""}${res.error || ""}`;
+    console.error(errText);
+    if (/unauthorized/i.test(errText)) {
+      console.error("");
+      console.error("Connexion Railway requise (la commande « railway » globale n’est pas obligatoire) :");
+      console.error("  npx @railway/cli login");
+      console.error("  npx @railway/cli link");
+      console.error("Puis relance le script push-env.");
+    }
     process.exit(res.status || 1);
   }
   console.error(`OK ${key}`);
