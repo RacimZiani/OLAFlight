@@ -91,7 +91,7 @@ Vérifier avant le premier commit qu’aucun fichier `.env` ni `data/*.db` n’a
 | `GET  /api/admin/flights`              | Liste vols scrappés               |
 | `POST /api/admin/flights/purge`        | `mode = demo \| noprice \| scraped \| all` |
 | `POST /api/admin/flights/:id/status`   | `scraped \| shortlisted \| contacted \| booked` |
-| `POST /api/admin/scrape`               | Booking → fallback Kayak          |
+| `POST /api/admin/scrape`               | Booking → fallback Google Flights |
 
 ---
 

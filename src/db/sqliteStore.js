@@ -24,22 +24,24 @@ let _db;
 const JSON_FIELDS = {
   flights: ["route", "meta"],
   leads: [],
-  devis: ["services_inclus"],
+  devis: ["services_inclus", "options", "hotels", "driver"],
   apporteurs: [],
   conversations_ola: ["messages"],
   agent_actions: ["input", "output"],
   users: [],
+  notifications: ["meta"],
 };
 
 // Champs "boolean" stockés en INTEGER : on coerce à la lecture.
 const BOOL_FIELDS = {
   flights: [],
-  leads: ["urgent"],
+  leads: ["urgent", "needs_hotel", "needs_driver"],
   devis: ["paiement_recu"],
   apporteurs: [],
   conversations_ola: [],
   agent_actions: [],
   users: ["active"],
+  notifications: ["read"],
 };
 
 function getDb() {
@@ -194,6 +196,7 @@ export function createSqliteStore() {
     apporteurs:        buildCollection("apporteurs"),
     conversations_ola: buildCollection("conversations_ola"),
     agent_actions:     buildCollection("agent_actions"),
+    notifications:     buildCollection("notifications"),
     users:             buildCollection("users", { orderBy: "created_at ASC" }),
     raw: getDb,
     async ready() {

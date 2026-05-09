@@ -51,17 +51,62 @@ const IATA_TO_CITY_SLUG = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// 1) Kayak via Playwright (source primaire — prix réels en EUR sur kayak.fr)
+// 1) Google Flights via Playwright (source primaire — prix réels en EUR)
+// On pilote directement le formulaire (le param ?q= ouvre la home, pas la recherche).
 // ─────────────────────────────────────────────────────────────
-export async function scrapeKayak({ from, to, depart, ret, limit, adults }) {
-  const { chromium } = await import("playwright");
+function dateToFrInput(yyyymmdd) {
+  // "2026-06-15" → "15/06/2026" (format input Google Flights FR)
+  const m = String(yyyymmdd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return yyyymmdd;
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
 
-  const base = `https://www.kayak.fr/flights/${from}-${to}/${depart}${ret ? `/${ret}` : ""}`;
-  const target = `${base}/${Math.max(1, adults || 1)}adults?sort=bestflight_a`;
+async function pickComboSuggestion(page, exactAriaLabel, dialogAriaLabel, value) {
+  // Ouvre l'input combobox identifié par son aria-label, écrase la valeur,
+  // attend la liste d'options dans le dialog "Saisir votre ..." et clique la première.
+  // On matche en "starts with" pour tolérer les espaces de fin (ex: aria-label="À ").
+  const sel = `input[aria-label^="${exactAriaLabel}"]`;
+  const input = page.locator(sel).first();
+  await input.waitFor({ state: "visible", timeout: 10000 });
+  await input.click({ timeout: 4000 });
+  await page.keyboard.press("Meta+A").catch(() => {});
+  await page.keyboard.press("Control+A").catch(() => {});
+  await page.keyboard.press("Delete").catch(() => {});
+  await input.fill("", { timeout: 2000 }).catch(() => {});
+  await page.keyboard.type(value, { delay: 70 });
+  await page.waitForTimeout(1000);
+  const dialogSel = `[role="dialog"][aria-label="${dialogAriaLabel}"]`;
+  const option = page
+    .locator(`${dialogSel} li[role="option"]`)
+    .or(page.locator('li[role="option"]'))
+    .first();
+  try {
+    await option.waitFor({ state: "visible", timeout: 5000 });
+    await option.click({ timeout: 2500 });
+  } catch {
+    await page.keyboard.press("Enter").catch(() => {});
+  }
+}
+
+export async function scrapeGoogleFlights({ from, to, depart, ret, limit, adults }) {
+  // Stealth via playwright-extra + puppeteer-extra-plugin-stealth.
+  const { chromium: chromiumBase } = await import("playwright");
+  let chromium = chromiumBase;
+  try {
+    const { chromium: stealthChromium } = await import("playwright-extra");
+    const stealthMod = await import("puppeteer-extra-plugin-stealth");
+    const stealth = stealthMod.default ? stealthMod.default() : stealthMod();
+    stealthChromium.use(stealth);
+    chromium = stealthChromium;
+  } catch (e) {
+    log.warn(`stealth init failed (ok, fallback playwright): ${e?.message || e}`);
+  }
+
+  const target = "https://www.google.com/travel/flights?hl=fr&curr=EUR";
 
   let browser;
   try {
-    log.info(`launching chromium → ${target}`);
+    log.info(`launching chromium (google flights) → ${target}`);
     browser = await chromium.launch({
       headless: true,
       args: [
@@ -79,72 +124,217 @@ export async function scrapeKayak({ from, to, depart, ret, limit, adults }) {
       extraHTTPHeaders: { "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.7" },
     });
 
-    const page = await context.newPage();
-    await page.addInitScript(() => {
+    // Pré-injecter les cookies de consentement Google (UE) pour court-circuiter l'écran consent.
+    await context.addCookies([
+      { name: "CONSENT", value: "YES+", domain: ".google.com", path: "/" },
+      { name: "SOCS", value: "CAESHAgBEhJnd3NfMjAyNDA1MDgtMF9SQzIaAmZyIAEaBgiAg6OvBg", domain: ".google.com", path: "/" },
+    ]);
+
+    // Patches anti-fingerprinting (stealth maison) — appliqués avant le 1er document.
+    await context.addInitScript(() => {
       Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+      Object.defineProperty(navigator, "languages", { get: () => ["fr-FR", "fr", "en-US", "en"] });
+      Object.defineProperty(navigator, "plugins", { get: () => [1, 2, 3, 4, 5] });
+      Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 8 });
+      Object.defineProperty(navigator, "deviceMemory", { get: () => 8 });
+      window.chrome = { runtime: {}, app: {}, csi: () => ({}), loadTimes: () => ({}) };
+      const originalQuery = window.navigator.permissions?.query;
+      if (originalQuery) {
+        window.navigator.permissions.query = (parameters) =>
+          parameters.name === "notifications"
+            ? Promise.resolve({ state: Notification.permission })
+            : originalQuery(parameters);
+      }
     });
+
+    const page = await context.newPage();
     await page.goto(target, { waitUntil: "domcontentloaded", timeout: 60000 });
 
-    try {
+    if (/consent\.google\.com/.test(page.url())) {
       await page
-        .getByRole("button", { name: /accept all|agree|tout accepter|j'accepte/i })
-        .first()
-        .click({ timeout: 4000 });
-    } catch {
-      /* pas de bandeau cookies */
+        .evaluate(() => {
+          const btns = Array.from(document.querySelectorAll('button, [role="button"], input[type="submit"]'));
+          const re = /tout accepter|accept all|j'accepte|i agree/i;
+          const hit = btns.find((b) => re.test((b.innerText || b.value || "").trim()));
+          if (hit) hit.click();
+        })
+        .catch(() => {});
+      await page.waitForURL(/\/travel\/flights/i, { timeout: 15000 }).catch(() => {});
     }
 
-    const priceInBody = () => {
-      const t = document.body?.innerText || "";
-      return /([$€£])\s?\d{2,5}|\d{2,5}\s?([$€£])/.test(t);
-    };
-    await page.waitForFunction(priceInBody, { timeout: 60000 }).catch(() => {});
+    // Bandeau cookies inline
+    try {
+      await page
+        .getByRole("button", { name: /tout accepter|accept all|j'accepte|i agree/i })
+        .first()
+        .click({ timeout: 3000 });
+    } catch {
+      /* pas de bandeau */
+    }
 
+    await page.waitForTimeout(1000);
+
+    // Type de voyage : si aller simple, basculer sur "Aller simple".
+    let oneWaySelected = false;
+    if (!ret) {
+      try {
+        // Le combobox affiche le label courant ("Aller-retour" par défaut).
+        const tripBtn = page
+          .locator('[role="combobox"]:has-text("Aller-retour"), [role="combobox"]:has-text("Round trip"), button:has-text("Aller-retour")')
+          .first();
+        await tripBtn.waitFor({ state: "visible", timeout: 6000 });
+        await tripBtn.click({ timeout: 4000 });
+        const opt = page
+          .locator('li[role="option"]:has-text("Aller simple"), [role="option"]:has-text("One way")')
+          .first();
+        await opt.waitFor({ state: "visible", timeout: 4000 });
+        await opt.click({ timeout: 3000 });
+        oneWaySelected = true;
+        await page.waitForTimeout(400);
+      } catch (e) {
+        log.warn(`google flights: trip-type switch failed: ${e?.message || e}`);
+      }
+    }
+
+    // Origine / Destination
+    await pickComboSuggestion(page, "De", "Saisir votre point de départ", from);
+    await page.waitForTimeout(700);
+    await pickComboSuggestion(page, "À", "Saisir votre destination", to);
+    await page.waitForTimeout(900);
+
+    // Dates : input aria-label "Départ" / "Retour" (format JJ/MM/AAAA)
+    const fillDate = async (exactAriaLabel, value) => {
+      const sel = `input[aria-label="${exactAriaLabel}"]`;
+      const input = page.locator(sel).first();
+      await input.waitFor({ state: "visible", timeout: 10000 });
+      await input.click({ timeout: 4000 });
+      await page.keyboard.press("Meta+A").catch(() => {});
+      await page.keyboard.press("Control+A").catch(() => {});
+      await page.keyboard.press("Delete").catch(() => {});
+      await input.fill("", { timeout: 2000 }).catch(() => {});
+      await page.keyboard.type(dateToFrInput(value), { delay: 40 });
+      await page.keyboard.press("Enter").catch(() => {});
+      await page.waitForTimeout(500);
+    };
+
+    try {
+      await fillDate("Départ", depart);
+    } catch (e) {
+      log.warn(`google flights: depart date input failed: ${e?.message || e}`);
+    }
+    if (ret) {
+      try {
+        await fillDate("Retour", ret);
+      } catch (e) {
+        log.warn(`google flights: return date input failed: ${e?.message || e}`);
+      }
+    }
+
+    // Refermer le picker
+    try {
+      await page
+        .getByRole("button", { name: /^ok$|^terminé$|^done$/i })
+        .first()
+        .click({ timeout: 2000 });
+    } catch {
+      /* pas de bouton OK */
+    }
+
+    // Lancer la recherche
+    try {
+      const searchBtn = page
+        .locator('button[aria-label*="Rechercher des vols" i]')
+        .or(page.getByRole("button", { name: /^rechercher$|^search$/i }))
+        .first();
+      await searchBtn.click({ timeout: 6000 });
+    } catch {
+      await page.keyboard.press("Enter").catch(() => {});
+    }
+
+    // Attendre la bascule sur la page résultats (l'URL devient /travel/flights?tfs=...)
+    await page.waitForURL(/[?&]tfs=/i, { timeout: 30000 }).catch(() => {});
+    log.debug(`google flights after search → ${page.url()}`);
+
+    if (!/[?&]tfs=/i.test(page.url())) {
+      log.warn("google flights: search URL did not include tfs= (form submit failed?)");
+    }
+
+    // Au lieu de scroller (qui peut déclencher des heuristiques anti-bot), on attend
+    // simplement l'apparition des cartes vol via un h3 / un texte "Meilleurs vols".
     await page
       .waitForFunction(
         () => {
           const t = document.body?.innerText || "";
-          const m = t.match(/(\d{1,3})\s*%\s*(complete|terminé|termin\u00e9)/i);
-          if (!m) return true;
-          return Number(m[1]) >= 95;
+          return /meilleurs (?:vols|résultats)|best departing|cheapest|vols les moins chers|other departing flights|autres vols/i.test(t);
         },
         { timeout: 45000 }
       )
       .catch(() => {});
 
-    for (let i = 0; i < 4; i++) {
-      await page.evaluate(() => {
-        window.scrollBy(0, window.innerHeight * 1.5);
-      });
-      await page.waitForTimeout(1200);
-    }
-    await page.waitForTimeout(1500);
+    // Petit délai pour laisser les prix se stabiliser
+    await page.waitForTimeout(2500);
 
+    const finalUrl = page.url();
     const lines = await page.evaluate(() => {
+      const re = /\d{2,5}\s?€|€\s?\d{2,5}/;
       const out = [];
-      const nodes = document.querySelectorAll(
-        '[class*="result"], [data-resultid], [class*="Result"], li, article, div[role="article"], div[class*="nrc6"], div[class*="Fxw9"]'
-      );
-      for (const n of nodes) {
+      const seen = new Set();
+      // Approche générique : tout élément qui contient un prix et n'a pas
+      // d'enfant contenant déjà un prix (= conteneur "carte vol" minimal).
+      const all = document.querySelectorAll('div, li, article, section');
+      for (const n of all) {
         const t = (n.innerText || "").replace(/\s+/g, " ").trim();
-        if (!t || t.length > 1500) continue;
-        if (!/([$€£])\s?\d{2,5}|\d{2,5}\s?([$€£])/.test(t)) continue;
+        if (!t || t.length < 25 || t.length > 1500) continue;
+        if (!re.test(t)) continue;
+        let hasPricedChild = false;
+        for (const c of n.children) {
+          const ct = (c.innerText || "").trim();
+          if (re.test(ct)) { hasPricedChild = true; break; }
+        }
+        if (hasPricedChild) continue;
+        if (seen.has(t)) continue;
+        seen.add(t);
         out.push(t);
+        if (out.length >= 60) break;
       }
       return out;
     });
-    log.debug(`kayak lines: ${lines.length}`);
+    log.debug(`google flights lines: ${lines.length} (url=${finalUrl})`);
+
+    if (process.env.GFLIGHTS_DEBUG_DUMP) {
+      try {
+        const fs = await import("node:fs/promises");
+        await fs.writeFile("/tmp/gflights-final.html", await page.content());
+        await page.screenshot({ path: "/tmp/gflights-final.png", fullPage: true });
+        log.debug("google flights debug dump → /tmp/gflights-final.html|.png");
+      } catch (e) {
+        log.warn(`debug dump failed: ${e?.message || e}`);
+      }
+    }
 
     await browser.close();
     browser = null;
 
-    return parseKayakLines({ lines, target, from, to, depart, ret, limit });
+    return parseFlightLines({
+      lines,
+      target: finalUrl,
+      from,
+      to,
+      depart,
+      ret,
+      limit,
+      source: "google_flights",
+      idPrefix: "gflights",
+    });
   } catch (e) {
     if (browser) await browser.close().catch(() => {});
-    log.error(`kayak playwright: ${e?.message || e}`);
+    log.error(`google flights playwright: ${e?.message || e}`);
     return [];
   }
 }
+
+// Compat ascendante: ancien nom utilisé dans olaAgentTools.js / admin.js / tests.
+export const scrapeKayak = scrapeGoogleFlights;
 
 function parsePrice(raw) {
   const m1 = raw.match(/([$€£])\s?(\d{2,5})/);
@@ -166,7 +356,17 @@ function parsePrice(raw) {
   return null;
 }
 
-function parseKayakLines({ lines, target, from, to, depart, ret, limit }) {
+function parseFlightLines({
+  lines,
+  target,
+  from,
+  to,
+  depart,
+  ret,
+  limit,
+  source = "google_flights",
+  idPrefix = "gflights",
+}) {
   // Groupe par prix+devise et garde l'entrée la plus "riche" (plus de signaux remplis).
   const byPrice = new Map();
   for (const raw of lines) {
@@ -201,7 +401,7 @@ function parseKayakLines({ lines, target, from, to, depart, ret, limit }) {
   const offers = [];
   for (const v of byPrice.values()) {
     offers.push({
-      external_id: `kayak:${from}-${to}:${depart}:${ret || "ONEWAY"}:${v.currency}${v.price}`,
+      external_id: `${idPrefix}:${from}-${to}:${depart}:${ret || "ONEWAY"}:${v.currency}${v.price}`,
       title: `${from} → ${to}${ret ? " (A/R)" : " (Aller simple)"}`,
       url: target,
       price: v.price,
@@ -215,7 +415,7 @@ function parseKayakLines({ lines, target, from, to, depart, ret, limit }) {
       },
       location: "",
       image_url: null,
-      source: "kayak",
+      source,
       meta: { airline: v.airline, duration: v.duration, stops: v.stops },
     });
   }

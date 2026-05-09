@@ -4,7 +4,7 @@ import { requireAdmin } from "../middleware/auth.js";
 import { scrapeBodySchema, purgeBodySchema, flightStatusSchema, idParamSchema } from "../schemas/index.js";
 import { getStore } from "../db/index.js";
 import { makeId } from "../lib/ids.js";
-import { scrapeBooking, scrapeKayak, IATA_TO_CITY_SLUG } from "../lib/scraper.js";
+import { scrapeBooking, scrapeGoogleFlights, IATA_TO_CITY_SLUG } from "../lib/scraper.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { createLogger } from "../logger.js";
 
@@ -81,12 +81,12 @@ router.post("/scrape", validate({ body: scrapeBodySchema }), async (req, res, ne
       log.warn(`booking failed: ${err.message}`);
     }
 
-    // (2) Kayak via Playwright en fallback (sources Booking bloquées en CI/datacenter).
+    // (2) Google Flights via Playwright en fallback (sources Booking bloquées en CI/datacenter).
     if (unique.length === 0) {
       try {
-        unique = await scrapeKayak({ from, to, depart, ret, limit, adults });
+        unique = await scrapeGoogleFlights({ from, to, depart, ret, limit, adults });
       } catch (err) {
-        log.warn(`kayak failed: ${err.message}`);
+        log.warn(`google flights failed: ${err.message}`);
       }
     }
 

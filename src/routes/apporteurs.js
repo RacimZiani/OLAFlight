@@ -1,13 +1,15 @@
 import { Router } from "express";
 import { z } from "zod";
 import { validate } from "../middleware/validate.js";
-import { requireBackoffice, requireAdmin } from "../middleware/auth.js";
+import { requireRole, requireAdmin } from "../middleware/auth.js";
 import { getStore } from "../db/index.js";
 import { uid } from "../lib/ids.js";
 import { HttpError } from "../middleware/errorHandler.js";
 
 const router = Router();
-router.use(requireBackoffice);
+// Le réseau apporteurs (et leurs commissions) est strictement réservé aux admins.
+// Les closers ne le voient pas (S02 — isolation par rôle).
+router.use(requireRole("admin", "dalsim"));
 
 const createSchema = z.object({
   nom: z.string().min(1),

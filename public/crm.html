@@ -189,6 +189,62 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 
 /* SHARED */
 .section-divider{height:1px;background:var(--l);margin:24px 0;}
+
+/* ─── BELL & NOTIFS ─── */
+.tb-bell{position:relative;background:none;border:none;color:var(--g);cursor:pointer;padding:8px;display:flex;align-items:center;justify-content:center;transition:color .2s;}
+.tb-bell:hover{color:var(--w);}
+.tb-bell svg{width:18px;height:18px;}
+.tb-bell-badge{position:absolute;top:0;right:-2px;background:#fb923c;color:#0a0a0a;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:400;letter-spacing:0;min-width:14px;height:14px;border-radius:7px;padding:0 4px;display:flex;align-items:center;justify-content:center;}
+.tb-bell-badge.zero{display:none;}
+
+.notif-panel{position:fixed;top:56px;right:24px;width:380px;max-height:520px;background:var(--b2);border:1px solid var(--l2);z-index:300;display:none;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+.notif-panel.open{display:flex;}
+.notif-head{padding:14px 18px;border-bottom:1px solid var(--l);display:flex;align-items:center;justify-content:space-between;}
+.notif-title{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--w);}
+.notif-mark{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);background:none;border:none;cursor:pointer;}
+.notif-mark:hover{color:var(--w);}
+.notif-list{flex:1;overflow-y:auto;}
+.notif-item{padding:14px 18px;border-bottom:1px solid var(--l);cursor:pointer;transition:background .15s;}
+.notif-item:hover{background:var(--b3);}
+.notif-item.unread{background:rgba(96,165,250,0.04);border-left:2px solid var(--blue-t);}
+.notif-item-head{display:flex;justify-content:space-between;gap:10px;align-items:start;}
+.notif-item-title{font-size:13px;color:var(--w);line-height:1.4;}
+.notif-item-time{font-family:'Montserrat',sans-serif;font-size:7px;color:var(--g);white-space:nowrap;}
+.notif-item-body{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--g);margin-top:4px;line-height:1.5;}
+.notif-empty{padding:32px 18px;color:var(--g);font-style:italic;text-align:center;font-size:13px;}
+
+/* ─── PIPELINE — search/filters/zoom ─── */
+.ph-toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;align-items:center;}
+.ph-search{flex:1;min-width:220px;background:var(--b3);border:1px solid var(--l);color:var(--w);padding:9px 14px;font-family:'Cormorant Garamond',serif;font-size:14px;outline:none;}
+.ph-search:focus{border-color:var(--l2);}
+.ph-select{background:var(--b3);border:1px solid var(--l);color:var(--w);padding:9px 12px;font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;outline:none;cursor:pointer;}
+
+/* zoom (1 colonne plein écran avec liste détaillée) */
+.zoom-card{background:var(--b3);border:1px solid var(--l);padding:16px 18px;margin-bottom:8px;cursor:pointer;display:grid;grid-template-columns:1fr auto auto auto;gap:18px;align-items:center;transition:border-color .2s;}
+.zoom-card:hover{border-color:var(--l2);}
+.zc-name{font-size:16px;color:var(--w);}
+.zc-sub{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-top:3px;}
+.zc-cell{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--g);letter-spacing:1px;}
+.zc-cell strong{color:var(--w);font-weight:300;}
+
+/* résumé conversation */
+.summary-box{background:var(--b3);border:1px solid var(--l);padding:14px 16px;font-size:14px;line-height:1.7;color:var(--g);font-family:'Cormorant Garamond',serif;white-space:pre-wrap;}
+.summary-box strong{color:var(--w);font-weight:400;}
+
+/* Édition de devis */
+.dev-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:10px;}
+.dev-grid label, #dev-edit-form label{display:flex;flex-direction:column;gap:5px;font-family:'Montserrat',sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);}
+.dev-grid input, .dev-grid textarea, #dev-edit-form input, #dev-edit-form textarea{
+  background:var(--b3);border:1px solid var(--l);color:var(--w);padding:8px 10px;
+  font-family:'Cormorant Garamond',serif;font-size:14px;outline:none;letter-spacing:0;text-transform:none;font-weight:300;
+}
+.dev-grid input:focus, .dev-grid textarea:focus{border-color:var(--gold);}
+.dev-opt-card{border:1px solid var(--l);padding:12px 14px;margin-bottom:10px;background:var(--b3);}
+.dev-opt-head{display:flex;justify-content:space-between;align-items:center;font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--w);margin-bottom:10px;}
+.dev-hotel-card{border:1px solid var(--l);padding:12px 14px;margin-bottom:10px;background:var(--b3);}
+.summary-meta{font-family:'Montserrat',sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g2);margin-top:8px;}
+.summary-refresh{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);background:none;border:1px solid var(--l);padding:6px 12px;cursor:pointer;margin-top:10px;}
+.summary-refresh:hover{color:var(--w);border-color:var(--l2);}
 </style>
 <meta name="ola-required-roles" content="admin,closeuse,dalsim">
 <script src="/auth-gate.js"></script>
@@ -205,11 +261,26 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
     <div class="tb-tab active" onclick="switchView('dashboard',this)">Dashboard</div>
     <div class="tb-tab" onclick="switchView('pipeline',this)">Pipeline</div>
     <div class="tb-tab" onclick="switchView('commissions',this)">Commissions</div>
-    <div class="tb-tab" onclick="switchView('apporteuses',this)">Apporteuses</div>
+    <div class="tb-tab" onclick="switchView('apporteuses',this)" data-admin-only>Apporteuses</div>
   </div>
   <div class="tb-right">
-    <div class="tb-user">Closer 1</div>
+    <button class="tb-bell" id="tb-bell" onclick="toggleNotifPanel(event)" aria-label="Notifications">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <span class="tb-bell-badge zero" id="tb-bell-badge">0</span>
+    </button>
+    <div class="tb-user" id="tb-user">—</div>
     <button class="tb-add" onclick="openNewLead()">+ Nouveau lead</button>
+  </div>
+</div>
+
+<!-- PANEL NOTIFICATIONS -->
+<div class="notif-panel" id="notif-panel" onclick="event.stopPropagation()">
+  <div class="notif-head">
+    <div class="notif-title">Notifications</div>
+    <button class="notif-mark" onclick="markAllNotifsRead()">Tout marquer lu</button>
+  </div>
+  <div class="notif-list" id="notif-list">
+    <div class="notif-empty">Chargement…</div>
   </div>
 </div>
 
@@ -227,9 +298,26 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
         <button class="filter-btn active" onclick="filterPipeline('all',this)">Tous</button>
         <button class="filter-btn" onclick="filterPipeline('mine',this)">Mes leads</button>
         <button class="filter-btn" onclick="filterPipeline('urgent',this)">Relances</button>
+        <button class="filter-btn" id="zoom-back" style="display:none" onclick="exitZoom()">← Toutes les colonnes</button>
       </div>
     </div>
+
+    <div class="ph-toolbar">
+      <input id="ph-search" class="ph-search" placeholder="Rechercher : nom, destination, contact…" oninput="onPipelineSearch(this.value)" />
+      <select class="ph-select" id="ph-closer" onchange="onPipelineCloserFilter(this.value)">
+        <option value="">Tous les closers</option>
+      </select>
+      <select class="ph-select" id="ph-sort" onchange="onPipelineSort(this.value)">
+        <option value="recent">Tri : Plus récent</option>
+        <option value="value-desc">Tri : Valeur ↓</option>
+        <option value="value-asc">Tri : Valeur ↑</option>
+        <option value="urgent">Tri : Urgents d'abord</option>
+        <option value="name">Tri : Nom (A→Z)</option>
+      </select>
+    </div>
+
     <div class="kanban" id="kanban-board"></div>
+    <div id="zoom-board" style="display:none"></div>
   </div>
 </div>
 
@@ -329,6 +417,9 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 // ─── DATA (API / SQLite) — pas de données fictives ───
 let leads = [];
 let apporteuses = [];
+let closers = [];
+let notifs = [];
+let pipelineState = { search: '', closer: '', sort: 'recent', zoom: null };
 
 const statusLabels = { new: 'Nouveau', contacted: 'Contacté', offer: 'Offre envoyée', nego: 'Négociation', won: 'Gagné', lost: 'Perdu' };
 const statusClass = { new: 'sp-new', contacted: 'sp-contact', offer: 'sp-offer', nego: 'sp-nego', won: 'sp-won', lost: 'sp-lost' };
@@ -358,6 +449,9 @@ function kanbanColumn(apiStatus) {
 }
 
 function normalizeApiLead(l) {
+  const ts = (typeof l.created_at === 'number')
+    ? l.created_at
+    : (l.created_at ? Date.parse(l.created_at) || 0 : 0);
   return {
     id: l.id,
     apiStatus: l.status,
@@ -372,10 +466,11 @@ function normalizeApiLead(l) {
     value: Number(l.value) || 0,
     margin: Number(l.margin) || 0,
     status: kanbanColumn(l.status),
-    sdr: l.closer_name || '—',
+    sdr: l.closer_name || '',
     followup: l.next_followup,
     notes: l.notes || '',
     urgent: !!l.urgent,
+    created_at: ts,
   };
 }
 
@@ -389,6 +484,11 @@ function fmtFollowup(f) {
 function currentUserLabel() {
   const u = window.OlaAuth && window.OlaAuth.user;
   return (u && (u.name || u.email)) || 'Équipe';
+}
+
+function isAdmin() {
+  const u = window.OlaAuth && window.OlaAuth.user;
+  return u && (u.role === 'admin' || u.role === 'dalsim');
 }
 
 function escapeHtmlCrm(s) {
@@ -471,33 +571,104 @@ function renderDashboard() {
   </div>`;
 }
 
-// ─── KANBAN ───
-function renderKanban(filter='all') {
+// ─── KANBAN avec search / classement / zoom catégorie ───
+let kanbanFilter = 'all';
+
+function applyPipelineFilters(list) {
+  let out = [...list];
+  // 1) filtres haut (Tous / Mes / Urgents)
+  if (kanbanFilter === 'mine') {
+    const me = window.OlaAuth && window.OlaAuth.user && window.OlaAuth.user.email;
+    if (me) out = out.filter(l => l.sdr === me);
+  } else if (kanbanFilter === 'urgent') {
+    out = out.filter(l => l.urgent);
+  }
+  // 2) recherche
+  if (pipelineState.search) {
+    const q = pipelineState.search.toLowerCase();
+    out = out.filter(l =>
+      (l.name||'').toLowerCase().includes(q) ||
+      (l.dest||'').toLowerCase().includes(q) ||
+      (l.contact||'').toLowerCase().includes(q) ||
+      (l.notes||'').toLowerCase().includes(q)
+    );
+  }
+  // 3) filtre closer
+  if (pipelineState.closer) {
+    out = out.filter(l => l.sdr === pipelineState.closer);
+  }
+  return out;
+}
+
+function sortPipeline(list) {
+  const arr = [...list];
+  switch (pipelineState.sort) {
+    case 'value-desc': arr.sort((a,b)=>(b.value||0)-(a.value||0)); break;
+    case 'value-asc':  arr.sort((a,b)=>(a.value||0)-(b.value||0)); break;
+    case 'urgent':     arr.sort((a,b)=>(b.urgent?1:0)-(a.urgent?1:0) || (b.value||0)-(a.value||0)); break;
+    case 'name':       arr.sort((a,b)=>(a.name||'').localeCompare(b.name||'')); break;
+    case 'recent':
+    default:           arr.sort((a,b)=>(b.created_at||0)-(a.created_at||0));
+  }
+  return arr;
+}
+
+function renderKanban(filter) {
+  if (filter !== undefined) kanbanFilter = filter;
   const statuses = ['new','contacted','offer','nego','won','lost'];
   const board = document.getElementById('kanban-board');
+  const zoomBoard = document.getElementById('zoom-board');
+  const zoomBack = document.getElementById('zoom-back');
+
+  // Mode zoom : on n'affiche que la colonne sélectionnée en liste détaillée.
+  if (pipelineState.zoom) {
+    board.style.display = 'none';
+    zoomBoard.style.display = 'block';
+    zoomBack.style.display = 'inline-block';
+    const s = pipelineState.zoom;
+    const filtered = sortPipeline(applyPipelineFilters(leads.filter(l => l.status === s)));
+    zoomBoard.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+        <div class="ph-title" style="font-size:22px">${statusLabels[s]||s}</div>
+        <div class="k-count">${filtered.length}</div>
+      </div>
+      ${filtered.length === 0 ? '<div style="padding:32px;color:var(--g);font-style:italic">Aucun lead dans cette colonne avec ces filtres.</div>' :
+        filtered.map(l => `
+        <div class="zoom-card" onclick="openLeadModal('${String(l.id).replace(/'/g,"\\\\'")}')">
+          <div>
+            <div class="zc-name">${escapeHtmlCrm(l.name)}${l.urgent?' <span style="color:var(--yellow-t);font-size:10px;letter-spacing:2px;text-transform:uppercase;font-family:Montserrat,sans-serif;margin-left:8px">⚡ urgent</span>':''}</div>
+            <div class="zc-sub">${escapeHtmlCrm(l.dest||'—')} · ${escapeHtmlCrm(l.dates||'dates à confirmer')}</div>
+          </div>
+          <div class="zc-cell">Contact<br><strong>${escapeHtmlCrm(l.contact||'—')}</strong></div>
+          <div class="zc-cell">Valeur<br><strong>${l.value>0?l.value.toLocaleString('fr-FR')+' €':'—'}</strong></div>
+          <div class="zc-cell">Closer<br><strong>${escapeHtmlCrm(l.sdr||'—')}</strong></div>
+        </div>`).join('')}
+    `;
+    return;
+  }
+
+  // Mode kanban classique avec headers cliquables (zoom).
+  board.style.display = 'grid';
+  zoomBoard.style.display = 'none';
+  zoomBack.style.display = 'none';
   board.innerHTML = statuses.map(s=>{
-    let cards = leads.filter(l=>l.status===s);
-    if(filter==='mine') {
-      const me = window.OlaAuth && window.OlaAuth.user && window.OlaAuth.user.email;
-      cards = me ? cards.filter(l=>l.sdr===me) : cards;
-    }
-    if(filter==='urgent') cards = cards.filter(l=>l.urgent);
+    const filtered = sortPipeline(applyPipelineFilters(leads.filter(l=>l.status===s)));
     return `
     <div class="k-col" data-status="${s}">
-      <div class="k-head">
+      <div class="k-head" onclick="enterZoom('${s}')" style="cursor:pointer" title="Cliquer pour zoomer">
         <div class="k-title">${statusLabels[s]}</div>
-        <div class="k-count">${cards.length}</div>
+        <div class="k-count">${filtered.length}</div>
       </div>
       <div class="k-cards">
-        ${cards.map(l=>`
-        <div class="k-card ${l.urgent?'kc-urgent':''} ${l.status==='won'?'kc-hot':''}" onclick="openLeadModal('${String(l.id).replace(/'/g, "\\'")}')">
-          <div class="kc-name">${l.name}</div>
-          <div class="kc-dest">${l.dest}</div>
+        ${filtered.map(l=>`
+        <div class="k-card ${l.urgent?'kc-urgent':''} ${l.status==='won'?'kc-hot':''}" onclick="openLeadModal('${String(l.id).replace(/'/g,"\\\\'")}')">
+          <div class="kc-name">${escapeHtmlCrm(l.name)}</div>
+          <div class="kc-dest">${escapeHtmlCrm(l.dest||'—')}</div>
           <div class="kc-meta">
-            <div class="kc-budget">${l.budget||'Budget ?'}</div>
-            <div class="kc-sdr">${l.sdr}</div>
+            <div class="kc-budget">${l.value>0?l.value.toLocaleString('fr-FR')+' €':'Budget ?'}</div>
+            <div class="kc-sdr">${escapeHtmlCrm(l.sdr||'—')}</div>
           </div>
-          <div class="kc-date">${l.dates||'Dates à confirmer'}${l.apporteuse?' · via '+l.apporteuse:''}</div>
+          <div class="kc-date">${escapeHtmlCrm(l.dates||'Dates à confirmer')}${l.apporteuse?' · via '+escapeHtmlCrm(l.apporteuse):''}</div>
         </div>`).join('')}
       </div>
     </div>`;
@@ -509,6 +680,12 @@ function filterPipeline(f, el) {
   el.classList.add('active');
   renderKanban(f);
 }
+
+function onPipelineSearch(v) { pipelineState.search = String(v||'').trim(); renderKanban(); }
+function onPipelineCloserFilter(v) { pipelineState.closer = v || ''; renderKanban(); }
+function onPipelineSort(v) { pipelineState.sort = v; renderKanban(); }
+function enterZoom(s) { pipelineState.zoom = s; renderKanban(); }
+function exitZoom() { pipelineState.zoom = null; renderKanban(); }
 
 // ─── LEAD MODAL ───
 function openLeadModal(id) {
@@ -559,6 +736,27 @@ function openLeadModal(id) {
       </div>
     </div>
     <div class="modal-section">
+      <div class="ms-title">Closer assigné</div>
+      ${isAdmin() ? `
+        <select class="status-select" onchange="updateLeadCloser('${safeId}', this.value)">
+          <option value="">— Non assigné —</option>
+          ${closers.map(c => `<option value="${escapeHtmlCrm(c.email)}" ${c.email === l.sdr ? 'selected' : ''}>${escapeHtmlCrm(c.name || c.email)}</option>`).join('')}
+        </select>
+      ` : `<div class="mf-val">${escapeHtmlCrm(l.sdr || '— Non assigné —')}</div>`}
+    </div>
+    <div class="modal-section">
+      <div class="ms-title">Résumé de conversation</div>
+      <div id="lead-summary" class="summary-box">Génération en cours…</div>
+      <div id="lead-summary-meta" class="summary-meta"></div>
+      <button class="summary-refresh" onclick="loadLeadSummary('${safeId}', true)">Régénérer</button>
+    </div>
+    <div class="modal-section">
+      <div class="ms-title">Devis envoyés</div>
+      <div id="lead-devis-list" style="font-family:Montserrat,sans-serif;font-size:11px;color:var(--g);line-height:1.7">
+        Chargement…
+      </div>
+    </div>
+    <div class="modal-section">
       <div class="ms-title">Historique agent IA</div>
       <div id="agent-actions" style="font-family:Montserrat,sans-serif;font-size:10px;color:var(--g);line-height:1.8">
         Chargement…
@@ -575,6 +773,275 @@ function openLeadModal(id) {
   </div>`;
   document.getElementById('modal-bg').classList.add('open');
   loadAgentActions(l.id);
+  loadLeadSummary(l.id);
+  loadLeadDevis(l.id);
+}
+
+// ─── Devis liés au lead ───
+async function loadLeadDevis(leadId) {
+  const box = document.getElementById('lead-devis-list');
+  if (!box) return;
+  try {
+    const r = await fetch('/api/leads/' + encodeURIComponent(leadId) + '/devis', { credentials: 'include' });
+    if (!r.ok) throw new Error('http ' + r.status);
+    const d = await r.json();
+    const items = d.items || [];
+    if (items.length === 0) {
+      box.innerHTML = '<div style="color:var(--g)">Aucun devis pour ce lead.</div>';
+      return;
+    }
+    box.innerHTML = items.map((dv) => {
+      const opts = Array.isArray(dv.options) ? dv.options.length : 0;
+      const has_extras = (Array.isArray(dv.hotels) && dv.hotels.length) || dv.driver;
+      const tags = [
+        opts > 1 ? `${opts} options` : 'Mono-option',
+        has_extras ? 'Extras' : null,
+        dv.paiement_recu ? 'Payé' : null,
+      ].filter(Boolean).join(' · ');
+      const pdf = dv.pdf_url ? `<a href="${escapeHtmlCrm(dv.pdf_url)}" target="_blank" style="color:var(--gold);text-decoration:underline">PDF</a>` : '<span style="color:var(--g)">PDF non généré</span>';
+      const safe = String(dv.id).replace(/'/g, "\\'");
+      return `
+        <div style="border:1px solid var(--l);padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--w)">${escapeHtmlCrm(dv.id)}</div>
+            <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-top:3px;color:var(--g)">
+              ${escapeHtmlCrm(dv.compagnie || '—')} · ${Number(dv.prix_vente || 0).toLocaleString('fr-FR')} € · ${tags}
+            </div>
+            <div style="font-size:9px;margin-top:3px">${pdf}</div>
+          </div>
+          <button class="ma-btn ma-ghost" style="font-size:8px" onclick="openDevisEditor('${safe}')">Modifier</button>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    box.innerHTML = '<span style="color:var(--red-t)">Erreur de chargement des devis.</span>';
+  }
+}
+
+// ─── Édition d'un devis (admin/closer) ───
+async function openDevisEditor(devisId) {
+  const r = await fetch('/api/devis/' + encodeURIComponent(devisId), { credentials: 'include' });
+  if (!r.ok) return alert('Devis introuvable ou hors périmètre');
+  const data = await r.json();
+  const d = data.item || {};
+  const services = Array.isArray(d.services_inclus) ? d.services_inclus.join('\n') : '';
+  const opts = Array.isArray(d.options) ? d.options : [];
+  const hotels = Array.isArray(d.hotels) ? d.hotels : [];
+  const driver = d.driver || null;
+
+  function optionRow(o, i) {
+    return `
+      <div class="dev-opt-card" data-opt-idx="${i}">
+        <div class="dev-opt-head">Option ${i + 1} <button type="button" class="ma-btn ma-danger" style="font-size:7px;padding:6px 10px" onclick="this.closest('.dev-opt-card').remove()">Retirer</button></div>
+        <div class="dev-grid">
+          <label>Label<input data-k="label" value="${escapeHtmlCrm(o.label || '')}" placeholder="Express / Confort / Premium"></label>
+          <label>Compagnie<input data-k="compagnie" value="${escapeHtmlCrm(o.compagnie || '')}"></label>
+          <label>Horaire dép.<input data-k="horaire_dep" value="${escapeHtmlCrm(o.horaire_dep || '')}"></label>
+          <label>Horaire arr.<input data-k="horaire_arr" value="${escapeHtmlCrm(o.horaire_arr || '')}"></label>
+          <label>Durée<input data-k="duration" value="${escapeHtmlCrm(o.duration || '')}"></label>
+          <label>Escales<input type="number" min="0" max="5" data-k="stops" value="${Number(o.stops || 0)}"></label>
+          <label>Prix de revient (€)<input type="number" min="0" data-k="prix_revient" value="${Number(o.prix_revient || 0)}"></label>
+          <label>Prix de vente (€)<input type="number" min="0" data-k="prix_vente" value="${Number(o.prix_vente || 0)}"></label>
+          <label>Prix marché (€)<input type="number" min="0" data-k="prix_marche" value="${Number(o.prix_marche || 0)}"></label>
+        </div>
+      </div>`;
+  }
+  function hotelRow(h) {
+    return `
+      <div class="dev-hotel-card">
+        <button type="button" class="ma-btn ma-danger" style="font-size:7px;padding:6px 10px;float:right" onclick="this.parentElement.remove()">Retirer</button>
+        <div class="dev-grid">
+          <label>Nom<input data-k="name" value="${escapeHtmlCrm(h.name || '')}"></label>
+          <label>Étoiles (1-5)<input type="number" min="1" max="5" data-k="stars" value="${Number(h.stars || 0)}"></label>
+          <label>Quartier / zone<input data-k="area" value="${escapeHtmlCrm(h.area || '')}"></label>
+          <label>Nuits<input type="number" min="1" data-k="nights" value="${Number(h.nights || 0)}"></label>
+          <label>Prix / nuit (€)<input type="number" min="0" data-k="price_per_night" value="${Number(h.price_per_night || 0)}"></label>
+          <label>Total (€)<input type="number" min="0" data-k="total_price" value="${Number(h.total_price || 0)}"></label>
+        </div>
+        <label>Notes<input data-k="notes" value="${escapeHtmlCrm(h.notes || '')}" style="width:100%"></label>
+      </div>`;
+  }
+
+  const content = document.getElementById('modal-content');
+  content.innerHTML = `
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Modifier le devis ${escapeHtmlCrm(d.id)}</div>
+        <div style="font-family:Montserrat,sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-top:6px">Régénération PDF automatique</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="dev-edit-form">
+      <div class="modal-section">
+        <div class="ms-title">Vol principal (mono-option si pas d'options ci-dessous)</div>
+        <div class="dev-grid">
+          <label>Compagnie<input id="ed-compagnie" value="${escapeHtmlCrm(d.compagnie || '')}"></label>
+          <label>Horaire dép.<input id="ed-horaire_dep" value="${escapeHtmlCrm(d.horaire_dep || '')}"></label>
+          <label>Horaire arr.<input id="ed-horaire_arr" value="${escapeHtmlCrm(d.horaire_arr || '')}"></label>
+          <label>Prix de revient (€)<input id="ed-prix_revient" type="number" min="0" value="${Number(d.prix_revient || 0)}"></label>
+          <label>Prix de vente (€)<input id="ed-prix_vente" type="number" min="0" value="${Number(d.prix_vente || 0)}"></label>
+          <label>Prix marché (€) — masqué si particulier<input id="ed-prix_marche" type="number" min="0" value="${Number(d.prix_marche || 0)}"></label>
+        </div>
+        <label>Services inclus (1 par ligne)<textarea id="ed-services" rows="4" style="width:100%">${escapeHtmlCrm(services)}</textarea></label>
+      </div>
+
+      <div class="modal-section">
+        <div class="ms-title">Options multiples (max 3)</div>
+        <div id="ed-options">${opts.map((o, i) => optionRow(o, i)).join('')}</div>
+        <button type="button" class="ma-btn ma-ghost" id="ed-add-opt">+ Ajouter une option</button>
+      </div>
+
+      <div class="modal-section">
+        <div class="ms-title">Hôtels proposés</div>
+        <div id="ed-hotels">${hotels.map(hotelRow).join('')}</div>
+        <button type="button" class="ma-btn ma-ghost" id="ed-add-hotel">+ Ajouter un hôtel</button>
+      </div>
+
+      <div class="modal-section">
+        <div class="ms-title">Chauffeur privé</div>
+        <div class="dev-grid">
+          <label>Pickup<input id="ed-driver-pickup" value="${escapeHtmlCrm(driver?.pickup || '')}"></label>
+          <label>Dropoff<input id="ed-driver-dropoff" value="${escapeHtmlCrm(driver?.dropoff || '')}"></label>
+          <label>Véhicule<input id="ed-driver-vehicle" value="${escapeHtmlCrm(driver?.vehicle || '')}"></label>
+          <label>Durée (h)<input id="ed-driver-hours" type="number" min="0" step="0.5" value="${Number(driver?.hours || 0)}"></label>
+          <label>Total (€)<input id="ed-driver-total" type="number" min="0" value="${Number(driver?.total_price || 0)}"></label>
+          <label>Notes<input id="ed-driver-notes" value="${escapeHtmlCrm(driver?.notes || '')}"></label>
+        </div>
+        <div style="font-size:9px;color:var(--g);margin-top:6px">Laisser tous les champs vides pour ne pas inclure de chauffeur dans le PDF.</div>
+      </div>
+
+      <div class="modal-section">
+        <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="ed-refresh-validity"> Prolonger la validité de 24 h</label>
+      </div>
+
+      <div class="modal-actions">
+        <button class="ma-btn ma-primary" onclick="submitDevisEdit('${escapeHtmlCrm(d.id)}', '${escapeHtmlCrm(d.lead_id || '')}')">Enregistrer + régénérer PDF</button>
+        <button class="ma-btn ma-ghost" onclick="closeModal()">Annuler</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-bg').classList.add('open');
+  document.getElementById('ed-add-opt').addEventListener('click', () => {
+    const wrap = document.getElementById('ed-options');
+    if (wrap.children.length >= 3) return alert('Max 3 options.');
+    const i = wrap.children.length;
+    wrap.insertAdjacentHTML('beforeend', optionRow({}, i));
+  });
+  document.getElementById('ed-add-hotel').addEventListener('click', () => {
+    document.getElementById('ed-hotels').insertAdjacentHTML('beforeend', hotelRow({}));
+  });
+}
+
+function readEditorFields(rootSel) {
+  const root = document.querySelector(rootSel);
+  if (!root) return {};
+  const out = {};
+  root.querySelectorAll('[data-k]').forEach((el) => {
+    const v = el.value;
+    if (v === '' || v == null) return;
+    if (el.type === 'number') {
+      const n = Number(v);
+      if (Number.isFinite(n)) out[el.dataset.k] = n;
+    } else {
+      out[el.dataset.k] = v;
+    }
+  });
+  return out;
+}
+
+async function submitDevisEdit(devisId, leadId) {
+  const optionsCards = Array.from(document.querySelectorAll('#ed-options .dev-opt-card'));
+  const options = optionsCards.map((c, i) => readEditorFields(`#ed-options [data-opt-idx="${i}"]`)).filter((o) => Object.keys(o).length > 0);
+  const hotelCards = Array.from(document.querySelectorAll('#ed-hotels .dev-hotel-card'));
+  const hotels = hotelCards.map((c, i) => {
+    const o = {};
+    c.querySelectorAll('[data-k]').forEach((el) => {
+      const v = el.value;
+      if (v === '' || v == null) return;
+      if (el.type === 'number') {
+        const n = Number(v);
+        if (Number.isFinite(n)) o[el.dataset.k] = n;
+      } else o[el.dataset.k] = v;
+    });
+    return o;
+  }).filter((h) => h.name);
+
+  const driver = {
+    pickup: document.getElementById('ed-driver-pickup').value || undefined,
+    dropoff: document.getElementById('ed-driver-dropoff').value || undefined,
+    vehicle: document.getElementById('ed-driver-vehicle').value || undefined,
+    hours: Number(document.getElementById('ed-driver-hours').value) || undefined,
+    total_price: Number(document.getElementById('ed-driver-total').value) || undefined,
+    notes: document.getElementById('ed-driver-notes').value || undefined,
+  };
+  const driverHasContent = Object.values(driver).some((v) => v != null && v !== '' && v !== 0);
+
+  const services = (document.getElementById('ed-services').value || '')
+    .split('\n').map((s) => s.trim()).filter(Boolean);
+
+  const body = {
+    compagnie: document.getElementById('ed-compagnie').value,
+    horaire_dep: document.getElementById('ed-horaire_dep').value,
+    horaire_arr: document.getElementById('ed-horaire_arr').value,
+    prix_revient: Number(document.getElementById('ed-prix_revient').value) || 0,
+    prix_vente: Number(document.getElementById('ed-prix_vente').value) || 0,
+    prix_marche: Number(document.getElementById('ed-prix_marche').value) || 0,
+    services_inclus: services,
+    options: options.length ? options : [],
+    hotels,
+    driver: driverHasContent ? driver : null,
+    refresh_validity: document.getElementById('ed-refresh-validity').checked,
+    regenerate_pdf: true,
+  };
+
+  const r = await fetch('/api/devis/' + encodeURIComponent(devisId), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    return alert('Échec mise à jour: ' + (t || r.status));
+  }
+  const d = await r.json();
+  alert('Devis mis à jour. PDF régénéré : ' + (d.pdf_url || '(non disponible)'));
+  closeModal();
+  if (leadId) openLeadModal(leadId);
+}
+
+// ─── Conversation summary (IA) ───
+async function loadLeadSummary(leadId, force) {
+  const box = document.getElementById('lead-summary');
+  const meta = document.getElementById('lead-summary-meta');
+  if (!box) return;
+  if (force) box.textContent = 'Régénération…';
+  try {
+    const r = await fetch('/api/leads/' + encodeURIComponent(leadId) + '/summary' + (force ? '?force=1' : ''), { credentials: 'include' });
+    if (!r.ok) throw new Error('http ' + r.status);
+    const d = await r.json();
+    // Mini-rendu markdown : • → puce, **gras**.
+    const text = String(d.summary || '_(vide)_').trim();
+    box.innerHTML = text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^•\s/gm, '· ');
+    meta.textContent = d.has_conv
+      ? `Source : conversation web · ${d.last_message_at ? 'dernière activité ' + fmtTs(d.last_message_at) : ''}`
+      : `Source : actions agent · ${d.last_message_at ? 'dernière activité ' + fmtTs(d.last_message_at) : 'aucune activité'}`;
+  } catch (e) {
+    box.innerHTML = '<span style="color:var(--red-t)">Impossible de générer le résumé.</span>';
+    meta.textContent = '';
+  }
+}
+
+function updateLeadCloser(id, email) {
+  fetch('/api/leads/' + encodeURIComponent(id), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ closer_name: email || null }),
+  }).then(r => {
+    if (!r.ok) return alert('Réassignation impossible');
+    return fetchLeadsFromApi();
+  });
 }
 
 function fmtTs(ts){
@@ -882,15 +1349,126 @@ async function fetchLeadsFromApi() {
   }
 }
 
+// ─── Closers (sélecteur d'assignation) ───
+async function fetchClosers() {
+  try {
+    const r = await fetch('/api/leads/closers/list', { credentials: 'include' });
+    if (!r.ok) return;
+    const d = await r.json();
+    closers = d.items || [];
+    const sel = document.getElementById('ph-closer');
+    if (sel) {
+      const cur = pipelineState.closer;
+      sel.innerHTML = '<option value="">Tous les closers</option>' +
+        closers.map(c => `<option value="${escapeHtmlCrm(c.email)}" ${cur === c.email ? 'selected' : ''}>${escapeHtmlCrm(c.name || c.email)}</option>`).join('');
+    }
+  } catch (e) {
+    console.warn('closers list', e);
+  }
+}
+
+// ─── Notifications (cloche) ───
+function fmtRelative(ts) {
+  const t = (typeof ts === 'number') ? ts : Date.parse(ts) || 0;
+  if (!t) return '';
+  const diff = Date.now() - t;
+  if (diff < 60000) return 'à l\'instant';
+  if (diff < 3600000) return Math.floor(diff/60000) + ' min';
+  if (diff < 86400000) return Math.floor(diff/3600000) + ' h';
+  return Math.floor(diff/86400000) + ' j';
+}
+
+async function fetchNotifs() {
+  try {
+    const r = await fetch('/api/notifications?limit=30', { credentials: 'include' });
+    if (!r.ok) return;
+    const d = await r.json();
+    notifs = d.items || [];
+    renderBell();
+    renderNotifPanel();
+  } catch (e) { /* silence */ }
+}
+
+function renderBell() {
+  const badge = document.getElementById('tb-bell-badge');
+  if (!badge) return;
+  const unread = notifs.filter(n => !n.read).length;
+  badge.textContent = unread > 99 ? '99+' : String(unread);
+  badge.classList.toggle('zero', unread === 0);
+}
+
+function renderNotifPanel() {
+  const list = document.getElementById('notif-list');
+  if (!list) return;
+  if (notifs.length === 0) {
+    list.innerHTML = '<div class="notif-empty">Aucune notification.</div>';
+    return;
+  }
+  list.innerHTML = notifs.map(n => `
+    <div class="notif-item ${n.read ? '' : 'unread'}" onclick="onNotifClick('${String(n.id).replace(/'/g,"\\\\'")}', ${n.lead_id ? `'${String(n.lead_id).replace(/'/g,"\\\\'")}'` : 'null'})">
+      <div class="notif-item-head">
+        <div class="notif-item-title">${escapeHtmlCrm(n.title || '')}</div>
+        <div class="notif-item-time">${fmtRelative(n.created_at)}</div>
+      </div>
+      ${n.body ? `<div class="notif-item-body">${escapeHtmlCrm(n.body)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function toggleNotifPanel(e) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  const p = document.getElementById('notif-panel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open')) fetchNotifs();
+}
+
+function onNotifClick(id, leadId) {
+  // Mark read + open lead modal if applicable.
+  fetch('/api/notifications/' + encodeURIComponent(id) + '/read', {
+    method: 'PATCH', credentials: 'include',
+  }).then(() => fetchNotifs()).catch(() => {});
+  if (leadId && leadId !== 'null') {
+    document.getElementById('notif-panel').classList.remove('open');
+    openLeadModal(leadId);
+  }
+}
+
+function markAllNotifsRead() {
+  fetch('/api/notifications/read-all', { method: 'POST', credentials: 'include' })
+    .then(() => fetchNotifs()).catch(() => {});
+}
+
+// Fermer le panel notifs au clic extérieur
+document.addEventListener('click', (e) => {
+  const p = document.getElementById('notif-panel');
+  const b = document.getElementById('tb-bell');
+  if (!p || !p.classList.contains('open')) return;
+  if (p.contains(e.target) || b.contains(e.target)) return;
+  p.classList.remove('open');
+});
+
+function refreshTopUser() {
+  const el = document.getElementById('tb-user');
+  if (el) el.textContent = currentUserLabel();
+  // Cache les éléments réservés aux admins (S02 — isolation par rôle).
+  document.querySelectorAll('[data-admin-only]').forEach((node) => {
+    node.style.display = isAdmin() ? '' : 'none';
+  });
+}
+
 function startCrm() {
+  refreshTopUser();
   fetchLeadsFromApi().then(() => {
     renderDashboard();
     renderKanban();
   });
+  fetchClosers();
+  fetchNotifs();
 }
 if (window.OlaAuth && window.OlaAuth.user) startCrm();
 else document.addEventListener('ola:auth', startCrm, { once: true });
 setInterval(fetchLeadsFromApi, 20000);
+setInterval(fetchNotifs, 15000);
 </script>
 </body>
 </html>

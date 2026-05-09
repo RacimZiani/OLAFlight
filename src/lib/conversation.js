@@ -64,13 +64,20 @@ export async function ensureConversation({ channel, contact, lang = "fr", lead_i
   return { ...conv, id: inserted?.id || conv.id };
 }
 
+// Cap haut pour éviter qu'une conversation pathologique fasse exploser la
+// row Postgres (limite en pratique : ~1 MB), tout en conservant l'ensemble
+// de l'échange particulier (besoin métier — pas de troncature à 30 msgs).
+const MAX_CONVERSATION_MESSAGES = 500;
+
 export async function appendMessage({ channel, contact, role, content }) {
   const col = await getConversationsCollection();
   const key = makeKey(channel, contact);
   const conv = await listAllByKey(key);
   if (!conv) return null;
   const msg = { role, content: String(content || ""), ts: Date.now() };
-  const next = [...(conv.messages || []), msg].slice(-30); // borné pour la mémoire
+  // On conserve l'intégralité de l'échange (jusqu'à 500 messages) — un
+  // historique complet est essentiel pour la fiche client + résumé IA.
+  const next = [...(conv.messages || []), msg].slice(-MAX_CONVERSATION_MESSAGES);
   if (col?.update) {
     return col.update(conv.id, { messages: next });
   }

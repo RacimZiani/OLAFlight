@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createLogger } from "../logger.js";
-import { scrapeBooking, scrapeKayak, IATA_TO_CITY_SLUG } from "./scraper.js";
+import { scrapeBooking, scrapeGoogleFlights, IATA_TO_CITY_SLUG } from "./scraper.js";
 import { getStore } from "../db/index.js";
 import { computeCommissions } from "./commissions.js";
 import { uid } from "./ids.js";
@@ -8,6 +8,8 @@ import { generateDevisPdf } from "./pdf.js";
 import { config } from "../config.js";
 import { logAgentAction } from "./agentAudit.js";
 import { setConversationLeadId } from "./conversation.js";
+import { pickCloserForLead } from "./closerAssign.js";
+import { notify } from "./notifBus.js";
 
 const log = createLogger("agent:tools");
 
@@ -18,7 +20,19 @@ const scrapeInputSchema = z.object({
   ret: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal("")]).optional().default(""),
   adults: z.coerce.number().int().min(1).max(9).optional().default(1),
   limit: z.coerce.number().int().min(1).max(12).optional().default(6),
-  prefer: z.enum(["booking", "kayak", "auto"]).optional().default("auto"),
+  prefer: z.enum(["booking", "google_flights", "kayak", "auto"]).optional().default("auto"),
+});
+
+const optionSchema = z.object({
+  label: z.string().optional().default(""),
+  compagnie: z.string().optional().default(""),
+  horaire_dep: z.string().optional().default(""),
+  horaire_arr: z.string().optional().default(""),
+  duration: z.string().optional().default(""),
+  stops: z.coerce.number().int().min(0).max(5).optional(),
+  prix_public: z.coerce.number().min(0),
+  prix_marche: z.coerce.number().min(0).optional(),
+  services_inclus: z.array(z.string()).optional().default([]),
 });
 
 const devisFromOfferSchema = z.object({
@@ -28,7 +42,7 @@ const devisFromOfferSchema = z.object({
   horaire_arr: z.string().optional().default(""),
   prix_marche: z.coerce.number().min(0).optional().default(0),
   // Prix public extrait (utilisé comme coût interne "prix_revient" dans cette V1)
-  prix_public: z.coerce.number().min(0),
+  prix_public: z.coerce.number().min(0).optional(),
   // En € (montant). Si absent, calcul auto "commercial".
   marge_souhaitee: z.coerce.number().optional(),
   services_inclus: z.array(z.string()).optional().default([
@@ -36,6 +50,31 @@ const devisFromOfferSchema = z.object({
     "Optimisation de l'itinéraire",
     "Assistance avant / pendant le voyage",
   ]),
+  // Multi-options : 1 à 3 propositions à comparer dans le devis.
+  // Si fourni, l'option "best deal" est utilisée pour les champs principaux et
+  // toutes les options sont stockées dans devis.options pour le PDF.
+  options: z.array(optionSchema).min(1).max(3).optional(),
+  // Hôtels proposés (1+ options). Affichés dans le PDF si needs_hotel === true.
+  hotels: z.array(z.object({
+    name: z.string(),
+    stars: z.coerce.number().int().min(1).max(5).optional(),
+    area: z.string().optional(),
+    nights: z.coerce.number().int().min(1).optional(),
+    price_per_night: z.coerce.number().min(0).optional(),
+    total_price: z.coerce.number().min(0).optional(),
+    notes: z.string().optional(),
+  })).optional(),
+  // Forfait chauffeur privé. Affiché dans le PDF si needs_driver === true.
+  driver: z.object({
+    pickup: z.string().optional(),
+    dropoff: z.string().optional(),
+    vehicle: z.string().optional(),  // Mercedes Classe S, Tesla, BMW Série 7…
+    hours: z.coerce.number().min(0).optional(),
+    total_price: z.coerce.number().min(0).optional(),
+    notes: z.string().optional(),
+  }).optional(),
+  // Indique au PDF de masquer le comparatif marché (override sur lead.client_type).
+  client_type: z.enum(["particulier", "pro", "corporate"]).optional(),
   // WhatsApp/IG désactivés tant que Meta n'est pas branché: on génère le PDF
   // et on renvoie son URL, mais on ne l'envoie pas automatiquement.
   generate_pdf: z.coerce.boolean().optional().default(true),
@@ -104,13 +143,22 @@ const leadUpsertSchema = z.object({
   apporteur_name: z.string().nullable().optional(),
   closer_name: z.string().nullable().optional(),
   urgent: z.coerce.boolean().optional(),
+  // Type de client : "particulier" → pas de comparatif marché dans le PDF.
+  client_type: z.enum(["particulier", "pro", "corporate"]).optional(),
+  // Besoins extras (hôtel optionnel, chauffeur OBLIGATOIRE de demander).
+  needs_hotel: z.coerce.boolean().optional(),
+  hotel_preference: z.string().optional(),
+  needs_driver: z.coerce.boolean().optional(),
+  driver_pickup: z.string().optional(),
+  driver_dropoff: z.string().optional(),
+  extras_notes: z.string().optional(),
 }).passthrough();
 
 export const OLA_AGENT_TOOLS = [
   {
     name: "scrape_flights",
     description:
-      "Scrape des offres de vols publiques (Booking/Kayak) à partir d'une route IATA et dates. Retourne une liste d'offres triées par prix.",
+      "Scrape des offres de vols publiques (Booking + Google Flights en fallback) à partir d'une route IATA et dates. Retourne une liste d'offres triées par prix.",
     input_schema: {
       type: "object",
       properties: {
@@ -120,7 +168,7 @@ export const OLA_AGENT_TOOLS = [
         ret: { type: "string", description: "YYYY-MM-DD ou vide si aller simple" },
         adults: { type: "integer" },
         limit: { type: "integer" },
-        prefer: { type: "string", enum: ["booking", "kayak", "auto"] },
+        prefer: { type: "string", enum: ["booking", "google_flights", "auto"] },
       },
       required: ["from", "to", "depart"],
     },
@@ -128,7 +176,7 @@ export const OLA_AGENT_TOOLS = [
   {
     name: "upsert_lead",
     description:
-      "Crée ou met à jour un lead CRM (client, route, dates, statut, notes). Utiliser pour garder le CRM synchronisé.",
+      "Crée ou met à jour un lead CRM (client, route, dates, statut, notes, type de client, besoins hôtel/chauffeur). Utiliser pour garder le CRM synchronisé.",
     input_schema: {
       type: "object",
       properties: {
@@ -145,27 +193,87 @@ export const OLA_AGENT_TOOLS = [
         apporteur_name: { type: "string" },
         closer_name: { type: "string" },
         urgent: { type: "boolean" },
+        client_type: {
+          type: "string",
+          enum: ["particulier", "pro", "corporate"],
+          description: "Particulier (vol seul, pas de comparatif marché) / pro (indépendant, freelance) / corporate (entreprise)."
+        },
+        needs_hotel: { type: "boolean", description: "Le client veut-il un hôtel inclus ?" },
+        hotel_preference: { type: "string", description: "Préférence : nom, marque, gamme (4*, 5*), zone." },
+        needs_driver: { type: "boolean", description: "Le client veut-il un chauffeur privé ?" },
+        driver_pickup: { type: "string", description: "Ex: 'CDG terminal 2E'." },
+        driver_dropoff: { type: "string", description: "Ex: 'Hôtel Plaza Athénée'." },
+        extras_notes: { type: "string", description: "Notes complémentaires sur extras." },
       },
     },
   },
   {
     name: "create_devis_from_offer",
     description:
-      "Crée un devis interne Ola Flight à partir d'un prix public (scrapé). Génère un PDF et renvoie l'URL pour suivi CRM (sans envoi WhatsApp/IG).",
+      "Crée un devis Ola Flight (1 à 3 options comparables) + extras hôtels/chauffeur si nécessaires. Préférer fournir `options` (max 3 propositions : Express / Confort / Premium). Si lead.needs_hotel === true → fournir `hotels[]`. Si lead.needs_driver === true → fournir `driver`. Si client_type === 'particulier' → pas de comparatif marché dans le PDF. Génère un PDF et renvoie l'URL.",
     input_schema: {
       type: "object",
       properties: {
         lead_id: { type: "string" },
-        compagnie: { type: "string" },
+        compagnie: { type: "string", description: "Compagnie de l'option principale (legacy mono-option)" },
         horaire_dep: { type: "string" },
         horaire_arr: { type: "string" },
         prix_marche: { type: "number" },
-        prix_public: { type: "number" },
+        prix_public: { type: "number", description: "Prix public scrapé (mono-option). Inutile si `options` est fourni." },
         marge_souhaitee: { type: "number" },
         services_inclus: { type: "array", items: { type: "string" } },
+        options: {
+          type: "array",
+          maxItems: 3,
+          description: "Tableau de 1 à 3 propositions comparatives. Préféré pour donner du choix au client.",
+          items: {
+            type: "object",
+            required: ["prix_public"],
+            properties: {
+              label: { type: "string", description: "Ex: 'Express', 'Confort', 'Premium'" },
+              compagnie: { type: "string" },
+              horaire_dep: { type: "string" },
+              horaire_arr: { type: "string" },
+              duration: { type: "string", description: "Ex: '7h45'" },
+              stops: { type: "integer", description: "Nombre d'escales" },
+              prix_public: { type: "number" },
+              prix_marche: { type: "number" },
+              services_inclus: { type: "array", items: { type: "string" } },
+            },
+          },
+        },
+        client_type: { type: "string", enum: ["particulier", "pro", "corporate"] },
+        hotels: {
+          type: "array",
+          description: "Hôtels proposés (si le client a demandé un hôtel).",
+          items: {
+            type: "object",
+            required: ["name"],
+            properties: {
+              name: { type: "string" },
+              stars: { type: "integer", description: "1 à 5" },
+              area: { type: "string" },
+              nights: { type: "integer" },
+              price_per_night: { type: "number" },
+              total_price: { type: "number" },
+              notes: { type: "string" },
+            },
+          },
+        },
+        driver: {
+          type: "object",
+          description: "Forfait chauffeur privé (si le client en veut un).",
+          properties: {
+            pickup: { type: "string" },
+            dropoff: { type: "string" },
+            vehicle: { type: "string" },
+            hours: { type: "number" },
+            total_price: { type: "number" },
+            notes: { type: "string" },
+          },
+        },
         generate_pdf: { type: "boolean" },
       },
-      required: ["prix_public"],
     },
   },
 ];
@@ -195,8 +303,8 @@ async function doScrapeFlights(input) {
     offers = r.offers || [];
   };
 
-  const tryKayak = async () => {
-    offers = await scrapeKayak({
+  const tryGoogleFlights = async () => {
+    offers = await scrapeGoogleFlights({
       from,
       to,
       depart: args.depart,
@@ -208,8 +316,8 @@ async function doScrapeFlights(input) {
 
   if (args.prefer === "booking") {
     await tryBooking();
-  } else if (args.prefer === "kayak") {
-    await tryKayak();
+  } else if (args.prefer === "google_flights" || args.prefer === "kayak") {
+    await tryGoogleFlights();
   } else {
     try {
       await tryBooking();
@@ -218,7 +326,7 @@ async function doScrapeFlights(input) {
       offers = [];
     }
     if (!offers.length) {
-      await tryKayak();
+      await tryGoogleFlights();
     }
   }
 
@@ -296,6 +404,18 @@ async function doUpsertLead(input, { context }) {
   const normalizedCanal =
     String(args.canal || "").toLowerCase().includes("insta") ? "instagram" : "whatsapp";
 
+  const existing = safeId ? await store.leads.findById(safeId) : null;
+  // Auto-dispatch : si on n'a pas de closer (ni dans args, ni sur le lead existant),
+  // on assigne automatiquement le closer le moins chargé.
+  let resolvedCloser = args.closer_name ?? existing?.closer_name ?? null;
+  if (!resolvedCloser) {
+    try {
+      resolvedCloser = await pickCloserForLead();
+    } catch (e) {
+      log.warn(`auto-dispatch failed: ${e?.message || e}`);
+    }
+  }
+
   const payload = {
     // Sur Supabase, leads.id est un uuid: si on ne fournit pas d'id, la DB le génère.
     // Si on fournit un id non-uuid, on l'ignore pour éviter des erreurs.
@@ -309,13 +429,79 @@ async function doUpsertLead(input, { context }) {
     passagers: Number(args.passagers || 1) || 1,
     status: normalizedStatus,
     apporteur_name: args.apporteur_name ?? null,
-    closer_name: args.closer_name ?? null,
+    closer_name: resolvedCloser,
     notes: args.notes || "",
     urgent: Boolean(args.urgent),
+    // Extras (peuvent être absents si la migration 008 n'a pas tourné — l'insertion
+    // les ignore alors silencieusement côté Supabase via fallback ci-dessous).
+    ...(args.client_type ? { client_type: args.client_type } : {}),
+    ...(args.needs_hotel != null ? { needs_hotel: Boolean(args.needs_hotel) } : {}),
+    ...(args.hotel_preference ? { hotel_preference: args.hotel_preference } : {}),
+    ...(args.needs_driver != null ? { needs_driver: Boolean(args.needs_driver) } : {}),
+    ...(args.driver_pickup ? { driver_pickup: args.driver_pickup } : {}),
+    ...(args.driver_dropoff ? { driver_dropoff: args.driver_dropoff } : {}),
+    ...(args.extras_notes ? { extras_notes: args.extras_notes } : {}),
   };
 
-  const existing = safeId ? await store.leads.findById(safeId) : null;
-  const saved = existing ? await store.leads.update(existing.id, payload) : await store.leads.insert(payload);
+  const EXTRAS_KEYS = [
+    "client_type", "needs_hotel", "hotel_preference",
+    "needs_driver", "driver_pickup", "driver_dropoff", "extras_notes",
+  ];
+  async function saveTolerant() {
+    try {
+      return existing
+        ? await store.leads.update(existing.id, payload)
+        : await store.leads.insert(payload);
+    } catch (e) {
+      const msg = e?.message || String(e);
+      // Si la migration 008 n'a pas tourné, Supabase rejette les colonnes extras.
+      if (/(client_type|needs_hotel|needs_driver|hotel_preference|driver_pickup|driver_dropoff|extras_notes)/i.test(msg)
+          && /column|cache|schema/i.test(msg)) {
+        log.warn(`leads extras unsupported (run db/migrations/008_extras_hotel_driver.sql) → fallback`);
+        const reduced = { ...payload };
+        for (const k of EXTRAS_KEYS) delete reduced[k];
+        return existing
+          ? await store.leads.update(existing.id, reduced)
+          : await store.leads.insert(reduced);
+      }
+      throw e;
+    }
+  }
+  const saved = await saveTolerant();
+
+  // Notif "lead_assigned" si on vient de désigner un closer (création OU passage de null à valeur).
+  const beforeCloser = existing?.closer_name || null;
+  if (saved?.closer_name && saved.closer_name !== beforeCloser) {
+    notify({
+      recipients: [{ email: saved.closer_name }],
+      type: "lead_assigned",
+      title: `Nouveau lead assigné par l'agent · ${saved.client_name || "Client"}`,
+      body: `${saved.destination || "—"} · ${saved.dates || "dates à confirmer"}`,
+      lead_id: saved.id,
+    }).catch(() => {});
+  }
+  // Transitions de statut critiques (clic du client sur "Accepter"/"Discuter" via prompt).
+  if (existing && existing.status !== saved?.status) {
+    const targets = [{ role: "admin" }];
+    if (saved?.closer_name) targets.push({ email: saved.closer_name });
+    if (saved?.status === "won") {
+      notify({
+        recipients: targets,
+        type: "lead_won",
+        title: `🏆 Deal gagné · ${saved.client_name || "Client"}`,
+        body: `${saved.destination || "—"}`,
+        lead_id: saved.id,
+      }).catch(() => {});
+    } else if (saved?.status === "nego") {
+      notify({
+        recipients: targets,
+        type: "lead_nego",
+        title: `Négociation en cours · ${saved.client_name || "Client"}`,
+        body: `${saved.destination || "—"} — le client veut discuter.`,
+        lead_id: saved.id,
+      }).catch(() => {});
+    }
+  }
 
   // On rattache au contexte de conversation si présent.
   if (saved?.id && context?.channel && context?.contact) {
@@ -340,60 +526,137 @@ async function doCreateDevisFromOffer(input, { context }) {
   const lead = safeLeadId ? await store.leads.findById(safeLeadId) : null;
   const leadId = safeLeadId || lead?.id || null;
 
-  const prix_revient = args.prix_public;
-  const marginHint = normalizeMarginInput(args.marge_souhaitee, prix_revient);
-  const { to: toIata } = parseIataFromDestinationText(lead?.destination || "");
-  const marginAuto = suggestMarginEur({
-    toIata,
-    classe: lead?.classe || "",
-    pricePublic: prix_revient,
-    notes: lead?.notes || "",
-  });
-  const marge_souhaitee = marginHint ?? marginAuto;
-  const prix_vente = Math.max(0, prix_revient + marge_souhaitee);
-  // Prix marché doit être COMPARABLE au tarif Ola Flight (même niveau de service).
-  // Si on n'a que le prix public scrapé (souvent éco), on estime un prix marché
-  // premium (business/first) pour ne pas afficher un comparatif défavorable.
-  const explicitMarket = typeof args.prix_marche === "number" && args.prix_marche > 0 ? args.prix_marche : 0;
   const cabin = String(lead?.classe || "").toLowerCase();
   const isFirst = /first|premi(è|e)re/.test(cabin);
   const isBiz = /business|biz/.test(cabin);
   const premiumFactor = isFirst ? 6.5 : isBiz ? 4.2 : 2.2;
-  const estimatedMarket = Math.round(prix_revient * premiumFactor);
-  const prix_marche = explicitMarket > 0 ? explicitMarket : Math.max(estimatedMarket, prix_vente);
+  const { to: toIata } = parseIataFromDestinationText(lead?.destination || "");
+
+  // Helper pour pricer une option (utilisé en mono comme en multi).
+  const priceOption = (opt) => {
+    const prix_revient_o = Math.max(0, Number(opt.prix_public) || 0);
+    const marginAuto = suggestMarginEur({
+      toIata,
+      classe: lead?.classe || "",
+      pricePublic: prix_revient_o,
+      notes: lead?.notes || "",
+    });
+    const margin_o = normalizeMarginInput(args.marge_souhaitee, prix_revient_o) ?? marginAuto;
+    const prix_vente_o = Math.max(0, prix_revient_o + margin_o);
+    const explicitMarket =
+      typeof opt.prix_marche === "number" && opt.prix_marche > 0 ? opt.prix_marche : 0;
+    const estimatedMarket = Math.round(prix_revient_o * premiumFactor);
+    const prix_marche_o = explicitMarket > 0 ? explicitMarket : Math.max(estimatedMarket, prix_vente_o);
+    return {
+      label: opt.label || "",
+      compagnie: opt.compagnie || "",
+      horaire_dep: opt.horaire_dep || "",
+      horaire_arr: opt.horaire_arr || "",
+      duration: opt.duration || "",
+      stops: typeof opt.stops === "number" ? opt.stops : null,
+      services_inclus: Array.isArray(opt.services_inclus) && opt.services_inclus.length
+        ? opt.services_inclus
+        : (args.services_inclus || []),
+      prix_revient: prix_revient_o,
+      prix_vente: prix_vente_o,
+      prix_marche: prix_marche_o,
+      marge: prix_vente_o - prix_revient_o,
+    };
+  };
+
+  // Construit la liste d'options : si l'agent fournit `options`, on les utilise.
+  // Sinon on crée une option unique à partir des champs flat (legacy).
+  const rawOpts = (args.options && args.options.length)
+    ? args.options
+    : (typeof args.prix_public === "number" && args.prix_public > 0)
+      ? [{
+          label: "",
+          compagnie: args.compagnie || "",
+          horaire_dep: args.horaire_dep || "",
+          horaire_arr: args.horaire_arr || "",
+          prix_public: args.prix_public,
+          prix_marche: args.prix_marche || 0,
+          services_inclus: args.services_inclus || [],
+        }]
+      : [];
+  if (rawOpts.length === 0) {
+    throw new Error("create_devis_from_offer: il faut fournir `options[]` ou `prix_public`.");
+  }
+  // Auto-label si l'agent oublie : Express / Confort / Premium par prix croissant.
+  const priced = rawOpts.map(priceOption).sort((a, b) => a.prix_vente - b.prix_vente);
+  const defaultLabels = ["Express", "Confort", "Premium"];
+  priced.forEach((o, i) => {
+    if (!o.label) o.label = defaultLabels[Math.min(i, defaultLabels.length - 1)];
+  });
+
+  // L'option principale = la moins chère par défaut (sera mise en avant au PDF).
+  const main = priced[0];
 
   const { marge, closer_commission, apporteur_commission } = computeCommissions({
-    prix_vente,
-    prix_revient,
+    prix_vente: main.prix_vente,
+    prix_revient: main.prix_revient,
     apporteur_name: lead?.apporteur_name || null,
   });
 
   const isSupabase = config.storage.driver === "supabase";
+  // Si client_type est passé en argument du tool, on l'utilise comme override.
+  // Sinon on prend celui du lead (l'agent met-à-jour le lead avant le devis).
+  const effectiveClientType = args.client_type || lead?.client_type || null;
   const devis = {
     id: `OLA-${uid().slice(0, 6)}`,
     lead_id: leadId || "",
-    compagnie: args.compagnie || "",
-    horaire_dep: args.horaire_dep || "",
-    horaire_arr: args.horaire_arr || "",
-    prix_revient,
-    prix_vente,
-    prix_marche,
+    compagnie: main.compagnie || "",
+    horaire_dep: main.horaire_dep || "",
+    horaire_arr: main.horaire_arr || "",
+    prix_revient: main.prix_revient,
+    prix_vente: main.prix_vente,
+    // Pour les particuliers : pas de comparatif marché dans le PDF.
+    // On stocke la valeur calculée pour le back-office, mais on flag à 0
+    // au niveau du PDF via les options/lead.client_type (logique pdfTemplate).
+    prix_marche: effectiveClientType === "particulier" ? 0 : main.prix_marche,
     // Supabase: marge/commissions sont des generated columns (001_init.sql)
     ...(isSupabase
       ? {}
       : { marge, closer_commission, apporteur_commission }),
     apporteur_name: lead?.apporteur_name || null,
-    services_inclus: args.services_inclus || [],
+    services_inclus: main.services_inclus,
+    options: priced.map((o) => ({
+      ...o,
+      prix_marche: effectiveClientType === "particulier" ? 0 : o.prix_marche,
+    })),
+    ...(args.hotels && args.hotels.length ? { hotels: args.hotels } : {}),
+    ...(args.driver && Object.keys(args.driver).length ? { driver: args.driver } : {}),
     pdf_url: null,
-    // SQLite: INTEGER ms. Supabase: timestamptz (selon migration).
-    // On envoie un format compatible selon le driver.
     valide_jusqu_au: isSupabase
       ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
       : Date.now() + 24 * 60 * 60 * 1000,
     paiement_recu: false,
   };
 
-  const inserted = await store.devis.insert(devis);
+  // Insertion tolérante : si une colonne récente (options, hotels, driver) n'existe
+  // pas encore en Supabase, on retire le champ et on retente.
+  async function insertDevisTolerant(row) {
+    try {
+      return await store.devis.insert(row);
+    } catch (e) {
+      const msg = e?.message || String(e);
+      const matches = ["options", "hotels", "driver"].filter((c) => {
+        const re = new RegExp(`'${c}'|"${c}"|\\b${c}\\b`, "i");
+        return re.test(msg) && /column|cache|schema|does not exist/i.test(msg);
+      });
+      if (matches.length === 0) throw e;
+      log.warn(`devis ${matches.join(",")} unsupported (run db/migrations/007 + 008) → fallback`);
+      const reduced = { ...row };
+      for (const c of matches) delete reduced[c];
+      return insertDevisTolerant(reduced);
+    }
+  }
+  const inserted = await insertDevisTolerant(devis);
+  // L'objet inserted ne contient pas forcément les champs JSON si la migration
+  // est absente — on les réajoute en mémoire pour la génération PDF en aval.
+  if (!inserted.options && devis.options) inserted.options = devis.options;
+  if (!inserted.hotels && devis.hotels) inserted.hotels = devis.hotels;
+  if (!inserted.driver && devis.driver) inserted.driver = devis.driver;
 
   // PDF (sans envoi WhatsApp/IG pour l'instant)
   let pdf = null;
@@ -410,18 +673,36 @@ async function doCreateDevisFromOffer(input, { context }) {
       await store.leads.update(inserted.lead_id, {
         status: "devis_sent",
         value: inserted.prix_vente,
-        margin: inserted.marge ?? (prix_vente - prix_revient),
+        margin: inserted.marge ?? (main.prix_vente - main.prix_revient),
       });
     } catch (e) {
       log.warn(`lead update after devis failed: ${e?.message || e}`);
     }
   }
 
+  // Notification cloche : nouveau devis envoyé (admins + closer assigné).
+  try {
+    const recipients = [{ role: "admin" }];
+    const refreshed = inserted.lead_id ? await store.leads.findById(inserted.lead_id) : null;
+    if (refreshed?.closer_name) recipients.push({ email: refreshed.closer_name });
+    notify({
+      recipients,
+      type: "devis_created",
+      title: `Nouveau devis · ${refreshed?.client_name || "Client"}`,
+      body: `${refreshed?.destination || lead?.destination || "—"} — ${main.prix_vente} € (${priced.length} option${priced.length > 1 ? "s" : ""})`,
+      lead_id: inserted.lead_id || null,
+      devis_id: inserted.id,
+    }).catch(() => {});
+  } catch (e) {
+    log.warn(`notif devis failed: ${e?.message || e}`);
+  }
+
   return {
     devis_id: inserted.id,
     lead_id: inserted.lead_id || null,
-    prix_vente,
-    marge_souhaitee,
+    prix_vente: main.prix_vente,
+    marge_souhaitee: main.prix_vente - main.prix_revient,
+    options_count: priced.length,
     pdf,
     public_pdf_url: pdf?.pdf_url ? `${config.publicUrl}${pdf.pdf_url}` : null,
   };

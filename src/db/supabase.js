@@ -119,6 +119,7 @@ export function createSupabaseStore() {
     apporteurs: buildCollection("apporteurs"),
     conversations_ola: buildCollection("conversations_ola"),
     agent_actions: buildCollection("agent_actions"),
+    notifications: buildCollection("notifications"),
     users: buildCollection("users"),
     async ready() {
       await getClient(); // throw early si conf manquante

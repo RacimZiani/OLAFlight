@@ -13,6 +13,7 @@ import apporteursRoutes from "./routes/apporteurs.js";
 import adminRoutes from "./routes/admin.js";
 import webhooksRoutes from "./routes/webhooks.js";
 import agentRoutes from "./routes/agent.js";
+import notificationsRoutes from "./routes/notifications.js";
 
 export function createApp() {
   const app = express();
@@ -59,6 +60,7 @@ export function createApp() {
   app.use("/api/apporteurs", apporteursRoutes);
   app.use("/api/admin", adminRoutes);        // admin only
   app.use("/api/agent", agentRoutes);        // audit agent IA (back-office)
+  app.use("/api/notifications", notificationsRoutes);
 
   app.use(notFoundHandler);
 
