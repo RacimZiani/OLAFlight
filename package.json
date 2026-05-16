@@ -15,7 +15,8 @@
     "railway:link": "npx @railway/cli link",
     "railway:push-env": "node scripts/push-env-railway.mjs",
     "db:print-init": "node -e \"import('node:fs').then(fs=>console.log(fs.readFileSync('db/migrations/001_init.sql','utf8')))\"",
-    "db:print-rls": "node -e \"import('node:fs').then(fs=>console.log(fs.readFileSync('db/migrations/002_rls.sql','utf8')))\""
+    "db:print-rls": "node -e \"import('node:fs').then(fs=>console.log(fs.readFileSync('db/migrations/002_rls.sql','utf8')))\"",
+    "airports:build": "node scripts/build-airports-index.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.0",

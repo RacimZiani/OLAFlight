@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { createLogger } from "../logger.js";
 import { scrapeBooking, scrapeGoogleFlights, IATA_TO_CITY_SLUG } from "./scraper.js";
+import {
+  reconcileScrapeRoute,
+  formatDestinationLabel,
+  iataToSearchLabel,
+  iataToBookingSlug,
+  parseRouteFromText,
+} from "./airports.js";
 import { getStore } from "../db/index.js";
 import { computeCommissions } from "./commissions.js";
 import { uid } from "./ids.js";
@@ -81,11 +88,8 @@ const devisFromOfferSchema = z.object({
 });
 
 function parseIataFromDestinationText(t) {
-  const s = String(t || "").toUpperCase();
-  const m = s.match(/\b([A-Z]{3})\b/g);
-  if (!m) return { from: null, to: null };
-  const uniq = [...new Set(m)].slice(0, 2);
-  return { from: uniq[0] || null, to: uniq[1] || null };
+  const r = parseRouteFromText(t);
+  return { from: r.from, to: r.to };
 }
 
 function normalizeMarginInput(v, basePrice) {
@@ -278,12 +282,25 @@ export const OLA_AGENT_TOOLS = [
   },
 ];
 
-async function doScrapeFlights(input) {
+async function doScrapeFlights(input, { context } = {}) {
   const args = scrapeInputSchema.parse(input);
-  const from = args.from.toUpperCase();
-  const to = args.to.toUpperCase();
-  const fromSlug = IATA_TO_CITY_SLUG[from] || "";
-  const toSlug = IATA_TO_CITY_SLUG[to] || "";
+  let from = args.from.toUpperCase();
+  let to = args.to.toUpperCase();
+
+  const confirmed =
+    context?.confirmedRoute ||
+    (context?.leadDestination ? parseRouteFromText(context.leadDestination) : null);
+  const reconciled = reconcileScrapeRoute({ from, to, confirmed });
+  if (reconciled.corrected) {
+    log.warn(`scrape_flights route fix: ${reconciled.reason}`);
+    from = reconciled.from;
+    to = reconciled.to;
+  }
+
+  const fromSlug = IATA_TO_CITY_SLUG[from] || iataToBookingSlug(from) || "";
+  const toSlug = IATA_TO_CITY_SLUG[to] || iataToBookingSlug(to) || "";
+  const fromSearch = iataToSearchLabel(from);
+  const toSearch = iataToSearchLabel(to);
 
   let offers = [];
   let debug = {};
@@ -307,6 +324,8 @@ async function doScrapeFlights(input) {
     offers = await scrapeGoogleFlights({
       from,
       to,
+      fromLabel: fromSearch,
+      toLabel: toSearch,
       depart: args.depart,
       ret: args.ret,
       adults: args.adults,
@@ -373,7 +392,14 @@ async function doScrapeFlights(input) {
     log.warn(`persist flights failed: ${e?.message || e}`);
   }
 
-  return { offers: normalized, debug };
+  return {
+    offers: normalized,
+    debug: {
+      ...debug,
+      route_used: { from, to, from_search: fromSearch, to_search: toSearch },
+      route_corrected: reconciled.corrected,
+    },
+  };
 }
 
 async function doUpsertLead(input, { context }) {
@@ -423,7 +449,21 @@ async function doUpsertLead(input, { context }) {
     client_name: args.client_name || "Client",
     client_contact: args.client_contact || "",
     canal: normalizedCanal,
-    destination: args.destination || "",
+    destination: (() => {
+      const raw = args.destination || "";
+      if (!raw && context?.confirmedRoute) {
+        return formatDestinationLabel(context.confirmedRoute);
+      }
+      const parsed = parseRouteFromText(raw);
+      if (parsed.from || parsed.to) {
+        return formatDestinationLabel({
+          from: parsed.from,
+          to: parsed.to,
+          label: parsed.label || raw,
+        });
+      }
+      return raw;
+    })(),
     dates: args.dates || "",
     classe: args.classe || "",
     passagers: Number(args.passagers || 1) || 1,
@@ -716,16 +756,18 @@ export async function runOlaTool({ name, input }, { context = {} } = {}) {
     contact: context.contact || null,
     lang: context.lang || "fr",
     name: context.name || "",
+    confirmedRoute: context.confirmedRoute || null,
+    leadDestination: context.leadDestination || "",
   };
   const startedAt = Date.now();
   try {
     let out;
     switch (name) {
       case "scrape_flights":
-        out = await doScrapeFlights(input);
+        out = await doScrapeFlights(input, { context: baseCtx });
         break;
       case "upsert_lead":
-        out = await doUpsertLead(input, { context });
+        out = await doUpsertLead(input, { context: baseCtx });
         if (out?.lead_id) baseCtx.lead_id = out.lead_id;
         break;
       case "create_devis_from_offer":

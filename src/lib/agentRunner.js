@@ -11,6 +11,8 @@ import { getStore } from "../db/index.js";
 import { createLogger } from "../logger.js";
 import { notifyDalsimOfNewLead } from "./notifications.js";
 import { OLA_AGENT_TOOLS, runOlaTool } from "./olaAgentTools.js";
+import { extractRouteFromMessages, formatDestinationLabel } from "./airports.js";
+import { getConversation } from "./conversation.js";
 
 const log = createLogger("agent");
 
@@ -32,7 +34,13 @@ Règles de sécurité supplémentaires :
 - Si un outil échoue, tu l’expliques brièvement et tu proposes une alternative (autres dates, autre aéroport, ou passage WhatsApp).
 
 Canal actuel: ${channel}.
-
+${context.confirmedRoute?.label ? `
+ROUTE CONFIRMÉE PAR LE CLIENT (ne jamais changer) :
+- Trajet : ${context.confirmedRoute.label}
+- Codes IATA : ${context.confirmedRoute.from || "?"} → ${context.confirmedRoute.to || "?"}
+- Aller simple : ${context.confirmedRoute.oneWay ? "oui" : "non précisé"}
+Utilise EXACTEMENT ces aéroports pour scrape_flights et create_devis_from_offer. Ne remplace jamais par une autre ville (ex. New York si le client a dit Madrid).
+` : ""}
 Règle additionnelle : réponds en ${
     lang === "en" ? "anglais" : "français"
   } (langue UI), sauf si l'utilisateur écrit clairement dans l'autre langue.`;
@@ -47,24 +55,97 @@ Règle additionnelle : réponds en ${
  * @param {"fr"|"en"} [args.lang="fr"]
  * @param {object} [args.context]  - { channel, contact, name } pour persistance
  */
+function mergeMessageHistories(serverMsgs, clientMsgs, cap = 24) {
+  const norm = (m) => ({
+    role: m.role === "assistant" ? "assistant" : "user",
+    content: String(m.content || "").slice(0, 2000),
+  });
+  const server = (serverMsgs || []).map(norm).filter((m) => m.content.trim());
+  const client = (clientMsgs || []).map(norm).filter((m) => m.content.trim());
+  if (!server.length) return client.slice(-cap);
+  if (!client.length) return server.slice(-cap);
+
+  const merged = [...server];
+  const tail = client.slice(-6);
+  const start = Math.max(0, client.length - tail.length);
+  for (let i = 0; i < tail.length; i++) {
+    const globalIdx = start + i;
+    const srvIdx = server.length - tail.length + i;
+    if (srvIdx >= 0 && srvIdx < server.length && server[srvIdx].content === tail[i].content) {
+      continue;
+    }
+    if (globalIdx >= server.length) merged.push(tail[i]);
+  }
+  return merged.slice(-cap);
+}
+
 export async function runAgent({ messages, lang = "fr", context = {} }) {
-  const trimmed = (messages || [])
-    .slice(-12)
+  let history = messages || [];
+
+  // Web : fusionner l'historique serveur (évite d'oublier Madrid après 12 msgs client-only).
+  if (context.channel === "web" && context.contact) {
+    try {
+      const conv = await getConversation({ channel: "web", contact: context.contact });
+      if (conv?.messages?.length) {
+        history = mergeMessageHistories(conv.messages, history, 24);
+      }
+    } catch (e) {
+      log.warn(`merge conversation history failed: ${e?.message || e}`);
+    }
+  }
+
+  const trimmed = history
     .map((m) => ({
       role: m.role === "assistant" ? "assistant" : "user",
       content: String(m.content || "").slice(0, 2000),
     }))
-    .filter((m) => m.content.trim().length > 0);
+    .filter((m) => m.content.trim().length > 0)
+    .slice(-24);
 
   if (trimmed.length === 0) return { text: "", lead: null };
+
+  const confirmedRoute = extractRouteFromMessages(trimmed);
+  if (confirmedRoute.to || confirmedRoute.from) {
+    confirmedRoute.label =
+      confirmedRoute.label ||
+      formatDestinationLabel({
+        from: confirmedRoute.from,
+        to: confirmedRoute.to,
+        label: "",
+      });
+  }
+
+  let leadDestination = "";
+  if (context.lead_id) {
+    try {
+      const store = await getStore();
+      const lead = await store.leads.findById(context.lead_id);
+      leadDestination = lead?.destination || "";
+      if (lead?.destination) {
+        const fromLead = extractRouteFromMessages([
+          { role: "user", content: lead.destination },
+        ]);
+        if (fromLead.to && !confirmedRoute.to) confirmedRoute.to = fromLead.to;
+        if (fromLead.from && !confirmedRoute.from) confirmedRoute.from = fromLead.from;
+      }
+    } catch {
+      /* best effort */
+    }
+  }
+
+  const agentContext = {
+    ...context,
+    confirmedRoute: confirmedRoute.to || confirmedRoute.from ? confirmedRoute : null,
+    leadDestination,
+  };
 
   // V1: tool-calling activé (scrape/devis/whatsapp). Si aucun tool n'est appelé,
   // le comportement reste équivalent à chatComplete().
   const { text } = await chatWithTools({
-    system: buildSystem(lang, context),
+    system: buildSystem(lang, agentContext),
     messages: trimmed,
     tools: OLA_AGENT_TOOLS,
-    onToolUse: async ({ id: _id, name, input }) => runOlaTool({ name, input }, { context }),
+    onToolUse: async ({ id: _id, name, input }) => runOlaTool({ name, input }, { context: agentContext }),
   });
 
   let leadCreated = null;

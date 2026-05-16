@@ -31,8 +31,23 @@ router.post("/", validate({ body: chatBodySchema }), async (req, res, next) => {
       name: "",
     });
 
+    // Inclure les messages serveur déjà persistés (le client n'envoie que les ~12 derniers).
+    let mergedMessages = messages || [];
+    if (conv?.messages?.length) {
+      const serverMsgs = conv.messages.map((m) => ({ role: m.role, content: m.content }));
+      const seen = new Set(serverMsgs.map((m) => `${m.role}:${m.content}`));
+      for (const m of mergedMessages) {
+        const k = `${m.role}:${m.content}`;
+        if (!seen.has(k)) {
+          serverMsgs.push(m);
+          seen.add(k);
+        }
+      }
+      mergedMessages = serverMsgs;
+    }
+
     const result = await runAgent({
-      messages,
+      messages: mergedMessages,
       lang,
       context: {
         channel: "web",

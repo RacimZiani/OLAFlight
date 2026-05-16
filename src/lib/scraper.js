@@ -48,6 +48,40 @@ const IATA_TO_CITY_SLUG = {
   PAR: "fr-paris",
   ABJ: "ci-abidjan",
   BRU: "be-brussels",
+  MAD: "es-madrid",
+  BCN: "es-barcelona",
+  JFK: "us-new-york",
+  EWR: "us-new-york",
+  LAX: "us-los-angeles",
+  MIA: "us-miami",
+  DXB: "ae-dubai",
+  DOH: "qa-doha",
+  LHR: "gb-london",
+  AMS: "nl-amsterdam",
+  FRA: "de-frankfurt",
+  MUC: "de-munich",
+  FCO: "it-rome",
+  MXP: "it-milan",
+  LIS: "pt-lisbon",
+  GVA: "ch-geneva",
+  ZRH: "ch-zurich",
+  NCE: "fr-nice",
+  LYS: "fr-lyon",
+  MRS: "fr-marseille",
+  BOD: "fr-bordeaux",
+  TLS: "fr-toulouse",
+  HND: "jp-tokyo",
+  SIN: "sg-singapore",
+  BKK: "th-bangkok",
+  HKG: "hk-hong-kong",
+  YUL: "ca-montreal",
+  YYZ: "ca-toronto",
+  GRU: "br-sao-paulo",
+  DSS: "sn-dakar",
+  CMN: "ma-casablanca",
+  RAK: "ma-marrakech",
+  TUN: "tn-tunis",
+  ALG: "dz-algiers",
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -88,7 +122,9 @@ async function pickComboSuggestion(page, exactAriaLabel, dialogAriaLabel, value)
   }
 }
 
-export async function scrapeGoogleFlights({ from, to, depart, ret, limit, adults }) {
+export async function scrapeGoogleFlights({ from, to, fromLabel, toLabel, depart, ret, limit, adults }) {
+  const fromQuery = fromLabel || from;
+  const toQuery = toLabel || to;
   // Stealth via playwright-extra + puppeteer-extra-plugin-stealth.
   const { chromium: chromiumBase } = await import("playwright");
   let chromium = chromiumBase;
@@ -197,9 +233,9 @@ export async function scrapeGoogleFlights({ from, to, depart, ret, limit, adults
     }
 
     // Origine / Destination
-    await pickComboSuggestion(page, "De", "Saisir votre point de départ", from);
+    await pickComboSuggestion(page, "De", "Saisir votre point de départ", fromQuery);
     await page.waitForTimeout(700);
-    await pickComboSuggestion(page, "À", "Saisir votre destination", to);
+    await pickComboSuggestion(page, "À", "Saisir votre destination", toQuery);
     await page.waitForTimeout(900);
 
     // Dates : input aria-label "Départ" / "Retour" (format JJ/MM/AAAA)
