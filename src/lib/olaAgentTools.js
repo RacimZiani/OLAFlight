@@ -8,6 +8,12 @@ import {
   iataToBookingSlug,
   parseRouteFromText,
 } from "./airports.js";
+import {
+  reconcileScrapeDepart,
+  formatLeadDatesLabel,
+  parseTravelDatesFromText,
+} from "./travelDates.js";
+import { getRoutePriceHints, isPricePlausible } from "./routePricing.js";
 import { getStore } from "../db/index.js";
 import { computeCommissions } from "./commissions.js";
 import { uid } from "./ids.js";
@@ -297,6 +303,18 @@ async function doScrapeFlights(input, { context } = {}) {
     to = reconciled.to;
   }
 
+  let depart = args.depart;
+  const travelConfirmed = context?.confirmedTravel || null;
+  const departFix = reconcileScrapeDepart({ depart, confirmed: travelConfirmed });
+  if (departFix.corrected) {
+    log.warn(`scrape_flights date fix: ${departFix.reason}`);
+    depart = departFix.depart;
+  }
+
+  const oneWay = travelConfirmed?.oneWay ?? !args.ret;
+  const cabin = context?.leadClasse || "";
+  const adults = args.adults || travelConfirmed?.passagers || 1;
+
   const fromSlug = IATA_TO_CITY_SLUG[from] || iataToBookingSlug(from) || "";
   const toSlug = IATA_TO_CITY_SLUG[to] || iataToBookingSlug(to) || "";
   const fromSearch = iataToSearchLabel(from);
@@ -309,9 +327,9 @@ async function doScrapeFlights(input, { context } = {}) {
     const r = await scrapeBooking({
       from,
       to,
-      depart: args.depart,
-      ret: args.ret,
-      adults: args.adults,
+      depart,
+      ret: oneWay ? "" : args.ret,
+      adults,
       limit: args.limit,
       fromSlug,
       toSlug,
@@ -326,9 +344,9 @@ async function doScrapeFlights(input, { context } = {}) {
       to,
       fromLabel: fromSearch,
       toLabel: toSearch,
-      depart: args.depart,
-      ret: args.ret,
-      adults: args.adults,
+      depart,
+      ret: oneWay ? "" : args.ret,
+      adults,
       limit: args.limit,
     });
   };
@@ -351,6 +369,13 @@ async function doScrapeFlights(input, { context } = {}) {
 
   const normalized = (offers || [])
     .filter((o) => typeof o?.price === "number" && o.price > 0)
+    .filter((o) => isPricePlausible({
+      price: o.price,
+      from,
+      to,
+      oneWay,
+      cabin,
+    }))
     .slice(0, args.limit)
     .map((o) => ({
       external_id: o.external_id,
@@ -392,12 +417,35 @@ async function doScrapeFlights(input, { context } = {}) {
     log.warn(`persist flights failed: ${e?.message || e}`);
   }
 
+  const priceHints = getRoutePriceHints({ from, to, oneWay, cabin });
+  const scrapeOk = normalized.length > 0;
+
+  if (!scrapeOk) {
+    log.warn(
+      `scrape_flights: 0 offre plausible ${from}→${to} ${depart} (oneWay=${oneWay}) — utiliser price_hints`
+    );
+  }
+
   return {
     offers: normalized,
+    scrape_ok: scrapeOk,
+    offers_count: normalized.length,
+    travel: {
+      depart,
+      ret: oneWay ? "" : args.ret || "",
+      one_way: oneWay,
+      adults,
+    },
+    price_hints: priceHints,
+    instruction: scrapeOk
+      ? "Utilise les prix des offres scrape_flights pour create_devis_from_offer (prix_public = price des offres)."
+      : `Scraping indisponible ou sans résultat. Utilise price_hints pour create_devis_from_offer : Express ${priceHints.express[0]}-${priceHints.express[1]} €, Confort ${priceHints.confort[0]}-${priceHints.confort[1]} €, Premium ${priceHints.premium[0]}-${priceHints.premium[1]} € (aller ${oneWay ? "simple" : "retour"}, 1 pax). ${priceHints.note}`,
     debug: {
       ...debug,
       route_used: { from, to, from_search: fromSearch, to_search: toSearch },
       route_corrected: reconciled.corrected,
+      depart_corrected: departFix.corrected,
+      depart_used: depart,
     },
   };
 }
@@ -464,7 +512,15 @@ async function doUpsertLead(input, { context }) {
       }
       return raw;
     })(),
-    dates: args.dates || "",
+    dates: (() => {
+      const raw = args.dates || "";
+      if (context?.confirmedTravel?.depart) {
+        return formatLeadDatesLabel(context.confirmedTravel);
+      }
+      const parsed = parseTravelDatesFromText(raw);
+      if (parsed.depart) return formatLeadDatesLabel({ ...parsed, oneWay: context?.confirmedTravel?.oneWay });
+      return raw;
+    })(),
     classe: args.classe || "",
     passagers: Number(args.passagers || 1) || 1,
     status: normalizedStatus,
@@ -757,7 +813,9 @@ export async function runOlaTool({ name, input }, { context = {} } = {}) {
     lang: context.lang || "fr",
     name: context.name || "",
     confirmedRoute: context.confirmedRoute || null,
+    confirmedTravel: context.confirmedTravel || null,
     leadDestination: context.leadDestination || "",
+    leadClasse: context.leadClasse || "",
   };
   const startedAt = Date.now();
   try {
@@ -771,7 +829,7 @@ export async function runOlaTool({ name, input }, { context = {} } = {}) {
         if (out?.lead_id) baseCtx.lead_id = out.lead_id;
         break;
       case "create_devis_from_offer":
-        out = await doCreateDevisFromOffer(input, { context });
+        out = await doCreateDevisFromOffer(input, { context: baseCtx });
         if (out?.lead_id) baseCtx.lead_id = out.lead_id;
         break;
       default:

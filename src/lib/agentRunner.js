@@ -12,6 +12,11 @@ import { createLogger } from "../logger.js";
 import { notifyDalsimOfNewLead } from "./notifications.js";
 import { OLA_AGENT_TOOLS, runOlaTool } from "./olaAgentTools.js";
 import { extractRouteFromMessages, formatDestinationLabel } from "./airports.js";
+import {
+  extractTravelDatesFromMessages,
+  getTodayContext,
+  formatLeadDatesLabel,
+} from "./travelDates.js";
 import { getConversation } from "./conversation.js";
 
 const log = createLogger("agent");
@@ -34,6 +39,19 @@ Règles de sécurité supplémentaires :
 - Si un outil échoue, tu l’expliques brièvement et tu proposes une alternative (autres dates, autre aéroport, ou passage WhatsApp).
 
 Canal actuel: ${channel}.
+
+DATE DU JOUR (référence obligatoire — ne jamais proposer une date de voyage dans le passé) :
+- Aujourd'hui : ${context.today?.labelFr || "—"} (${context.today?.iso || "—"})
+- Si le client dit « août » ou « 15 août » sans année → utiliser ${context.today?.year || "l'année en cours"} (ou l'année suivante si le mois est déjà passé).
+- Interdit d'utiliser 2024 ou une année passée sauf si le client l'a explicitement demandée pour un voyage futur impossible.
+
+${context.confirmedTravel?.depart ? `
+DATES CONFIRMÉES (ne jamais changer) :
+- Départ : ${context.confirmedTravel.label || context.confirmedTravel.depart} (${context.confirmedTravel.depart})
+${context.confirmedTravel.ret ? `- Retour : ${context.confirmedTravel.ret}` : "- Aller simple"}
+- Passagers : ${context.confirmedTravel.passagers ?? "non précisé"}
+Utilise EXACTEMENT ces dates pour scrape_flights (\`depart\` = ${context.confirmedTravel.depart}) et pour le champ \`dates\` du lead.
+` : ""}
 ${context.confirmedRoute?.label ? `
 ROUTE CONFIRMÉE PAR LE CLIENT (ne jamais changer) :
 - Trajet : ${context.confirmedRoute.label}
@@ -133,9 +151,17 @@ export async function runAgent({ messages, lang = "fr", context = {} }) {
     }
   }
 
+  const today = getTodayContext();
+  const confirmedTravel = extractTravelDatesFromMessages(trimmed);
+  if (confirmedTravel.depart) {
+    confirmedTravel.datesLabel = formatLeadDatesLabel(confirmedTravel);
+  }
+
   const agentContext = {
     ...context,
+    today,
     confirmedRoute: confirmedRoute.to || confirmedRoute.from ? confirmedRoute : null,
+    confirmedTravel: confirmedTravel.depart ? confirmedTravel : null,
     leadDestination,
   };
 
