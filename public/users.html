@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ola Flight — Comptes équipe</title>
+<meta name="ola-required-roles" content="admin">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300&family=Montserrat:wght@200;300;400&display=swap');
+:root{--b:#0a0a0a;--b2:#111;--w:#f5f3ef;--g:rgba(245,243,239,0.4);--l:rgba(245,243,239,0.1);--green:#4ade80;--red:#f87171;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;}
+.topbar{height:56px;background:var(--b2);border-bottom:1px solid var(--l);display:flex;align-items:center;padding:0 24px;gap:16px;}
+.tb-name{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;}
+.tb-app-nav{display:flex;flex:1;}
+.tb-tab{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);padding:0 16px;height:56px;display:flex;align-items:center;text-decoration:none;border-bottom:2px solid transparent;}
+.tb-tab:hover,.tb-tab.active{color:var(--w);border-bottom-color:var(--w);}
+.wrap{padding:40px 32px;max-width:1100px;}
+h1{font-size:32px;font-weight:200;margin-bottom:8px;}
+.sub{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:28px;}
+.grid{display:grid;grid-template-columns:320px 1fr;gap:24px;}
+@media(max-width:900px){.grid{grid-template-columns:1fr;}}
+.panel{border:1px solid var(--l);background:var(--b2);padding:24px;}
+.ptitle{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:16px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-family:'Montserrat',sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:6px;}
+.field input,.field select{width:100%;background:transparent;border:none;border-bottom:1px solid var(--l);color:var(--w);font-family:'Cormorant Garamond',serif;font-size:17px;padding:8px 0;outline:none;}
+.field select option{background:var(--b2);}
+.btn{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;background:var(--w);color:var(--b);border:none;padding:12px 20px;cursor:pointer;margin-top:8px;}
+.btn:hover{opacity:.9;}
+.btn--ghost{background:transparent;color:var(--g);border:1px solid var(--l);}
+.msg{font-family:'Montserrat',sans-serif;font-size:9px;margin-top:10px;min-height:14px;}
+.msg.err{color:var(--red);}
+.msg.ok{color:var(--green);}
+table{width:100%;border-collapse:collapse;}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--l);font-family:'Montserrat',sans-serif;font-size:9px;}
+th{color:var(--g);font-weight:300;letter-spacing:2px;text-transform:uppercase;}
+.tag{display:inline-block;padding:3px 8px;border:1px solid var(--l);font-size:8px;letter-spacing:1px;text-transform:uppercase;}
+.tag.off{opacity:.45;}
+.actions{display:flex;gap:6px;flex-wrap:wrap;}
+.actions button{font:inherit;font-size:7px;letter-spacing:1px;text-transform:uppercase;background:transparent;border:1px solid var(--l);color:var(--g);padding:5px 8px;cursor:pointer;}
+.actions button:hover{color:var(--w);border-color:var(--w);}
+</style>
+<script src="/auth-gate.js"></script>
+<script src="/app-nav.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="tb-name">Ola Flight</div>
+  <nav class="tb-app-nav"></nav>
+</header>
+<main class="wrap">
+  <h1>Comptes équipe</h1>
+  <p class="sub">Admin · prospecteurs · closers — accès back-office et devis</p>
+  <div class="grid">
+    <section class="panel">
+      <div class="ptitle">Nouveau compte</div>
+      <form id="create-form">
+        <div class="field"><label for="c-email">Email</label><input id="c-email" type="email" required /></div>
+        <div class="field"><label for="c-name">Nom affiché</label><input id="c-name" type="text" /></div>
+        <div class="field"><label for="c-role">Rôle</label>
+          <select id="c-role" required>
+            <option value="prospecteur">Prospecteur</option>
+            <option value="closer">Closer</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="field"><label for="c-pass">Mot de passe</label><input id="c-pass" type="password" minlength="8" required /></div>
+        <button class="btn" type="submit">Créer le compte</button>
+        <div class="msg" id="create-msg"></div>
+      </form>
+    </section>
+    <section class="panel">
+      <div class="ptitle">Utilisateurs</div>
+      <div id="users-table">Chargement…</div>
+    </section>
+  </div>
+</main>
+<script>
+const ROLE_LABELS = { admin:'Admin', prospecteur:'Prospecteur', closer:'Closer', dalsim:'Prospecteur', closeuse:'Closer', agent:'Prospecteur' };
+
+function normRole(r) {
+  const x = String(r||'').toLowerCase();
+  if (x === 'closeuse') return 'closer';
+  if (x === 'dalsim' || x === 'agent') return 'prospecteur';
+  return x;
+}
+
+async function loadUsers() {
+  const host = document.getElementById('users-table');
+  const r = await fetch('/api/auth/users', { credentials: 'include' });
+  if (!r.ok) { host.textContent = 'Impossible de charger les comptes.'; return; }
+  const { items } = await r.json();
+  if (!items.length) { host.innerHTML = '<p style="opacity:.5">Aucun compte.</p>'; return; }
+  host.innerHTML = `<table>
+    <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Statut</th><th></th></tr></thead>
+    <tbody>${items.map(u => `
+      <tr>
+        <td>${escapeHtml(u.display_name || u.email)}<br><span style="opacity:.5">${escapeHtml(u.email)}</span></td>
+        <td><span class="tag">${ROLE_LABELS[u.role] || u.role}</span></td>
+        <td><span class="tag ${u.active ? '' : 'off'}">${u.active ? 'Actif' : 'Inactif'}</span></td>
+        <td class="actions">
+          <button type="button" data-act="role" data-id="${u.id}" data-email="${escapeHtml(u.email)}">Changer rôle</button>
+          <button type="button" data-act="toggle" data-id="${u.id}" data-active="${u.active ? '1' : '0'}">${u.active ? 'Désactiver' : 'Activer'}</button>
+          <button type="button" data-act="pass" data-id="${u.id}">Mot de passe</button>
+          <button type="button" data-act="del" data-id="${u.id}" data-email="${escapeHtml(u.email)}">Supprimer</button>
+        </td>
+      </tr>`).join('')}</tbody></table>`;
+  host.querySelectorAll('button[data-act]').forEach(btn => btn.addEventListener('click', onAction));
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function patchUser(id, body) {
+  const r = await fetch('/api/auth/users/' + encodeURIComponent(id), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Échec');
+  return j;
+}
+
+async function onAction(e) {
+  const btn = e.currentTarget;
+  const id = btn.dataset.id;
+  const act = btn.dataset.act;
+  try {
+    if (act === 'role') {
+      const cur = normRole(prompt('Nouveau rôle : admin, prospecteur ou closer', 'prospecteur'));
+      if (!['admin','prospecteur','closer'].includes(cur)) return;
+      await patchUser(id, { role: cur });
+    } else if (act === 'toggle') {
+      await patchUser(id, { active: btn.dataset.active !== '1' });
+    } else if (act === 'pass') {
+      const p = prompt('Nouveau mot de passe (8 caractères min.)');
+      if (!p || p.length < 8) return;
+      await patchUser(id, { password: p });
+    } else if (act === 'del') {
+      if (!confirm('Supprimer ' + btn.dataset.email + ' ?')) return;
+      const r = await fetch('/api/auth/users/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'include' });
+      if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || 'Échec'); }
+    }
+    await loadUsers();
+  } catch (err) {
+    alert(err.message || 'Erreur');
+  }
+}
+
+document.getElementById('create-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById('create-msg');
+  msg.className = 'msg';
+  msg.textContent = '';
+  const body = {
+    email: document.getElementById('c-email').value.trim(),
+    display_name: document.getElementById('c-name').value.trim() || undefined,
+    role: document.getElementById('c-role').value,
+    password: document.getElementById('c-pass').value,
+  };
+  try {
+    const r = await fetch('/api/auth/users', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Création impossible');
+    msg.className = 'msg ok';
+    msg.textContent = 'Compte créé.';
+    e.target.reset();
+    await loadUsers();
+  } catch (err) {
+    msg.className = 'msg err';
+    msg.textContent = err.message || 'Erreur';
+  }
+});
+
+document.addEventListener('ola:auth', loadUsers);
+</script>
+</body>
+</html>

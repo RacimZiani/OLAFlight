@@ -9,7 +9,8 @@ import { generateDevisPdf } from "../lib/pdf.js";
 import { sendMessage } from "../lib/messaging/index.js";
 import { config } from "../config.js";
 import { HttpError } from "../middleware/errorHandler.js";
-import { requireBackoffice, requireRole } from "../middleware/auth.js";
+import { requireBackoffice, requireRole, requireDevis } from "../middleware/auth.js";
+import { canAccessLead, normalizeRole, ROLES, filterLeadsForUser } from "../lib/roles.js";
 
 const router = Router();
 
@@ -32,9 +33,9 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
     const store = await getStore();
     const devis = await store.devis.findById(req.params.id);
     if (!devis) throw new HttpError(404, "Devis introuvable");
-    if (req.user.role === "closeuse") {
+    if (normalizeRole(req.user.role) !== ROLES.ADMIN) {
       const lead = devis.lead_id ? await store.leads.findById(devis.lead_id) : null;
-      if (!lead || lead.closer_name !== req.user.email) {
+      if (!lead || !canAccessLead(req.user, lead)) {
         throw new HttpError(403, "Devis hors périmètre");
       }
     }
@@ -48,20 +49,17 @@ router.get("/", validate({ query: devisQuerySchema }), async (req, res, next) =>
     let items = await store.devis.list();
     // Le rôle vient de la session JWT (req.user.role) — la query.role legacy est
     // ignorée pour ne pas pouvoir réclamer un rôle plus élevé via l'URL.
-    const role = req.user.role;
-    // Closeuse : ne voit que les devis liés à ses leads (rule S02).
-    if (role === "closeuse") {
-      const leads = await store.leads.list();
-      const myLeadIds = new Set(
-        leads.filter((l) => l.closer_name === req.user.email).map((l) => String(l.id))
-      );
+    const role = normalizeRole(req.user.role);
+    if (role !== ROLES.ADMIN) {
+      const leads = filterLeadsForUser(await store.leads.list(), req.user);
+      const myLeadIds = new Set(leads.map((l) => String(l.id)));
       items = items.filter((d) => d.lead_id && myLeadIds.has(String(d.lead_id)));
     }
     res.json({ items: items.map((d) => sanitizeDevisForRole(d, role)) });
   } catch (e) { next(e); }
 });
 
-router.post("/", requireRole("admin", "dalsim"), validate({ body: devisCreateSchema }), async (req, res, next) => {
+router.post("/", requireDevis, validate({ body: devisCreateSchema }), async (req, res, next) => {
   try {
     const body = req.body;
     const { marge, closer_commission, apporteur_commission } = computeCommissions({
@@ -167,9 +165,9 @@ router.patch(
       if (!before) throw new HttpError(404, "Devis introuvable");
 
       // Closeuse : ne peut éditer que les devis liés à ses leads.
-      if (req.user.role === "closeuse") {
+      if (normalizeRole(req.user.role) !== ROLES.ADMIN) {
         const lead = before.lead_id ? await store.leads.findById(before.lead_id) : null;
-        if (!lead || lead.closer_name !== req.user.email) {
+        if (!lead || !canAccessLead(req.user, lead)) {
           throw new HttpError(403, "Devis hors périmètre");
         }
       }
@@ -270,7 +268,7 @@ router.patch(
 // ─── Génération PDF + envoi optionnel au client ──────────────────────
 router.post(
   "/:id/pdf",
-  requireRole("admin", "dalsim"),
+  requireDevis,
   validate({ params: idParamSchema }),
   async (req, res, next) => {
     try {

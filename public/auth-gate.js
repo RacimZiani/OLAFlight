@@ -84,8 +84,14 @@
     const user = data && data.user;
     if(!user){ redirectToLogin(); return; }
 
+    function normRole(r){
+      const x = String(r||'').toLowerCase();
+      if(x==='closeuse') return 'closer';
+      if(x==='dalsim'||x==='agent') return 'prospecteur';
+      return x;
+    }
     const required = getRequiredRoles();
-    if(required && !required.includes(user.role)){
+    if(required && !required.some(r => normRole(r)===normRole(user.role) || r===user.role)){
       location.replace('/');
       return;
     }

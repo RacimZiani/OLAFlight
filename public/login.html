@@ -62,7 +62,7 @@ body{
     </div>
     <form class="card" id="login-form" autocomplete="on">
       <div class="title">Connexion</div>
-      <div class="sub">Admin</div>
+      <div class="sub">Équipe Ola Flight</div>
       <div class="field">
         <label for="email">Email</label>
         <input id="email" name="email" type="email" autocomplete="username" required placeholder="vous@olaflight.com" />
@@ -84,16 +84,19 @@ body{
 
   // Destination après login : ?next=... si fourni (utile depuis l'auth-gate
   // d'une page back-office), sinon retour à la page d'accueil.
-  function destination(){
+  function homeForRole(){
+    return '/hub.html';
+  }
+  function destination(user){
     const params = new URLSearchParams(location.search);
     const next = params.get('next');
     if(next && next.startsWith('/') && !next.startsWith('//')) return next;
-    return '/';
+    return user ? homeForRole(user.role) : '/hub.html';
   }
 
   fetch('/api/auth/me', { credentials: 'include' })
     .then(r => r.ok ? r.json() : null)
-    .then(j => { if(j && j.user){ location.replace(destination()); } })
+    .then(j => { if(j && j.user){ location.replace(destination(j.user)); } })
     .catch(() => {});
 
   form.addEventListener('submit', async (e) => {
@@ -115,7 +118,7 @@ body{
         btn.disabled = false;
         return;
       }
-      location.replace(destination());
+      location.replace(destination(j.user));
     }catch(err){
       errBox.textContent = 'Réseau indisponible';
       btn.disabled = false;

@@ -22,6 +22,8 @@ import { config } from "../config.js";
 import { logAgentAction } from "./agentAudit.js";
 import { setConversationLeadId } from "./conversation.js";
 import { pickCloserForLead } from "./closerAssign.js";
+import { pickProspecteurForLead } from "./prospecteurAssign.js";
+import { prospecteurWantsNotif } from "./roles.js";
 import { notify } from "./notifBus.js";
 
 const log = createLogger("agent:tools");
@@ -486,7 +488,15 @@ async function doUpsertLead(input, { context }) {
     try {
       resolvedCloser = await pickCloserForLead();
     } catch (e) {
-      log.warn(`auto-dispatch failed: ${e?.message || e}`);
+      log.warn(`auto-dispatch closer failed: ${e?.message || e}`);
+    }
+  }
+  let resolvedProspecteur = args.apporteur_name ?? existing?.apporteur_name ?? null;
+  if (!resolvedProspecteur) {
+    try {
+      resolvedProspecteur = await pickProspecteurForLead();
+    } catch (e) {
+      log.warn(`auto-dispatch prospecteur failed: ${e?.message || e}`);
     }
   }
 
@@ -524,7 +534,7 @@ async function doUpsertLead(input, { context }) {
     classe: args.classe || "",
     passagers: Number(args.passagers || 1) || 1,
     status: normalizedStatus,
-    apporteur_name: args.apporteur_name ?? null,
+    apporteur_name: resolvedProspecteur,
     closer_name: resolvedCloser,
     notes: args.notes || "",
     urgent: Boolean(args.urgent),
@@ -567,6 +577,7 @@ async function doUpsertLead(input, { context }) {
 
   // Notif "lead_assigned" si on vient de désigner un closer (création OU passage de null à valeur).
   const beforeCloser = existing?.closer_name || null;
+  const beforeProspecteur = existing?.apporteur_name || null;
   if (saved?.closer_name && saved.closer_name !== beforeCloser) {
     notify({
       recipients: [{ email: saved.closer_name }],
@@ -576,10 +587,31 @@ async function doUpsertLead(input, { context }) {
       lead_id: saved.id,
     }).catch(() => {});
   }
+  if (saved?.apporteur_name && saved.apporteur_name !== beforeProspecteur) {
+    notify({
+      recipients: [{ email: saved.apporteur_name }],
+      type: "chatbot_lead",
+      title: `Nouveau client chatbot · ${saved.client_name || "Client"}`,
+      body: `${saved.destination || "—"} · ${saved.dates || "dates à confirmer"}`,
+      lead_id: saved.id,
+    }).catch(() => {});
+  }
+  if (!existing && saved?.apporteur_name && saved?.status === "devis_sent") {
+    notify({
+      recipients: [{ email: saved.apporteur_name }],
+      type: "chatbot_devis",
+      title: `Devis chatbot envoyé · ${saved.client_name || "Client"}`,
+      body: `${saved.destination || "—"}`,
+      lead_id: saved.id,
+    }).catch(() => {});
+  }
   // Transitions de statut critiques (clic du client sur "Accepter"/"Discuter" via prompt).
   if (existing && existing.status !== saved?.status) {
     const targets = [{ role: "admin" }];
     if (saved?.closer_name) targets.push({ email: saved.closer_name });
+    if (saved?.apporteur_name && prospecteurWantsNotif(saved.status)) {
+      targets.push({ email: saved.apporteur_name });
+    }
     if (saved?.status === "won") {
       notify({
         recipients: targets,

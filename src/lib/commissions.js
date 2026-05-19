@@ -37,7 +37,8 @@ const PRIVATE_FINANCIAL_FIELDS = [
 ];
 
 export function sanitizeDevisForRole(devis, role) {
-  if (role === "admin" || role === "dalsim") return devis; // accès complet
+  const r = String(role || "").toLowerCase();
+  if (r === "admin" || r === "dalsim") return devis; // accès complet financier
   const clone = { ...devis };
   for (const f of PRIVATE_FINANCIAL_FIELDS) delete clone[f];
   return clone;

@@ -8,6 +8,7 @@ import { config } from "../config.js";
 import { uid } from "../lib/ids.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { createLogger } from "../logger.js";
+import { isAdmin } from "../lib/roles.js";
 
 const log = createLogger("auth");
 const router = Router();
@@ -81,14 +82,14 @@ router.get("/me", async (req, res) => {
 const userCreateSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, "8 caractères minimum"),
-  role: z.enum(["admin", "dalsim", "closeuse", "agent"]),
+  role: z.enum(["admin", "prospecteur", "closer", "dalsim", "closeuse", "agent"]),
   display_name: z.string().min(1).optional(),
   whatsapp: z.string().optional(),
 });
 
 router.get("/users", async (req, res, next) => {
   try {
-    if (req.user?.role !== "admin") throw new HttpError(403, "Admin requis");
+    if (!isAdmin(req.user)) throw new HttpError(403, "Admin requis");
     const store = await getStore();
     const items = (await store.users.list()).map((u) => ({
       id: u.id, email: u.email, role: u.role,
@@ -101,7 +102,7 @@ router.get("/users", async (req, res, next) => {
 
 router.post("/users", validate({ body: userCreateSchema }), async (req, res, next) => {
   try {
-    if (req.user?.role !== "admin") throw new HttpError(403, "Admin requis");
+    if (!isAdmin(req.user)) throw new HttpError(403, "Admin requis");
     if (!isReasonablePassword(req.body.password)) {
       throw new HttpError(400, "Mot de passe trop faible (8 caractères minimum)");
     }
@@ -130,7 +131,7 @@ router.post("/users", validate({ body: userCreateSchema }), async (req, res, nex
 });
 
 const userPatchSchema = z.object({
-  role: z.enum(["admin", "dalsim", "closeuse", "agent"]).optional(),
+  role: z.enum(["admin", "prospecteur", "closer", "dalsim", "closeuse", "agent"]).optional(),
   display_name: z.string().optional(),
   whatsapp: z.string().nullable().optional(),
   active: z.boolean().optional(),
@@ -139,7 +140,7 @@ const userPatchSchema = z.object({
 
 router.patch("/users/:id", validate({ body: userPatchSchema }), async (req, res, next) => {
   try {
-    if (req.user?.role !== "admin") throw new HttpError(403, "Admin requis");
+    if (!isAdmin(req.user)) throw new HttpError(403, "Admin requis");
     const store = await getStore();
     const patch = { ...req.body };
     if (patch.password) {
@@ -160,7 +161,7 @@ router.patch("/users/:id", validate({ body: userPatchSchema }), async (req, res,
 
 router.delete("/users/:id", async (req, res, next) => {
   try {
-    if (req.user?.role !== "admin") throw new HttpError(403, "Admin requis");
+    if (!isAdmin(req.user)) throw new HttpError(403, "Admin requis");
     if (req.user.id === req.params.id) {
       throw new HttpError(400, "On ne peut pas se supprimer soi-même");
     }

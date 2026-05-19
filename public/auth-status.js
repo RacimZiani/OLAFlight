@@ -18,12 +18,20 @@
     const logoutBtn = document.getElementById('olaLogoutBtn');
     const backLinks = document.querySelectorAll('.ola-back-link');
 
+    function normRole(r){
+      const x = String(r||'').toLowerCase();
+      if(x==='closeuse') return 'closer';
+      if(x==='dalsim'||x==='agent') return 'prospecteur';
+      return x;
+    }
     if(user){
       if(loginLink) loginLink.hidden = true;
       if(logoutBtn) logoutBtn.hidden = false;
+      const userNorm = normRole(user.role);
       backLinks.forEach((a) => {
         const allowed = (a.getAttribute('data-back-roles') || '').split(',').map(s => s.trim()).filter(Boolean);
-        a.hidden = allowed.length > 0 && !allowed.includes(user.role);
+        const ok = allowed.some((r) => normRole(r) === userNorm || r === user.role);
+        a.hidden = allowed.length > 0 && !ok;
       });
     } else {
       if(loginLink) loginLink.hidden = false;

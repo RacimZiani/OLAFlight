@@ -6,6 +6,7 @@ import { getStore } from "../db/index.js";
 import { config } from "../config.js";
 import { uid } from "./ids.js";
 import { createLogger } from "../logger.js";
+import { normalizeRole, ROLES } from "./roles.js";
 
 const log = createLogger("notif");
 
@@ -93,10 +94,16 @@ export async function listForUser(user, { limit = 50, unread = false } = {}) {
     return [];
   }
   const lim = Math.max(1, Math.min(200, Number(limit) || 50));
+  const userNorm = normalizeRole(user?.role);
   const filtered = all.filter((n) => {
     const matchEmail = n.user_email && user?.email && n.user_email === user.email;
-    const matchRole = !n.user_email && n.user_role && user?.role && n.user_role === user.role;
+    const matchRole =
+      !n.user_email &&
+      n.user_role &&
+      user?.role &&
+      (normalizeRole(n.user_role) === userNorm || n.user_role === user.role);
     if (!(matchEmail || matchRole)) return false;
+    if (userNorm === ROLES.PROSPECTEUR && n.type === "lead_lost") return false;
     if (unread && n.read) return false;
     return true;
   });

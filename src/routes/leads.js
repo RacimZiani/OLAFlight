@@ -7,6 +7,14 @@ import { HttpError } from "../middleware/errorHandler.js";
 import { notifyDalsimOfNewLead } from "../lib/notifications.js";
 import { notify } from "../lib/notifBus.js";
 import { pickCloserForLead } from "../lib/closerAssign.js";
+import { pickProspecteurForLead } from "../lib/prospecteurAssign.js";
+import {
+  filterLeadsForUser,
+  canAccessLead,
+  normalizeRole,
+  ROLES,
+  prospecteurWantsNotif,
+} from "../lib/roles.js";
 import { summarizeLeadConversation } from "../lib/conversationSummary.js";
 import { requireBackoffice } from "../middleware/auth.js";
 import { createLogger } from "../logger.js";
@@ -44,25 +52,65 @@ function normalizeLeadInput(body) {
   };
 }
 
-// Filtre selon le rôle : closeuse ne voit que ses leads (rule S02).
-function filterForRole(items, user) {
-  if (user.role === "closeuse") {
-    return items.filter((l) => l.closer_name && l.closer_name === user.email);
+function notifyStatusChange({ before, updated }) {
+  if (before.status === updated.status) return;
+  const lname = updated.client_name || "Lead";
+  const dest = updated.destination || "—";
+  const targets = [{ role: "admin" }];
+  if (updated.closer_name) targets.push({ email: updated.closer_name });
+  if (updated.apporteur_name && prospecteurWantsNotif(updated.status)) {
+    targets.push({ email: updated.apporteur_name });
   }
-  return items;
+  if (updated.status === "won") {
+    notify({
+      recipients: targets,
+      type: "lead_won",
+      title: `🏆 Deal gagné · ${lname}`,
+      body: `${dest} · ${updated.value ? `${updated.value} €` : ""}`.trim(),
+      lead_id: updated.id,
+    }).catch(() => {});
+  } else if (updated.status === "nego") {
+    notify({
+      recipients: targets,
+      type: "lead_nego",
+      title: `Négociation en cours · ${lname}`,
+      body: `${dest} — le client veut discuter.`,
+      lead_id: updated.id,
+    }).catch(() => {});
+  } else if (updated.status === "lost") {
+    notify({
+      recipients: [{ role: "admin" }, ...(updated.closer_name ? [{ email: updated.closer_name }] : [])],
+      type: "lead_lost",
+      title: `Lead perdu · ${lname}`,
+      body: dest,
+      lead_id: updated.id,
+    }).catch(() => {});
+  }
 }
 
 router.get("/", async (req, res, next) => {
   try {
     const store = await getStore();
     let items = await store.leads.list();
-    items = filterForRole(items, req.user);
+    items = filterLeadsForUser(items, req.user);
     items.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
     res.json({ items });
   } catch (e) { next(e); }
 });
 
 // Liste des closers actifs (pour le sélecteur admin/agent dans la modal lead).
+router.get("/prospecteurs/list", async (_req, res, next) => {
+  try {
+    const store = await getStore();
+    if (!store.users?.list) return res.json({ items: [] });
+    const all = await store.users.list().catch(() => []);
+    const items = all
+      .filter((u) => normalizeRole(u.role) === ROLES.PROSPECTEUR && u.active !== false)
+      .map((u) => ({ email: u.email, name: u.display_name || u.name || u.email, role: u.role }));
+    res.json({ items });
+  } catch (e) { next(e); }
+});
+
 router.get("/closers/list", async (_req, res, next) => {
   try {
     const store = await getStore();
@@ -70,8 +118,7 @@ router.get("/closers/list", async (_req, res, next) => {
     const all = await store.users.list().catch(() => []);
     const items = all
       .filter((u) => {
-        const r = String(u.role || "").toLowerCase();
-        return (r === "closeuse" || r === "closer") && u.active !== false;
+        return normalizeRole(u.role) === ROLES.CLOSER && u.active !== false;
       })
       .map((u) => ({ email: u.email, name: u.name || u.email, role: u.role }));
     res.json({ items });
@@ -81,12 +128,17 @@ router.get("/closers/list", async (_req, res, next) => {
 router.post("/", validate({ body: leadCreateSchema }), async (req, res, next) => {
   try {
     const lead = normalizeLeadInput(req.body);
-    // Closeuse : on force closer_name à son propre email (pas de leads pour autrui).
-    if (req.user.role === "closeuse") lead.closer_name = req.user.email;
-    // Auto-dispatch si admin/dalsim ne précise pas de closer.
-    if (!lead.closer_name && req.user.role !== "closeuse") {
+    const role = normalizeRole(req.user.role);
+    if (role === ROLES.CLOSER) lead.closer_name = req.user.email;
+    if (role === ROLES.PROSPECTEUR) lead.apporteur_name = req.user.email;
+    if (!lead.closer_name && role !== ROLES.CLOSER) {
       try { lead.closer_name = await pickCloserForLead(); } catch (e) {
-        log.warn(`auto-dispatch failed: ${e?.message || e}`);
+        log.warn(`auto-dispatch closer failed: ${e?.message || e}`);
+      }
+    }
+    if (!lead.apporteur_name && role !== ROLES.PROSPECTEUR) {
+      try { lead.apporteur_name = await pickProspecteurForLead(); } catch (e) {
+        log.warn(`auto-dispatch prospecteur failed: ${e?.message || e}`);
       }
     }
     const store = await getStore();
@@ -98,7 +150,16 @@ router.post("/", validate({ body: leadCreateSchema }), async (req, res, next) =>
       notify({
         recipients: [{ email: inserted.closer_name }],
         type: "lead_assigned",
-        title: `Nouveau lead assigné : ${inserted.client_name || "Client"}`,
+        title: `Nouveau lead assigné (closer) : ${inserted.client_name || "Client"}`,
+        body: `${inserted.destination || "—"} · ${inserted.dates || "dates à confirmer"}`,
+        lead_id: inserted.id,
+      }).catch(() => {});
+    }
+    if (inserted?.apporteur_name) {
+      notify({
+        recipients: [{ email: inserted.apporteur_name }],
+        type: "chatbot_lead",
+        title: `Nouveau client chatbot · ${inserted.client_name || "Client"}`,
         body: `${inserted.destination || "—"} · ${inserted.dates || "dates à confirmer"}`,
         lead_id: inserted.id,
       }).catch(() => {});
@@ -118,14 +179,18 @@ router.patch(
       const store = await getStore();
       const before = await store.leads.findById(req.params.id);
       if (!before) throw new HttpError(404, "Lead introuvable");
-      // Closeuse : ne peut update que ses leads, et ne peut pas réassigner closer_name.
-      if (req.user.role === "closeuse") {
-        if (before.closer_name !== req.user.email) {
-          throw new HttpError(403, "Lead non assigné à votre compte");
-        }
-        if (req.body.closer_name && req.body.closer_name !== req.user.email) {
-          throw new HttpError(403, "Réassignation réservée aux admins");
-        }
+      const role = normalizeRole(req.user.role);
+      if (role === ROLES.CLOSER && !canAccessLead(req.user, before)) {
+        throw new HttpError(403, "Lead non assigné à votre compte");
+      }
+      if (role === ROLES.PROSPECTEUR && !canAccessLead(req.user, before)) {
+        throw new HttpError(403, "Lead hors périmètre prospecteur");
+      }
+      if (role === ROLES.CLOSER && req.body.closer_name && req.body.closer_name !== req.user.email) {
+        throw new HttpError(403, "Réassignation réservée aux admins");
+      }
+      if (role === ROLES.PROSPECTEUR && req.body.apporteur_name && req.body.apporteur_name !== req.user.email) {
+        throw new HttpError(403, "Réassignation réservée aux admins");
       }
       const updated = await store.leads.update(req.params.id, req.body);
       if (!updated) throw new HttpError(404, "Lead introuvable");
@@ -136,38 +201,7 @@ router.patch(
         notifyDalsimOfNewLead(updated).catch((e) => log.warn(`notif dalsim: ${e.message}`));
       }
 
-      // Notifications cloche : transitions importantes.
-      if (before.status !== updated.status) {
-        const lname = updated.client_name || "Lead";
-        const dest = updated.destination || "—";
-        const targets = [{ role: "admin" }];
-        if (updated.closer_name) targets.push({ email: updated.closer_name });
-        if (updated.status === "won") {
-          notify({
-            recipients: targets,
-            type: "lead_won",
-            title: `🏆 Deal gagné · ${lname}`,
-            body: `${dest} · ${updated.value ? `${updated.value} €` : ""}`.trim(),
-            lead_id: updated.id,
-          }).catch(() => {});
-        } else if (updated.status === "nego") {
-          notify({
-            recipients: targets,
-            type: "lead_nego",
-            title: `Négociation en cours · ${lname}`,
-            body: `${dest} — le client veut discuter.`,
-            lead_id: updated.id,
-          }).catch(() => {});
-        } else if (updated.status === "lost") {
-          notify({
-            recipients: [{ role: "admin" }],
-            type: "lead_lost",
-            title: `Lead perdu · ${lname}`,
-            body: dest,
-            lead_id: updated.id,
-          }).catch(() => {});
-        }
-      }
+      notifyStatusChange({ before, updated });
       // Réassignation manuelle d'un closer → notif au nouveau closer.
       if (
         req.body.closer_name &&
@@ -193,7 +227,7 @@ router.get("/:id/devis", validate({ params: idParamSchema }), async (req, res, n
     const store = await getStore();
     const lead = await store.leads.findById(req.params.id);
     if (!lead) throw new HttpError(404, "Lead introuvable");
-    if (req.user.role === "closeuse" && lead.closer_name !== req.user.email) {
+    if (!canAccessLead(req.user, lead)) {
       throw new HttpError(403, "Lead hors périmètre");
     }
     const all = await store.devis.list();
@@ -213,8 +247,8 @@ router.get("/:id/conversation", validate({ params: idParamSchema }), async (req,
     const store = await getStore();
     const lead = await store.leads.findById(req.params.id);
     if (!lead) throw new HttpError(404, "Lead introuvable");
-    if (req.user.role === "closeuse" && lead.closer_name !== req.user.email) {
-      throw new HttpError(403, "Lead non assigné à votre compte");
+    if (!canAccessLead(req.user, lead)) {
+      throw new HttpError(403, "Lead hors périmètre");
     }
     if (!store.conversations_ola?.list) return res.json({ messages: [], conversation: null });
     const all = await store.conversations_ola.list().catch(() => []);
@@ -232,8 +266,8 @@ router.get("/:id/summary", validate({ params: idParamSchema }), async (req, res,
     const store = await getStore();
     const lead = await store.leads.findById(req.params.id);
     if (!lead) throw new HttpError(404, "Lead introuvable");
-    if (req.user.role === "closeuse" && lead.closer_name !== req.user.email) {
-      throw new HttpError(403, "Lead non assigné à votre compte");
+    if (!canAccessLead(req.user, lead)) {
+      throw new HttpError(403, "Lead hors périmètre");
     }
     const out = await summarizeLeadConversation(req.params.id);
     res.json(out);
@@ -242,7 +276,7 @@ router.get("/:id/summary", validate({ params: idParamSchema }), async (req, res,
 
 router.delete("/:id", validate({ params: idParamSchema }), async (req, res, next) => {
   try {
-    if (!["admin", "dalsim"].includes(req.user.role)) {
+    if (normalizeRole(req.user.role) !== ROLES.ADMIN) {
       throw new HttpError(403, "Suppression réservée aux admins");
     }
     const store = await getStore();

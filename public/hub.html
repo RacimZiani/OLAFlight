@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ola Flight — Espace équipe</title>
+<meta name="ola-required-roles" content="admin,prospecteur,closer,dalsim,closeuse">
+</head>
+<body>
+<header class="topbar">
+  <div class="tb-brand"><span class="tb-name">Ola Flight</span></div>
+  <nav class="tb-app-nav"></nav>
+</header>
+<main class="hub">
+  <h1>Espace équipe</h1>
+  <p class="sub">Choisissez un outil</p>
+  <div class="cards" id="cards"></div>
+</main>
+<script src="/auth-gate.js"></script>
+<script src="/app-nav.js"></script>
+<script>
+(function(){
+  const ALL = [
+    { href:'/crm.html', title:'Pipeline clients', desc:'Suivi des leads, statuts, conversations.', roles:['admin','prospecteur','closer','dalsim','closeuse'] },
+    { href:'/dalsim.html', title:'Création de devis', desc:'Générer et envoyer des propositions tarifaires.', roles:['admin','prospecteur','closer','dalsim','closeuse'] },
+    { href:'/team.html', title:'Vue équipe', desc:'Performance closers et prospecteurs.', roles:['admin'] },
+    { href:'/users.html', title:'Comptes équipe', desc:'Créer et gérer les accès admin, prospecteurs, closers.', roles:['admin'] },
+    { href:'/admin.html', title:'Administration vols', desc:'Scraping et cache tarifs.', roles:['admin'] },
+  ];
+  function norm(r){ if(r==='closeuse')return'closer'; if(r==='dalsim'||r==='agent')return'prospecteur'; return r; }
+  document.addEventListener('ola:auth', e => {
+    const u = e.detail;
+    const host = document.getElementById('cards');
+    host.innerHTML = ALL.filter(c => c.roles.some(r => norm(r)===norm(u.role))).map(c => `
+      <a class="card" href="${c.href}">
+        <h2>${c.title}</h2>
+        <p>${c.desc}</p>
+      </a>
+    `).join('');
+  });
+})();
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300&family=Montserrat:wght@200;300&display=swap');
+:root{--b:#0a0a0a;--w:#f5f3ef;--g:rgba(245,243,239,0.4);--l:rgba(245,243,239,0.1);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;}
+.topbar{height:56px;border-bottom:1px solid var(--l);display:flex;align-items:center;padding:0 24px;gap:16px;}
+.tb-name{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;}
+.tb-app-nav{display:flex;gap:0;margin-left:24px;flex:1;}
+.tb-nav{display:flex;gap:0;margin-left:24px;}
+.tb-tab{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);padding:0 16px;height:56px;display:flex;align-items:center;text-decoration:none;border-bottom:2px solid transparent;}
+.tb-tab:hover,.tb-tab.active{color:var(--w);border-bottom-color:var(--w);}
+.hub{padding:48px 32px;max-width:960px;}
+.hub h1{font-size:36px;font-weight:200;margin-bottom:8px;}
+.sub{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:32px;}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
+.card{display:block;border:1px solid var(--l);padding:28px 24px;text-decoration:none;color:var(--w);transition:border-color .2s;}
+.card:hover{border-color:rgba(245,243,239,0.35);}
+.card h2{font-size:22px;font-weight:300;margin-bottom:10px;}
+.card p{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--g);line-height:1.6;}
+</style>
+</body>
+</html>

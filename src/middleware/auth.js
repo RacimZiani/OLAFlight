@@ -1,12 +1,13 @@
 import { config } from "../config.js";
 import { verifySession } from "../lib/jwt.js";
+import { BACKOFFICE_ROLES, hasRole } from "../lib/roles.js";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Auth runtime : on attache `req.user = { id, email, role, name }` à chaque
 // requête en lisant le cookie de session JWT. Fallback : header X-Admin-Token
 // (legacy compat) en attendant la suppression du header X-Admin-Token.
 //
-// Rôles : admin | dalsim | closeuse | agent | guest
+// Rôles : admin | prospecteur | closer (+ legacy dalsim, closeuse, agent) | guest
 // ─────────────────────────────────────────────────────────────────────────
 
 function readCookieToken(req) {
@@ -55,12 +56,11 @@ export function requireAuth(req, res, next) {
 }
 
 export function requireRole(...allowed) {
-  const set = new Set(allowed);
   return (req, res, next) => {
     if (!req.user || req.user.role === "guest") {
       return res.status(401).json({ error: "Authentification requise" });
     }
-    if (!set.has(req.user.role)) {
+    if (!hasRole(req.user, ...allowed)) {
       return res.status(403).json({ error: `Accès refusé pour le rôle '${req.user.role}'` });
     }
     next();
@@ -68,5 +68,6 @@ export function requireRole(...allowed) {
 }
 
 export const requireAdmin = requireRole("admin");
-export const requireDalsim = requireRole("admin", "dalsim");
-export const requireBackoffice = requireRole("admin", "dalsim", "closeuse");
+export const requireDalsim = requireRole("admin", "dalsim", "prospecteur");
+export const requireDevis = requireRole("admin", "prospecteur", "closer", "dalsim", "closeuse");
+export const requireBackoffice = requireRole(...BACKOFFICE_ROLES);

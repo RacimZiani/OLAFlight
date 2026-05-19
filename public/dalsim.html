@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Ola Flight — Interface Dalsim</title>
+<title>Ola Flight — Création de devis</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,200;0,300;1,200;1,300&family=Montserrat:wght@200;300;400&display=swap');
 :root{
@@ -144,14 +144,16 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 .empty-icon{font-size:40px;margin-bottom:16px;opacity:0.3;}
 .empty-text{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);}
 </style>
-<meta name="ola-required-roles" content="admin,dalsim">
+<meta name="ola-required-roles" content="admin,prospecteur,closer,dalsim,closeuse">
 <script src="/auth-gate.js"></script>
+<script src="/app-nav.js"></script>
 </head>
 <body>
 
 <!-- TOP BAR -->
 <div class="topbar">
-  <div class="tb-brand"><a href="/" style="color:inherit;text-decoration:none">Accueil</a> · Dalsim</div>
+  <div class="tb-brand"><span class="tb-name">Ola Flight · Devis</span></div>
+  <nav class="tb-app-nav"></nav>
   <div class="tb-notif" id="notifBadge" onclick="showPage('notifs')">2</div>
 </div>
 

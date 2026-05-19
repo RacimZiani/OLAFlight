@@ -25,7 +25,9 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 .tb-brand{display:flex;align-items:center;gap:12px;}
 .tb-logo{width:24px;height:24px;background:var(--l2);border:1px solid var(--l2);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--w);}
 .tb-name{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:var(--w);}
+.tb-app-nav{display:flex;gap:0;flex:1;}
 .tb-nav{display:flex;gap:0;}
+.tb-nav-inner{margin-left:0;}
 .tb-tab{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);padding:0 24px;height:56px;display:flex;align-items:center;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
 .tb-tab:hover{color:var(--w);}
 .tb-tab.active{color:var(--w);border-bottom-color:var(--w);}
@@ -246,8 +248,9 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 .summary-refresh{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);background:none;border:1px solid var(--l);padding:6px 12px;cursor:pointer;margin-top:10px;}
 .summary-refresh:hover{color:var(--w);border-color:var(--l2);}
 </style>
-<meta name="ola-required-roles" content="admin,closeuse,dalsim">
+<meta name="ola-required-roles" content="admin,prospecteur,closer,dalsim,closeuse">
 <script src="/auth-gate.js"></script>
+<script src="/app-nav.js"></script>
 </head>
 <body>
 
@@ -257,11 +260,12 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
     <div class="tb-logo">✦</div>
     <div class="tb-name">Ola Flight · CRM</div>
   </div>
-  <div class="tb-nav">
+  <nav class="tb-app-nav"></nav>
+  <div class="tb-nav tb-nav-inner">
     <div class="tb-tab active" onclick="switchView('dashboard',this)">Dashboard</div>
     <div class="tb-tab" onclick="switchView('pipeline',this)">Pipeline</div>
-    <div class="tb-tab" onclick="switchView('commissions',this)">Commissions</div>
-    <div class="tb-tab" onclick="switchView('apporteuses',this)" data-admin-only>Apporteuses</div>
+    <div class="tb-tab" onclick="switchView('commissions',this)" data-admin-closer-only>Commissions</div>
+    <div class="tb-tab" onclick="switchView('apporteuses',this)" data-admin-only>Prospecteurs</div>
   </div>
   <div class="tb-right">
     <button class="tb-bell" id="tb-bell" onclick="toggleNotifPanel(event)" aria-label="Notifications">
@@ -486,9 +490,23 @@ function currentUserLabel() {
   return (u && (u.name || u.email)) || 'Équipe';
 }
 
+function normRole(r) {
+  const x = String(r || '').toLowerCase();
+  if (x === 'closeuse') return 'closer';
+  if (x === 'dalsim' || x === 'agent') return 'prospecteur';
+  return x;
+}
 function isAdmin() {
   const u = window.OlaAuth && window.OlaAuth.user;
-  return u && (u.role === 'admin' || u.role === 'dalsim');
+  return u && normRole(u.role) === 'admin';
+}
+function isProspecteur() {
+  const u = window.OlaAuth && window.OlaAuth.user;
+  return u && normRole(u.role) === 'prospecteur';
+}
+function isCloser() {
+  const u = window.OlaAuth && window.OlaAuth.user;
+  return u && normRole(u.role) === 'closer';
 }
 
 function escapeHtmlCrm(s) {
@@ -1108,8 +1126,8 @@ function saveNewLead() {
     destination: document.getElementById('nl-dest').value,
     dates: document.getElementById('nl-dates').value,
     classe: document.getElementById('nl-type').value,
-    apporteur_name: document.getElementById('nl-apporteuse').value || null,
-    closer_name: u && u.role === 'closeuse' ? u.email : (u && u.email) || null,
+    apporteur_name: isProspecteur() ? u.email : (document.getElementById('nl-apporteuse').value || null),
+    closer_name: isCloser() ? u.email : (document.getElementById('nl-closer')?.value || u?.email || null),
     next_followup: Number.isFinite(next_followup) ? next_followup : null,
     notes: document.getElementById('nl-notes').value,
     value: parseInt(document.getElementById('nl-value').value, 10) || 0,
@@ -1453,6 +1471,9 @@ function refreshTopUser() {
   // Cache les éléments réservés aux admins (S02 — isolation par rôle).
   document.querySelectorAll('[data-admin-only]').forEach((node) => {
     node.style.display = isAdmin() ? '' : 'none';
+  });
+  document.querySelectorAll('[data-admin-closer-only]').forEach((node) => {
+    node.style.display = (isAdmin() || isCloser()) ? '' : 'none';
   });
 }
 
