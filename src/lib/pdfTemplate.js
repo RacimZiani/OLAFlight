@@ -7,7 +7,9 @@
 //    reçoit même pas en argument. C'est le call-site qui sanitize avant.
 // ─────────────────────────────────────────────────────────────────────────
 
-const FALLBACK_LOGO = ""; // base64 inline si on veut, sinon on reste typo
+import { OLA_LOGO_DATA_URI } from "./olaLogo.js";
+
+const FALLBACK_LOGO = OLA_LOGO_DATA_URI;
 
 function fmtMoney(n, currency = "EUR") {
   if (n == null || Number.isNaN(Number(n))) return "—";
@@ -64,6 +66,11 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
     ? devis.driver
     : null;
 
+  const logoSrc = companyLogo || FALLBACK_LOGO;
+  const brandLogoHtml = logoSrc
+    ? `<img class="brand-logo-img" src="${logoSrc}" alt="Ola Flight" />`
+    : `<div class="brand-logo-fallback">Ō</div>`;
+
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -82,7 +89,13 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
   .page{ width:210mm; min-height:297mm; padding:24mm 22mm; display:flex; flex-direction:column; }
   .head{ display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:18mm; border-bottom:1px solid var(--l); }
   .brand{ display:flex; align-items:center; gap:10px; }
-  .brand-logo{ width:40px; height:40px; border:1px solid var(--l2); display:flex; align-items:center; justify-content:center; font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:200; }
+  .brand-logo-fallback{ width:40px; height:40px; border:1px solid var(--l2); display:flex; align-items:center; justify-content:center; font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:200; }
+  .brand-logo-img{
+    height:52px; width:auto; max-width:72mm;
+    display:block; object-fit:contain;
+    background:transparent;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
   .brand-name{ font-family:'Montserrat',sans-serif; font-size:9px; font-weight:300; letter-spacing:5px; text-transform:uppercase; color:var(--g); }
   .ref{ text-align:right; }
   .ref-label{ font-family:'Montserrat',sans-serif; font-size:7px; font-weight:300; letter-spacing:3px; text-transform:uppercase; color:var(--g2); margin-bottom:4px; }
@@ -159,7 +172,7 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
 
   <header class="head">
     <div class="brand">
-      <div class="brand-logo">Ō</div>
+      ${brandLogoHtml}
       <div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:200;letter-spacing:1px;">Ola Flight</div>
         <div class="brand-name">Private Travel · Paris</div>

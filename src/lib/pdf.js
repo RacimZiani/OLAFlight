@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import { config } from "../config.js";
 import { createLogger } from "../logger.js";
 import { renderDevisHtml } from "./pdfTemplate.js";
+import { OLA_LOGO_DATA_URI } from "./olaLogo.js";
 import { sanitizeDevisForRole } from "./commissions.js";
 
 const log = createLogger("pdf");
@@ -40,7 +41,11 @@ export async function generateDevisPdf({ devis, lead }) {
   // prix_revient / marge / commissions avant de toucher au template.
   const safeDevis = sanitizeDevisForRole(devis, "client");
 
-  const html = renderDevisHtml({ devis: safeDevis, lead });
+  const html = renderDevisHtml({
+    devis: safeDevis,
+    lead,
+    companyLogo: OLA_LOGO_DATA_URI,
+  });
   const filename = `devis-${devis.id}.pdf`;
   const absolutePath = path.join(config.pdf.outDir, filename);
   const publicUrl = `${config.pdf.publicPath}/${filename}`;

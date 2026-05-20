@@ -21,6 +21,13 @@ body{
 }
 .shell{width:100%;max-width:420px;}
 .brand{text-align:center;margin-bottom:48px;}
+.brand-logo{
+  display:block;margin:0 auto 24px;
+  height:96px;width:auto;max-width:280px;
+  object-fit:contain;
+  background:transparent;
+  mix-blend-mode:screen;
+}
 .brand-mark{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:6px;text-transform:uppercase;color:var(--g);margin-bottom:8px;}
 .brand-name{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:200;letter-spacing:0.04em;}
 .brand-name em{font-style:italic;font-weight:300;}
@@ -56,7 +63,8 @@ body{
 <body>
   <div class="shell">
     <div class="brand">
-      <div class="brand-mark">Ola Flight</div>
+      <img class="brand-logo" src="/assets/ola-logo.png" alt="Ola Flight" width="280" height="96" />
+      <div class="brand-mark">Private Travel</div>
       <div class="brand-name">Ola <em>Flight</em></div>
       <div class="brand-tag">Espace équipe</div>
     </div>
