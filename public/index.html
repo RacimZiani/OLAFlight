@@ -1200,6 +1200,12 @@ const I18N = {
     'chat.status': 'En ligne',
     'chat.placeholder': 'Votre destination, vos dates…',
     'chat.hint': 'Conciergerie premium · Réponses sous quelques minutes',
+    'chat.form.first': 'Prénom',
+    'chat.form.last': 'Nom',
+    'chat.form.phone': 'Numéro',
+    'chat.form.email': 'Adresse mail',
+    'chat.form.submit': 'Envoyer mes coordonnées',
+    'chat.form.err': 'Merci de remplir tous les champs correctement.',
     'wa.text': 'Bonjour, je souhaite organiser un voyage premium.'
   },
   en: {
@@ -1274,6 +1280,12 @@ const I18N = {
     'chat.status': 'Online',
     'chat.placeholder': 'Your destination, your dates…',
     'chat.hint': 'Premium concierge · Replies within minutes',
+    'chat.form.first': 'First name',
+    'chat.form.last': 'Last name',
+    'chat.form.phone': 'Phone number',
+    'chat.form.email': 'Email address',
+    'chat.form.submit': 'Send my details',
+    'chat.form.err': 'Please fill in all fields correctly.',
     'wa.text': 'Hello, I would like to plan a premium trip.'
   }
 };
@@ -1476,6 +1488,97 @@ function applyLang(lang){
   text-align:center;
 }
 
+.ola-chat-contact{
+  display:none;
+  flex-direction:column;
+  gap:10px;
+  padding:14px 16px;
+  border-top:1px solid var(--line);
+  background:var(--black3);
+}
+.ola-chat-contact.open{ display:flex; }
+.ola-contact-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.ola-contact-field{ display:flex; flex-direction:column; gap:5px; }
+.ola-contact-label{
+  font-family:'Montserrat',sans-serif;
+  font-size:7px; font-weight:300;
+  letter-spacing:2px; text-transform:uppercase;
+  color:var(--grey);
+}
+.ola-contact-input{
+  background:var(--black);
+  border:1px solid var(--line2);
+  color:var(--white);
+  padding:10px 12px;
+  font-family:'Montserrat',sans-serif;
+  font-size:13px; font-weight:300;
+  outline:none;
+  width:100%;
+}
+.ola-contact-input:focus{ border-color:var(--grey2); }
+.ola-contact-phone{
+  display:flex;
+  gap:0;
+  border:1px solid var(--line2);
+  background:var(--black);
+}
+.ola-contact-phone:focus-within{ border-color:var(--grey2); }
+.ola-contact-dial{
+  flex:0 0 118px;
+  max-width:42%;
+  background:var(--black2);
+  border:none;
+  border-right:1px solid var(--line2);
+  color:var(--white);
+  font-family:'Montserrat',sans-serif;
+  font-size:11px; font-weight:300;
+  padding:10px 8px;
+  outline:none;
+  cursor:pointer;
+}
+.ola-contact-dial option{ background:var(--black); color:var(--white); }
+.ola-contact-phone input{
+  flex:1;
+  border:none;
+  background:transparent;
+  color:var(--white);
+  padding:10px 12px;
+  font-family:'Montserrat',sans-serif;
+  font-size:13px;
+  outline:none;
+  min-width:0;
+}
+.ola-contact-submit{
+  background:var(--white);
+  color:var(--black);
+  border:none;
+  cursor:pointer;
+  padding:12px 16px;
+  font-family:'Montserrat',sans-serif;
+  font-size:9px;
+  font-weight:300;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  transition:opacity .2s;
+}
+.ola-contact-submit:hover:not(:disabled){ opacity:.82; }
+.ola-contact-submit:disabled{ opacity:.35; cursor:not-allowed; }
+.ola-contact-err{
+  font-family:'Montserrat',sans-serif;
+  font-size:10px;
+  color:#e57373;
+  display:none;
+}
+.ola-contact-err.show{ display:block; }
+@media(max-width:480px){
+  .ola-contact-grid{ grid-template-columns:1fr; }
+  .ola-contact-dial{ flex:0 0 108px; }
+}
+
 @media(max-width:480px){
   .ola-chat-panel{ right:8px; bottom:8px; width:calc(100vw - 16px); height:calc(100vh - 16px); }
   .ola-chat-fab{ right:16px; bottom:16px; width:56px; height:56px; }
@@ -1505,15 +1608,41 @@ function applyLang(lang){
     <button class="ola-choice" data-choice="negotiate">Discuter</button>
     <button class="ola-choice" data-choice="refuse">Pas pour moi</button>
   </div>
-  <div class="ola-chat-foot">
+  <div class="ola-chat-foot" id="olaChatFoot">
     <textarea class="ola-chat-input" id="olaChatInput" rows="1" placeholder="Votre destination, vos dates…" data-i18n-placeholder="chat.placeholder"></textarea>
     <button class="ola-chat-send" id="olaChatSend" aria-label="Envoyer">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
     </button>
   </div>
+  <div class="ola-chat-contact" id="olaChatContact" aria-label="Coordonnées">
+    <div class="ola-contact-grid">
+      <div class="ola-contact-field">
+        <label class="ola-contact-label" for="olaContactPrenom" data-i18n="chat.form.first">Prénom</label>
+        <input class="ola-contact-input" id="olaContactPrenom" type="text" autocomplete="given-name" required>
+      </div>
+      <div class="ola-contact-field">
+        <label class="ola-contact-label" for="olaContactNom" data-i18n="chat.form.last">Nom</label>
+        <input class="ola-contact-input" id="olaContactNom" type="text" autocomplete="family-name" required>
+      </div>
+    </div>
+    <div class="ola-contact-field">
+      <label class="ola-contact-label" for="olaContactPhone" data-i18n="chat.form.phone">Numéro</label>
+      <div class="ola-contact-phone">
+        <select class="ola-contact-dial" id="olaContactDial" aria-label="Indicatif pays"></select>
+        <input id="olaContactPhone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="6 12 34 56 78" required>
+      </div>
+    </div>
+    <div class="ola-contact-field">
+      <label class="ola-contact-label" for="olaContactEmail" data-i18n="chat.form.email">Adresse mail</label>
+      <input class="ola-contact-input" id="olaContactEmail" type="email" autocomplete="email" required>
+    </div>
+    <p class="ola-contact-err" id="olaContactErr"></p>
+    <button type="button" class="ola-contact-submit" id="olaContactSubmit" data-i18n="chat.form.submit">Envoyer mes coordonnées</button>
+  </div>
   <div class="ola-chat-hint" data-i18n="chat.hint">Conciergerie premium · Réponses sous quelques minutes</div>
 </div>
 
+<script src="/dial-codes.js"></script>
 <script>
 (function(){
   const fab = document.getElementById('olaChatFab');
@@ -1523,8 +1652,88 @@ function applyLang(lang){
   const input = document.getElementById('olaChatInput');
   const send = document.getElementById('olaChatSend');
   const choices = document.getElementById('olaChatChoices');
+  const foot = document.getElementById('olaChatFoot');
+  const contactPanel = document.getElementById('olaChatContact');
+  const contactPrenom = document.getElementById('olaContactPrenom');
+  const contactNom = document.getElementById('olaContactNom');
+  const contactDial = document.getElementById('olaContactDial');
+  const contactPhone = document.getElementById('olaContactPhone');
+  const contactEmail = document.getElementById('olaContactEmail');
+  const contactSubmit = document.getElementById('olaContactSubmit');
+  const contactErr = document.getElementById('olaContactErr');
 
-  const state = { msgs:[], busy:false, convId:null, decision:false };
+  const state = { msgs:[], busy:false, convId:null, decision:false, contactForm:false };
+  const CONTACT_MARKER = '<!--OLA_CONTACT_FORM-->';
+
+  function initDialSelect(){
+    if (!contactDial || !window.OLA_DIAL_CODES) return;
+    contactDial.innerHTML = '';
+    window.OLA_DIAL_CODES.forEach((c) => {
+      const opt = document.createElement('option');
+      opt.value = c.dial;
+      opt.textContent = (c.flag ? c.flag + ' ' : '') + c.dial + ' ' + c.name;
+      opt.dataset.iso = c.iso;
+      if (c.iso === 'FR') opt.selected = true;
+      contactDial.appendChild(opt);
+    });
+  }
+  initDialSelect();
+
+  function detectContactFormFromText(text){
+    const t = String(text || '');
+    if (t.includes(CONTACT_MARKER)) return true;
+    return /pr[ée]nom.*nom.*(?:email|t[ée]l)/is.test(t)
+      || /pour pr[ée]parer le devis.*(?:pr[ée]nom|nom|email)/is.test(t);
+  }
+
+  function setContactForm(on){
+    state.contactForm = !!on;
+    if (foot) foot.style.display = state.contactForm ? 'none' : 'flex';
+    if (contactPanel) contactPanel.classList.toggle('open', state.contactForm);
+    if (contactErr) contactErr.classList.remove('show');
+    render();
+    if (state.contactForm && contactPrenom) setTimeout(() => contactPrenom.focus(), 80);
+  }
+
+  function buildE164(dial, national){
+    const cc = String(dial || '').replace(/\D/g, '');
+    let n = String(national || '').replace(/\D/g, '');
+    if (n.startsWith('0')) n = n.slice(1);
+    return '+' + cc + n;
+  }
+
+  function formatContactPayload(){
+    const lang = (document.documentElement.lang === 'en') ? 'en' : 'fr';
+    const prenom = contactPrenom.value.trim();
+    const nom = contactNom.value.trim();
+    const email = contactEmail.value.trim();
+    const e164 = buildE164(contactDial.value, contactPhone.value);
+    if (lang === 'en'){
+      return [
+        'Client identity (web form):',
+        '- First name: ' + prenom,
+        '- Last name: ' + nom,
+        '- Email: ' + email,
+        '- Phone: ' + e164,
+      ].join('\n');
+    }
+    return [
+      'Identité client (formulaire web) :',
+      '- Prénom : ' + prenom,
+      '- Nom : ' + nom,
+      '- Email : ' + email,
+      '- Téléphone : ' + e164,
+    ].join('\n');
+  }
+
+  function validateContactForm(){
+    const prenom = contactPrenom.value.trim();
+    const nom = contactNom.value.trim();
+    const email = contactEmail.value.trim();
+    const digits = contactPhone.value.replace(/\D/g, '');
+    const okEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    return prenom.length >= 1 && nom.length >= 1 && okEmail && digits.length >= 6;
+  }
   function getConvId(){
     if (state.convId) return state.convId;
     const k = 'ola_chat_conversation_id';
@@ -1573,8 +1782,10 @@ function applyLang(lang){
     if (choices){
       choices.style.display = state.decision ? 'flex' : 'none';
     }
-    input.disabled = state.decision || state.busy;
-    send.disabled = state.decision || state.busy;
+    const lock = state.decision || state.busy;
+    input.disabled = lock || state.contactForm;
+    send.disabled = lock || state.contactForm;
+    if (contactSubmit) contactSubmit.disabled = lock;
     body.scrollTop = body.scrollHeight;
   }
 
@@ -1602,17 +1813,14 @@ function applyLang(lang){
 
   function setDecision(on){
     state.decision = !!on;
+    if (on) setContactForm(false);
     render();
   }
 
-  async function ask(){
-    const txt = input.value.trim();
+  async function sendUserText(txt){
     if (!txt || state.busy) return;
     state.msgs.push({role:'user', content:txt});
-    input.value = '';
-    input.style.height = 'auto';
     state.busy = true;
-    send.disabled = true;
     render();
 
     try {
@@ -1624,8 +1832,15 @@ function applyLang(lang){
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'server error');
-      state.msgs.push({role:'assistant', content: data.response || '...'});
-      // Si un devis vient d'être envoyé, on passe en mode décision.
+      const reply = String(data.response || '...').replace(CONTACT_MARKER, '').trim();
+      state.msgs.push({role:'assistant', content: reply || '...'});
+      if (data.ui && data.ui.contact_form) {
+        setContactForm(true);
+      } else if (detectContactFormFromText(reply)) {
+        setContactForm(true);
+      } else {
+        setContactForm(false);
+      }
       setDecision(detectDecisionMode());
     } catch(e) {
       const lang = (document.documentElement.lang === 'en') ? 'en' : 'fr';
@@ -1634,9 +1849,32 @@ function applyLang(lang){
         : "Désolé, je rencontre un souci technique. Réessayez dans quelques instants."});
     } finally {
       state.busy = false;
-      send.disabled = false;
       render();
     }
+  }
+
+  async function ask(){
+    const txt = input.value.trim();
+    if (!txt || state.busy || state.contactForm) return;
+    input.value = '';
+    input.style.height = 'auto';
+    await sendUserText(txt);
+  }
+
+  async function submitContactForm(){
+    if (!state.contactForm || state.busy) return;
+    const lang = (document.documentElement.lang === 'en') ? 'en' : 'fr';
+    if (!validateContactForm()){
+      if (contactErr){
+        contactErr.textContent = lang === 'en'
+          ? 'Please fill in all fields correctly.'
+          : 'Merci de remplir tous les champs correctement.';
+        contactErr.classList.add('show');
+      }
+      return;
+    }
+    setContactForm(false);
+    await sendUserText(formatContactPayload());
   }
 
   function choose(kind){
@@ -1658,6 +1896,12 @@ function applyLang(lang){
   window.olaOpenChat = open;
   window.olaCloseChat = close;
   send.addEventListener('click', ask);
+  if (contactSubmit) contactSubmit.addEventListener('click', submitContactForm);
+  if (contactPanel){
+    contactPanel.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA'){ e.preventDefault(); submitContactForm(); }
+    });
+  }
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); ask(); }
   });

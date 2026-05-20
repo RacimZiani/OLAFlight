@@ -18,6 +18,11 @@ import {
   formatLeadDatesLabel,
 } from "./travelDates.js";
 import { getConversation } from "./conversation.js";
+import {
+  shouldShowContactForm,
+  stripContactFormMarker,
+  CONTACT_FORM_MARKER,
+} from "./contactFormUi.js";
 
 const log = createLogger("agent");
 
@@ -36,7 +41,9 @@ Tu as accès à des outils internes pour agir au lieu de promettre :
 Règles de sécurité supplémentaires :
 - Tu peux communiquer des PRIX PUBLICS issus du scraping (indicatifs), mais tu ne révèles jamais de prix_revient, marge, commissions.
 - Tu ne “fabriques” jamais un billet : tu proposes des options + un devis PDF Ola Flight pour finaliser.
-- Si un outil échoue, tu l’expliques brièvement et tu proposes une alternative (autres dates, autre aéroport, ou passage WhatsApp).
+- Sur le **web** : create_devis_from_offer est **refusé** sans scrape_ok, sans identité/contact, ou sur routes bloquées (Ukraine, etc.).
+- Les **aéroports de départ et d'arrivée** sur le PDF sont injectés par le serveur — ne les invente jamais dans le chat.
+- Si un outil renvoie devis_refused ou scrape_ok:false, tu l’expliques brièvement et tu proposes une alternative (autres dates, autre aéroport, ou équipe humaine / devis_pending).
 
 Canal actuel: ${channel}.
 
@@ -197,5 +204,13 @@ export async function runAgent({ messages, lang = "fr", context = {} }) {
     }
   }
 
-  return { text, lead: leadCreated };
+  const displayText = stripContactFormMarker(text);
+  const ui =
+    context.channel === "web" && shouldShowContactForm(text, { channel: "web" })
+      ? { contact_form: true }
+      : null;
+
+  return { text: displayText, lead: leadCreated, ui };
 }
+
+export { CONTACT_FORM_MARKER };

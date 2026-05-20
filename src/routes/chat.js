@@ -74,7 +74,12 @@ router.post("/", validate({ body: chatBodySchema }), async (req, res, next) => {
       /* best effort */
     }
 
-    res.json({ response: result.text, lead: result.lead, conversation_id: convId });
+    res.json({
+      response: result.text,
+      lead: result.lead,
+      conversation_id: convId,
+      ui: result.ui || null,
+    });
   } catch (err) {
     next(err);
   }

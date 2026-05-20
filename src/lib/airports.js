@@ -41,15 +41,22 @@ function entryFromIata(iata) {
   const code = String(iata || "").toUpperCase();
   if (!/^[A-Z]{3}$/.test(code)) return null;
   const ap = loadIndex().byIata[code];
-  if (!ap) return { iata: code, label: code, slug: "" };
+  if (!ap) return { iata: code, label: code, slug: "", inIndex: false };
   return {
     iata: ap.iata,
     label: ap.label,
     slug: ap.slug || "",
     city: ap.city,
     country: ap.country,
+    countryCode: ap.countryCode || "",
     name: ap.name,
+    inIndex: true,
   };
+}
+
+/** Entrée index (OurAirports) ou null si code inconnu. */
+export function getAirportEntry(iata) {
+  return entryFromIata(iata);
 }
 
 /**
@@ -237,11 +244,7 @@ export function reconcileScrapeRoute({ from, to, confirmed }) {
     out.corrected = true;
   }
 
-  if (!cFrom && cTo && !out.from) {
-    out.from = "CDG";
-    out.corrected = true;
-    out.reason = (out.reason ? out.reason + "; " : "") + "origine par défaut CDG (Paris)";
-  }
+  // Pas d'origine par défaut (ex. CDG) : l'agent doit demander le départ au client.
 
   return out;
 }

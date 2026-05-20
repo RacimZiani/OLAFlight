@@ -25,6 +25,11 @@ import { pickCloserForLead } from "./closerAssign.js";
 import { pickProspecteurForLead } from "./prospecteurAssign.js";
 import { prospecteurWantsNotif } from "./roles.js";
 import { notify } from "./notifBus.js";
+import {
+  checkDevisAllowed,
+  enrichDevisOptionsFromRoute,
+  getRouteBlockReason,
+} from "./devisGate.js";
 
 const log = createLogger("agent:tools");
 
@@ -222,7 +227,7 @@ export const OLA_AGENT_TOOLS = [
   {
     name: "create_devis_from_offer",
     description:
-      "Crée un devis Ola Flight (1 à 3 options comparables) + extras hôtels/chauffeur si nécessaires. Préférer fournir `options` (max 3 propositions : Express / Confort / Premium). Si lead.needs_hotel === true → fournir `hotels[]`. Si lead.needs_driver === true → fournir `driver`. Si client_type === 'particulier' → pas de comparatif marché dans le PDF. Génère un PDF et renvoie l'URL.",
+      "Crée un devis Ola Flight UNIQUEMENT si scrape_flights a renvoyé scrape_ok:true avec des offres, le lead est complet (identité, contact, dates, route, client_type, needs_driver), et la route n'est pas bloquée. Sinon l'outil renvoie devis_refused — ne pas réessayer sans corriger. Fournir `options` (max 3) avec prix_public issus du scrape ; les noms d'aéroports sont injectés automatiquement depuis la base (ne pas inventer).",
     input_schema: {
       type: "object",
       properties: {
@@ -316,6 +321,39 @@ async function doScrapeFlights(input, { context } = {}) {
   const oneWay = travelConfirmed?.oneWay ?? !args.ret;
   const cabin = context?.leadClasse || "";
   const adults = args.adults || travelConfirmed?.passagers || 1;
+
+  const routeBlock = getRouteBlockReason(from, to);
+  if (routeBlock) {
+    log.warn(`scrape_flights blocked: ${from}→${to} — ${routeBlock}`);
+    return {
+      offers: [],
+      scrape_ok: false,
+      offers_count: 0,
+      route_blocked: true,
+      block_reason: routeBlock,
+      travel: {
+        depart,
+        ret: oneWay ? "" : args.ret || "",
+        one_way: oneWay,
+        adults,
+      },
+      price_hints: null,
+      instruction:
+        "Route non éligible au devis automatique. NE PAS appeler create_devis_from_offer. Expliquez au client que l'équipe Ola Flight étudie la demande manuellement (upsert_lead status devis_pending).",
+      debug: { route_used: { from, to }, route_blocked: true },
+    };
+  }
+
+  if (!from || !to) {
+    return {
+      offers: [],
+      scrape_ok: false,
+      offers_count: 0,
+      instruction:
+        "Route incomplète (départ et arrivée requis). Demandez la ville/aéroport de départ ET d'arrivée avant scrape_flights.",
+      debug: { route_used: { from, to } },
+    };
+  }
 
   const fromSlug = IATA_TO_CITY_SLUG[from] || iataToBookingSlug(from) || "";
   const toSlug = IATA_TO_CITY_SLUG[to] || iataToBookingSlug(to) || "";
@@ -440,8 +478,8 @@ async function doScrapeFlights(input, { context } = {}) {
     },
     price_hints: priceHints,
     instruction: scrapeOk
-      ? "Utilise les prix des offres scrape_flights pour create_devis_from_offer (prix_public = price des offres)."
-      : `Scraping indisponible ou sans résultat. Utilise price_hints pour create_devis_from_offer : Express ${priceHints.express[0]}-${priceHints.express[1]} €, Confort ${priceHints.confort[0]}-${priceHints.confort[1]} €, Premium ${priceHints.premium[0]}-${priceHints.premium[1]} € (aller ${oneWay ? "simple" : "retour"}, 1 pax). ${priceHints.note}`,
+      ? "Utilise les prix des offres scrape_flights pour create_devis_from_offer (prix_public = price des offres). Les aéroports seront injectés automatiquement."
+      : "Scraping sans offre réelle sur cette route. NE PAS appeler create_devis_from_offer sur le web. Proposez d'autres dates/aéroports ou upsert_lead en devis_pending pour traitement humain.",
     debug: {
       ...debug,
       route_used: { from, to, from_search: fromSearch, to_search: toSearch },
@@ -654,6 +692,29 @@ async function doCreateDevisFromOffer(input, { context }) {
   const lead = safeLeadId ? await store.leads.findById(safeLeadId) : null;
   const leadId = safeLeadId || lead?.id || null;
 
+  const gate = checkDevisAllowed(lead, context);
+  if (!gate.ok) {
+    log.warn(`create_devis refused: ${gate.reasons.join(" | ")}`);
+    return {
+      devis_refused: true,
+      reasons: gate.reasons,
+      instruction: gate.instruction,
+    };
+  }
+
+  const route = gate.route;
+  if (lead?.id && route.from && route.to) {
+    const destLabel = formatDestinationLabel({ from: route.from, to: route.to });
+    if (destLabel && lead.destination !== destLabel) {
+      try {
+        await store.leads.update(lead.id, { destination: destLabel });
+        lead.destination = destLabel;
+      } catch {
+        /* best effort */
+      }
+    }
+  }
+
   const cabin = String(lead?.classe || "").toLowerCase();
   const isFirst = /first|premi(è|e)re/.test(cabin);
   const isBiz = /business|biz/.test(cabin);
@@ -710,8 +771,12 @@ async function doCreateDevisFromOffer(input, { context }) {
   if (rawOpts.length === 0) {
     throw new Error("create_devis_from_offer: il faut fournir `options[]` ou `prix_public`.");
   }
+
+  const scrapeOffers = context?.lastScrape?.offers || [];
+  const enrichedRaw = enrichDevisOptionsFromRoute(rawOpts, { route, scrapeOffers });
+
   // Auto-label si l'agent oublie : Express / Confort / Premium par prix croissant.
-  const priced = rawOpts.map(priceOption).sort((a, b) => a.prix_vente - b.prix_vente);
+  const priced = enrichedRaw.map(priceOption).sort((a, b) => a.prix_vente - b.prix_vente);
   const defaultLabels = ["Express", "Confort", "Premium"];
   priced.forEach((o, i) => {
     if (!o.label) o.label = defaultLabels[Math.min(i, defaultLabels.length - 1)];
@@ -855,6 +920,20 @@ export async function runOlaTool({ name, input }, { context = {} } = {}) {
     switch (name) {
       case "scrape_flights":
         out = await doScrapeFlights(input, { context: baseCtx });
+        baseCtx.lastScrape = {
+          scrape_ok: Boolean(out?.scrape_ok),
+          offers_count: Number(out?.offers_count) || 0,
+          from: out?.debug?.route_used?.from || input?.from,
+          to: out?.debug?.route_used?.to || input?.to,
+          route_blocked: Boolean(out?.route_blocked),
+          block_reason: out?.block_reason || null,
+          offers: (out?.offers || []).slice(0, 6).map((o) => ({
+            price: o.price,
+            company: o.company,
+            depart_time: o.depart_time,
+            arrive_time: o.arrive_time,
+          })),
+        };
         break;
       case "upsert_lead":
         out = await doUpsertLead(input, { context: baseCtx });

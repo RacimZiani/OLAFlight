@@ -193,8 +193,9 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
       <div class="cell-val">${escapeHtml(lead?.dates || "—")}</div>
     </div>
     <div class="cell">
-      <div class="cell-label">Horaires</div>
-      <div class="cell-val">${escapeHtml(devis.horaire_dep || "—")} → ${escapeHtml(devis.horaire_arr || "—")}</div>
+      <div class="cell-label">Aéroports</div>
+      <div class="cell-val">${escapeHtml((opts[0]?.aeroport_dep || devis.horaire_dep || "—").split(" · ")[0])}</div>
+      <div class="cell-sub">→ ${escapeHtml((opts[0]?.aeroport_arr || devis.horaire_arr || "—").split(" · ")[0])}</div>
     </div>
   </div>
 
@@ -216,7 +217,9 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
         <div class="opt-label">${escapeHtml(o.label || (i === 0 ? "Express" : i === 1 ? "Confort" : "Premium"))}</div>
         <div class="opt-name">${escapeHtml(o.compagnie || "Compagnie à confirmer")}</div>
         <div class="opt-meta">
-          ${escapeHtml(o.horaire_dep || "—")} → ${escapeHtml(o.horaire_arr || "—")}${o.duration ? " · " + escapeHtml(o.duration) : ""}${stopsTxt ? " · " + stopsTxt : ""}
+          ${o.aeroport_dep ? `<strong>Départ :</strong> ${escapeHtml(o.aeroport_dep)}<br>` : ""}
+          ${o.aeroport_arr ? `<strong>Arrivée :</strong> ${escapeHtml(o.aeroport_arr)}` : escapeHtml(o.horaire_dep || "—") + " → " + escapeHtml(o.horaire_arr || "—")}
+          ${o.duration ? " · " + escapeHtml(o.duration) : ""}${stopsTxt ? " · " + stopsTxt : ""}
         </div>
         ${showCmp ? `<div class="opt-market">${fmtMoney(o.prix_marche)}</div>` : ""}
         <div class="opt-price" ${isReco ? `style="color:var(--gold)"` : ""}>${fmtMoney(o.prix_vente)}</div>
