@@ -1,5 +1,13 @@
 /* Navigation back-office selon le rôle (admin / prospecteur / closer). */
 (function () {
+  if (!document.getElementById("ola-app-nav-css")) {
+    const link = document.createElement("link");
+    link.id = "ola-app-nav-css";
+    link.rel = "stylesheet";
+    link.href = "/app-nav.css";
+    document.head.appendChild(link);
+  }
+
   const LINKS = {
     hub: { href: "/hub.html", label: "Accueil", roles: ["admin", "prospecteur", "closer", "dalsim", "closeuse"] },
     crm: { href: "/crm.html", label: "Pipeline", roles: ["admin", "prospecteur", "closer", "dalsim", "closeuse"] },

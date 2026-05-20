@@ -17,7 +17,8 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 
 /* TOP BAR */
 .topbar{height:56px;background:var(--b2);border-bottom:1px solid var(--l);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:100;}
-.tb-brand{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:var(--w);}
+.tb-brand{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:var(--w);flex-shrink:0;}
+.topbar .tb-app-nav{flex:1;min-width:0;}
 .tb-notif{width:32px;height:32px;background:var(--rt);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:400;color:white;position:relative;cursor:pointer;}
 .tb-notif.zero{background:var(--l2);}
 

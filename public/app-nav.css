@@ -1,0 +1,66 @@
+/* Navigation back-office partagée (injectée via app-nav.js) */
+
+nav.tb-app-nav {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  gap: 0;
+  margin-left: 16px;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+nav.tb-app-nav::-webkit-scrollbar {
+  height: 0;
+}
+
+nav.tb-app-nav a.tb-tab {
+  font-family: "Montserrat", sans-serif;
+  font-size: 8px;
+  font-weight: 300;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(245, 243, 239, 0.55);
+  padding: 0 16px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+nav.tb-app-nav a.tb-tab:link,
+nav.tb-app-nav a.tb-tab:visited {
+  color: rgba(245, 243, 239, 0.55);
+}
+
+nav.tb-app-nav a.tb-tab:hover,
+nav.tb-app-nav a.tb-tab.active {
+  color: #f5f3ef;
+  border-bottom-color: #f5f3ef;
+}
+
+/* Topbar : laisser de la place à la nav entre brand et actions */
+.topbar nav.tb-app-nav {
+  flex: 1;
+  justify-content: flex-start;
+}
+
+@media (max-width: 640px) {
+  nav.tb-app-nav {
+    margin-left: 8px;
+  }
+  nav.tb-app-nav a.tb-tab {
+    padding: 0 12px;
+    font-size: 7px;
+    letter-spacing: 2px;
+  }
+}
