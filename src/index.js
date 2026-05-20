@@ -3,12 +3,18 @@ import { config, assertCriticalConfig } from "./config.js";
 import { logger } from "./logger.js";
 import { getStore } from "./db/index.js";
 import { seedAdminIfNeeded } from "./seeds/admin.js";
+import { refreshBlockedDestinationsIfStale } from "./lib/blockedDestinationsData.js";
 
 async function main() {
   for (const issue of assertCriticalConfig()) logger.warn(issue);
 
   await getStore();           // ouvre la DB + applique les migrations
   await seedAdminIfNeeded();  // crée l'admin si users vide
+
+  const refreshDays = Number(process.env.OLA_BLOCKED_REFRESH_DAYS) || 7;
+  refreshBlockedDestinationsIfStale(refreshDays).catch((e) =>
+    logger.warn(`blocked destinations refresh: ${e?.message || e}`)
+  );
 
   const app = createApp();
   const onListen = () => {

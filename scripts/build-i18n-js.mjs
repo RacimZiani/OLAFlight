@@ -35,6 +35,7 @@ const extraFr = {
   "chat.greet":
     "Bonjour, bienvenue chez Ōla Flight. Pour vous préparer les meilleures options, c'est pour quelle destination ?",
   "chat.err.tech": "Désolé, je rencontre un souci technique. Réessayez dans quelques instants.",
+  "chat.err.empty": "Désolé, je n'ai pas pu formuler de réponse. Pouvez-vous renvoyer votre message ?",
   "chat.preset.accept": "Parfait, je valide. Vous pouvez lancer la réservation.",
   "chat.preset.negotiate": "Je suis intéressé. Est-ce qu'on peut optimiser le tarif (ou l'itinéraire) ?",
   "chat.preset.refuse": "Merci, je vais passer pour cette fois.",
@@ -83,6 +84,7 @@ const extraEn = {
   "chat.greet":
     "Hello, welcome to Ōla Flight. To find you the best options — what's your destination?",
   "chat.err.tech": "Sorry, I'm having a technical issue. Please try again in a moment.",
+  "chat.err.empty": "Sorry, I couldn't formulate a reply. Please send your message again.",
   "chat.preset.accept": "Perfect, I confirm. You can proceed with the booking.",
   "chat.preset.negotiate": "I'm interested. Can we optimise the fare (or the itinerary)?",
   "chat.preset.refuse": "Thanks, I'll pass this time.",

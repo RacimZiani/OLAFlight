@@ -1647,8 +1647,11 @@ window.addEventListener('load', () => {
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'server error');
-      const reply = String(data.response || '...').replace(CONTACT_MARKER, '').trim();
-      state.msgs.push({role:'assistant', content: reply || '...'});
+      let reply = String(data.response || '').replace(CONTACT_MARKER, '').trim();
+      if (!reply || /^\.{2,}$/.test(reply)) {
+        reply = (typeof t === 'function') ? t('chat.err.empty') : 'Désolé, je n\'ai pas pu formuler de réponse. Réessayez.';
+      }
+      state.msgs.push({role:'assistant', content: reply});
       if (data.ui && data.ui.contact_form) {
         setContactForm(true);
       } else if (detectContactFormFromText(reply)) {

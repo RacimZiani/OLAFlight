@@ -1,0 +1,540 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-20T21:59:03.492Z",
+  "policy": "Block US State Dept Level 3 (Reconsider Travel) and Level 4 (Do Not Travel), plus Ola extras.",
+  "sources": [
+    {
+      "id": "us_state_dept_rss",
+      "url": "https://travel.state.gov/_res/rss/TAsTWs.xml",
+      "levels": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "ola_extra",
+      "countryCodes": [
+        "PS"
+      ],
+      "places": [
+        "gaza",
+        "bande de gaza",
+        "rafah",
+        "kiev",
+        "kyiv",
+        "crimee",
+        "donetsk",
+        "luhansk",
+        "marioupol",
+        "sebastopol",
+        "sevastopol",
+        "simferopol",
+        "new caledonia"
+      ]
+    }
+  ],
+  "countryCodes": [
+    "AE",
+    "AF",
+    "AZ",
+    "BD",
+    "BF",
+    "BH",
+    "BI",
+    "BY",
+    "CD",
+    "CF",
+    "CO",
+    "CY",
+    "ET",
+    "GT",
+    "GW",
+    "GY",
+    "HN",
+    "HT",
+    "IQ",
+    "IR",
+    "JO",
+    "KP",
+    "KW",
+    "LB",
+    "LY",
+    "ML",
+    "MM",
+    "MO",
+    "MR",
+    "NC",
+    "NE",
+    "NG",
+    "NI",
+    "OM",
+    "PG",
+    "PK",
+    "PS",
+    "QA",
+    "RU",
+    "RW",
+    "SA",
+    "SD",
+    "SO",
+    "SS",
+    "ST",
+    "SY",
+    "TD",
+    "TT",
+    "TZ",
+    "UA",
+    "UG",
+    "VE",
+    "YE"
+  ],
+  "countries": [
+    {
+      "code": "AE",
+      "name": "United Arab Emirates",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "United Arab Emirates - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "AF",
+      "name": "Afghanistan",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Afghanistan - Level 4: Do Not Travel"
+    },
+    {
+      "code": "AZ",
+      "name": "Azerbaijan",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Azerbaijan - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "BD",
+      "name": "Bangladesh",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Bangladesh - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "BF",
+      "name": "Burkina Faso",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Burkina Faso - Level 4: Do Not Travel"
+    },
+    {
+      "code": "BH",
+      "name": "Bahrain",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Bahrain - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "BI",
+      "name": "Burundi",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Burundi - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "BY",
+      "name": "Belarus",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Belarus - Level 4: Do Not Travel"
+    },
+    {
+      "code": "CD",
+      "name": "Democratic Republic of the Congo",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Democratic Republic of the Congo - Level 4: Do Not Travel"
+    },
+    {
+      "code": "CF",
+      "name": "Central African Republic",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Central African Republic - Level 4: Do Not Travel"
+    },
+    {
+      "code": "CO",
+      "name": "Colombia",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Colombia - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "CY",
+      "name": "Cyprus",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Cyprus - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "ET",
+      "name": "Ethiopia",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Ethiopia - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "GT",
+      "name": "Guatemala",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Guatemala - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "GW",
+      "name": "Guinea-Bissau",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Guinea-Bissau - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "GY",
+      "name": "Guyana",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Guyana - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "HN",
+      "name": "Honduras",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Honduras - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "HT",
+      "name": "Haiti",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Haiti - Level 4: Do Not Travel"
+    },
+    {
+      "code": "IQ",
+      "name": "Iraq",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Iraq - Level 4: Do Not Travel"
+    },
+    {
+      "code": "IR",
+      "name": "Iran",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Iran - Level 4: Do Not Travel"
+    },
+    {
+      "code": "JO",
+      "name": "Jordan",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Jordan - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "KP",
+      "name": "North Korea",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "North Korea - Level 4: Do Not Travel"
+    },
+    {
+      "code": "KW",
+      "name": "Kuwait",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Kuwait - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "LB",
+      "name": "Lebanon",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Lebanon - Level 4: Do Not Travel"
+    },
+    {
+      "code": "LY",
+      "name": "Libya",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Libya - Level 4: Do Not Travel"
+    },
+    {
+      "code": "ML",
+      "name": "Mali",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Mali - Level 4: Do Not Travel"
+    },
+    {
+      "code": "MM",
+      "name": "Burma",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Burma - Level 4: Do Not Travel"
+    },
+    {
+      "code": "MO",
+      "name": "Macau",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Macau - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "MR",
+      "name": "Mauritania",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Mauritania - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "NC",
+      "name": "New Caledonia",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "New Caledonia - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "NE",
+      "name": "Niger",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Niger - Level 4: Do Not Travel"
+    },
+    {
+      "code": "NG",
+      "name": "Nigeria",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Nigeria - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "NI",
+      "name": "Nicaragua",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Nicaragua - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "OM",
+      "name": "Oman",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Oman - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "PG",
+      "name": "Papua New Guinea",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Papua New Guinea - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "PK",
+      "name": "Pakistan",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Pakistan - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "PS",
+      "name": "PS",
+      "level": 4,
+      "source": "ola_extra",
+      "advisoryTitle": "Ola Flight policy"
+    },
+    {
+      "code": "QA",
+      "name": "Qatar",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Qatar - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "RU",
+      "name": "Russia",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Russia - Level 4: Do Not Travel"
+    },
+    {
+      "code": "RW",
+      "name": "Rwanda",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Rwanda - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "SA",
+      "name": "Saudi Arabia",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Saudi Arabia - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "SD",
+      "name": "Sudan",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Sudan - Level 4: Do Not Travel"
+    },
+    {
+      "code": "SO",
+      "name": "Somalia",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Somalia - Level 4: Do Not Travel"
+    },
+    {
+      "code": "SS",
+      "name": "South Sudan",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "South Sudan - Level 4: Do Not Travel"
+    },
+    {
+      "code": "ST",
+      "name": "São Tomé and Príncipe",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "São Tomé and Príncipe - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "SY",
+      "name": "Syria",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Syria - Level 4: Do Not Travel"
+    },
+    {
+      "code": "TD",
+      "name": "Chad",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Chad - Level 4: Do Not Travel"
+    },
+    {
+      "code": "TT",
+      "name": "Trinidad and Tobago",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Trinidad and Tobago - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "TZ",
+      "name": "Tanzania",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Tanzania - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "UA",
+      "name": "Ukraine",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Ukraine - Level 4: Do Not Travel"
+    },
+    {
+      "code": "UG",
+      "name": "Uganda",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Uganda - Level 4: Do Not Travel"
+    },
+    {
+      "code": "VE",
+      "name": "Venezuela",
+      "level": 3,
+      "source": "us_state_dept",
+      "advisoryTitle": "Venezuela - Level 3: Reconsider Travel"
+    },
+    {
+      "code": "YE",
+      "name": "Yemen",
+      "level": 4,
+      "source": "us_state_dept",
+      "advisoryTitle": "Yemen - Level 4: Do Not Travel"
+    }
+  ],
+  "places": [
+    "gaza",
+    "bande de gaza",
+    "rafah",
+    "kiev",
+    "kyiv",
+    "crimee",
+    "donetsk",
+    "luhansk",
+    "marioupol",
+    "sebastopol",
+    "sevastopol",
+    "simferopol",
+    "new caledonia"
+  ],
+  "countryNames": [
+    "united arab emirates",
+    "afghanistan",
+    "azerbaijan",
+    "bangladesh",
+    "burkina faso",
+    "bahrain",
+    "burundi",
+    "belarus",
+    "democratic republic of the congo",
+    "central african republic",
+    "colombia",
+    "cyprus",
+    "ethiopia",
+    "guatemala",
+    "guinea bissau",
+    "guyana",
+    "honduras",
+    "haiti",
+    "iraq",
+    "iran",
+    "jordan",
+    "north korea",
+    "kuwait",
+    "lebanon",
+    "libya",
+    "mali",
+    "burma",
+    "macau",
+    "mauritania",
+    "new caledonia",
+    "niger",
+    "nigeria",
+    "nicaragua",
+    "oman",
+    "papua new guinea",
+    "pakistan",
+    "ps",
+    "qatar",
+    "russia",
+    "rwanda",
+    "saudi arabia",
+    "sudan",
+    "somalia",
+    "south sudan",
+    "sao tome and principe",
+    "syria",
+    "chad",
+    "trinidad and tobago",
+    "tanzania",
+    "ukraine",
+    "uganda",
+    "venezuela",
+    "yemen"
+  ],
+  "unresolved": [],
+  "stats": {
+    "blockedCountries": 53,
+    "usEntriesParsed": 52,
+    "unresolvedCount": 0
+  }
+}

@@ -17,7 +17,8 @@
     "db:print-init": "node -e \"import('node:fs').then(fs=>console.log(fs.readFileSync('db/migrations/001_init.sql','utf8')))\"",
     "db:print-rls": "node -e \"import('node:fs').then(fs=>console.log(fs.readFileSync('db/migrations/002_rls.sql','utf8')))\"",
     "airports:build": "node scripts/build-airports-index.mjs",
-    "dial-codes:build": "node scripts/build-dial-codes.mjs"
+    "dial-codes:build": "node scripts/build-dial-codes.mjs",
+    "blocked:build": "node scripts/build-blocked-destinations.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.0",

@@ -6,22 +6,7 @@ import {
   formatDestinationLabel,
 } from "./airports.js";
 import { parseTravelDatesFromText } from "./travelDates.js";
-
-/** Pays / zones sans devis auto (pas de vols commerciaux fiables ou politique Ola). */
-const BLOCKED_COUNTRY_CODES = new Set([
-  "UA", // Ukraine (Kiev, etc.)
-  "RU",
-  "BY",
-  "SY",
-  "IR",
-  "KP",
-  "CU",
-  "AF",
-  "IQ",
-  "YE",
-  "SD",
-  "SS",
-]);
+import { getRouteBlockReason as getRouteBlockReasonPolicy } from "./routePolicy.js";
 
 const PLACEHOLDER_NAMES = new Set([
   "client",
@@ -55,16 +40,9 @@ function hasDates(lead, context) {
 }
 
 export function getRouteBlockReason(from, to) {
-  const f = String(from || "").toUpperCase();
-  const t = String(to || "").toUpperCase();
-  for (const code of [f, t]) {
-    const ap = getAirportEntry(code);
-    if (!ap) continue;
-    if (BLOCKED_COUNTRY_CODES.has(ap.countryCode)) {
-      return `Destination ${ap.label || code} : vols commerciaux non disponibles via Ola Flight (zone ${ap.countryCode}).`;
-    }
-  }
-  return null;
+  const hit = getRouteBlockReasonPolicy(from, to);
+  if (!hit) return null;
+  return `Destination ${hit.label || hit.iata} : vols commerciaux non disponibles via Ola Flight (zone ${hit.code || hit.place || "restreinte"}).`;
 }
 
 export function resolveRouteForLead(lead, context = {}) {

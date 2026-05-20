@@ -23,6 +23,7 @@ import {
   stripContactFormMarker,
   CONTACT_FORM_MARKER,
 } from "./contactFormUi.js";
+import { evaluateRoutePolicy, getBlockedPolicyStats } from "./routePolicy.js";
 
 const log = createLogger("agent");
 
@@ -59,7 +60,14 @@ ${context.confirmedTravel.ret ? `- Retour : ${context.confirmedTravel.ret}` : "-
 - Passagers : ${context.confirmedTravel.passagers ?? "non précisé"}
 Utilise EXACTEMENT ces dates pour scrape_flights (\`depart\` = ${context.confirmedTravel.depart}) et pour le champ \`dates\` du lead.
 ` : ""}
-${context.confirmedRoute?.label ? `
+${context.routePolicy?.blocked ? `
+⛔ DESTINATION NON ÉLIGIBLE (verdict serveur — PRIORITÉ ABSOLUE) :
+${context.routePolicy.reply}
+- Ne dis JAMAIS « Parfait, c'est pour … » pour cette destination.
+- Ne pose PAS les questions dates / classe / hôtel / chauffeur / formulaire.
+- Propose uniquement des alternatives (ex. Varsovie, Budapest, Prague, Bucarest).
+` : ""}
+${context.confirmedRoute?.label && !context.routePolicy?.blocked ? `
 ROUTE CONFIRMÉE PAR LE CLIENT (ne jamais changer) :
 - Trajet : ${context.confirmedRoute.label}
 - Codes IATA : ${context.confirmedRoute.from || "?"} → ${context.confirmedRoute.to || "?"}
@@ -164,22 +172,44 @@ export async function runAgent({ messages, lang = "fr", context = {} }) {
     confirmedTravel.datesLabel = formatLeadDatesLabel(confirmedTravel);
   }
 
+  const routePolicy = evaluateRoutePolicy(
+    confirmedRoute.to || confirmedRoute.from ? confirmedRoute : null,
+    trimmed,
+    lang
+  );
+
+  if (routePolicy.blocked) {
+    log.info(
+      `route blocked (no LLM): ${routePolicy.hit?.iata || routePolicy.hit?.place || "?"} [${getBlockedPolicyStats().countries} pays dans la liste]`
+    );
+    return { text: routePolicy.reply, lead: null, ui: null };
+  }
+
   const agentContext = {
     ...context,
     today,
     confirmedRoute: confirmedRoute.to || confirmedRoute.from ? confirmedRoute : null,
     confirmedTravel: confirmedTravel.depart ? confirmedTravel : null,
     leadDestination,
+    routePolicy: { blocked: false },
   };
 
   // V1: tool-calling activé (scrape/devis/whatsapp). Si aucun tool n'est appelé,
   // le comportement reste équivalent à chatComplete().
-  const { text } = await chatWithTools({
+  let { text } = await chatWithTools({
     system: buildSystem(lang, agentContext),
     messages: trimmed,
     tools: OLA_AGENT_TOOLS,
     onToolUse: async ({ id: _id, name, input }) => runOlaTool({ name, input }, { context: agentContext }),
   });
+
+  text = String(text || "").trim();
+  if (!text || /^\.{2,}$/.test(text)) {
+    text =
+      lang === "en"
+        ? "Sorry, I had trouble formulating a reply. Please send your message again."
+        : "Désolé, je n'ai pas pu formuler de réponse. Pouvez-vous renvoyer votre message ?";
+  }
 
   let leadCreated = null;
   if (LEAD_TRIGGER_PATTERN.test(text)) {

@@ -122,7 +122,8 @@ const I18N = {
     "login.err.network": "Réseau indisponible",
     "login.err.auth": "Connexion impossible",
     "login.err.creds": "Identifiants incorrects",
-    "chat.form.aria": "Coordonnées"
+    "chat.form.aria": "Coordonnées",
+    "chat.err.empty": "Désolé, je n'ai pas pu formuler de réponse. Pouvez-vous renvoyer votre message ?"
   },
   "en": {
     "nav.services": "Services",
@@ -245,7 +246,8 @@ const I18N = {
     "login.err.network": "Network unavailable",
     "login.err.auth": "Sign-in failed",
     "login.err.creds": "Incorrect email or password",
-    "chat.form.aria": "Contact details"
+    "chat.form.aria": "Contact details",
+    "chat.err.empty": "Sorry, I couldn't formulate a reply. Please send your message again."
   }
 };
 

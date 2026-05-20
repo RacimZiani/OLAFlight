@@ -5,6 +5,7 @@ node_modules/
 .cache/
 data/*.json
 !data/airports-index.json
+!data/blocked-destinations.json
 data/*.db
 data/*.db-shm
 data/*.db-wal

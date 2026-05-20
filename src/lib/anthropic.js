@@ -138,7 +138,40 @@ export async function chatWithTools({
     history.push({ role: "user", content: toolResults });
   }
 
-  // Fallback si l'agent boucle trop.
+  // Fallback : boucle tools sans texte final → une passe de synthèse sans outils.
+  const simpleMessages = history
+    .map((m) => {
+      if (typeof m.content === "string" && m.content.trim()) {
+        return { role: m.role, content: m.content };
+      }
+      if (m.role === "assistant" && Array.isArray(m.content)) {
+        const t = extractText({ content: m.content });
+        return t.trim() ? { role: "assistant", content: t } : null;
+      }
+      if (m.role === "user" && Array.isArray(m.content)) {
+        return { role: "user", content: "[Résultat outil interne reçu — continue la conversation.]" };
+      }
+      return null;
+    })
+    .filter(Boolean)
+    .slice(-16);
+
+  if (simpleMessages.length) {
+    try {
+      const { text: synth } = await chatComplete({
+        system: `${system}\n\nRéponds au client en texte clair (2–6 phrases max). N'utilise aucun outil. Ne réponds jamais uniquement par « ... ».`,
+        messages: simpleMessages,
+        maxTokens: Math.min(maxTokens || config.anthropic.maxTokens, 1024),
+        model,
+      });
+      if (synth?.trim()) {
+        return { text: synth.trim(), raw: null, messages: history };
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   const last = history
     .slice()
     .reverse()
