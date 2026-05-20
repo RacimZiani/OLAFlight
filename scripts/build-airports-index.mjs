@@ -89,6 +89,12 @@ const FR_CITY_ALIASES = {
   madrid: "madrid",
   barcelona: "barcelona",
   nyc: "new york",
+  varsovie: "warsaw",
+  kiev: "kyiv",
+  kyiv: "kyiv",
+  budapest: "budapest",
+  prague: "prague",
+  bucarest: "bucharest",
 };
 
 function normalizeKey(s) {

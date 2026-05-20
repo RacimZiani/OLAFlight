@@ -5,12 +5,51 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { isContactFormUserMessage } from "./contactFormUi.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INDEX_PATH = path.join(__dirname, "../../data/airports-index.json");
 
 /** @type {{ byIata: Record<string, object>, aliases: Record<string, string> } | null} */
 let _index = null;
+
+/** Villes FR courantes absentes ou ambiguës dans l'index. */
+const MANUAL_FR_ALIASES = {
+  varsovie: "WAW",
+  warsaw: "WAW",
+  warszawa: "WAW",
+  kiev: "IEV",
+  kyiv: "IEV",
+  budapest: "BUD",
+  prague: "PRG",
+  bucarest: "OTP",
+  bucharest: "OTP",
+  londres: "LHR",
+  london: "LHR",
+};
+
+/** Codes 3 lettres qui ne sont pas des aéroports dans nos conversations. */
+const SPURIOUS_IATA = new Set([
+  "WEB",
+  "PDF",
+  "SMS",
+  "CRM",
+  "API",
+  "URL",
+  "BOT",
+  "FAQ",
+  "VIP",
+  "CEO",
+  "CTA",
+  "APP",
+  "DOM",
+  "XML",
+  "JSON",
+  "OUI",
+  "NON",
+]);
+
+const ROUTE_SEP_RE = /\s*(?:→|->|vers|to|—|–)\s*/i;
 
 function loadIndex() {
   if (_index) return _index;
@@ -25,8 +64,6 @@ function loadIndex() {
   }
 }
 
-const ROUTE_SEP_RE = /\s*(?:→|->|vers|to|—|–)\s*/i;
-
 function normalizeKey(s) {
   return String(s || "")
     .toLowerCase()
@@ -37,9 +74,26 @@ function normalizeKey(s) {
     .trim();
 }
 
+function aliasAsWordRegex(alias) {
+  const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:^|\\s)${escaped}(?:\\s|$)`, "i");
+}
+
+function isSpuriousIata(code) {
+  return SPURIOUS_IATA.has(String(code || "").toUpperCase());
+}
+
+function isShortCityReply(text) {
+  const t = String(text || "").trim();
+  if (!t || t.length > 55 || t.includes("\n")) return false;
+  if (/^[\d\s+().@-]+$/.test(t)) return false;
+  if (/^(oui|non|ok|yes|no|merci|thanks|business|first|entreprise|corporate)$/i.test(t)) return false;
+  return true;
+}
+
 function entryFromIata(iata) {
   const code = String(iata || "").toUpperCase();
-  if (!/^[A-Z]{3}$/.test(code)) return null;
+  if (!/^[A-Z]{3}$/.test(code) || isSpuriousIata(code)) return null;
   const ap = loadIndex().byIata[code];
   if (!ap) return { iata: code, label: code, slug: "", inIndex: false };
   return {
@@ -61,38 +115,44 @@ export function getAirportEntry(iata) {
 
 /**
  * Résout un fragment texte (ville, IATA, nom d'aéroport) en code IATA.
- * Couvre tous les aéroports IATA de la base OurAirports + alias FR courants.
- * @returns {{ iata: string, label: string, slug?: string } | null}
+ * @returns {{ iata: string, label: string, slug?: string, inIndex?: boolean } | null}
  */
 export function resolveAirport(text) {
   const raw = String(text || "").trim();
   if (!raw) return null;
 
-  const { aliases, byIata } = loadIndex();
   const key = normalizeKey(raw);
+  if (MANUAL_FR_ALIASES[key]) return entryFromIata(MANUAL_FR_ALIASES[key]);
 
-  // Alias exact (ville, nom, mot-clé)
+  const { aliases, byIata } = loadIndex();
+
   if (aliases[key]) return entryFromIata(aliases[key]);
 
-  // Code IATA seul
-  const iataMatch = raw.match(/\b([A-Z]{3})\b/i);
-  if (iataMatch) return entryFromIata(iataMatch[1].toUpperCase());
+  const iataOnly = raw.match(/^\s*([A-Za-z]{3})\s*$/);
+  if (iataOnly) return entryFromIata(iataOnly[1].toUpperCase());
 
-  // Sous-chaîne : "pour madrid", texte long avec ville dedans
+  const iataMatch = raw.match(/\b([A-Z]{3})\b/i);
+  if (iataMatch && raw.length <= 6) return entryFromIata(iataMatch[1].toUpperCase());
+
   if (key.length >= 3) {
-    // Priorité aux alias dont la clé est contenue dans le texte (plus long d'abord)
     const candidates = [];
     for (const [alias, code] of Object.entries(aliases)) {
       if (alias.length < 3) continue;
-      if (key.includes(alias) || alias.includes(key)) {
-        candidates.push({ alias, code, len: alias.length });
+      if (alias === key) {
+        candidates.push({ alias, code, len: alias.length, exact: true });
+        continue;
+      }
+      if (aliasAsWordRegex(alias).test(key)) {
+        candidates.push({ alias, code, len: alias.length, exact: false });
       }
     }
-    candidates.sort((a, b) => b.len - a.len);
+    candidates.sort((a, b) => {
+      if (a.exact !== b.exact) return a.exact ? -1 : 1;
+      return b.len - a.len;
+    });
     if (candidates.length) return entryFromIata(candidates[0].code);
   }
 
-  // Recherche par ville / nom d'aéroport (contient)
   const q = key;
   let best = null;
   for (const ap of Object.values(byIata)) {
@@ -100,7 +160,7 @@ export function resolveAirport(text) {
     const nameK = normalizeKey(ap.name);
     if (!cityK && !nameK) continue;
     if (cityK === q || nameK === q) return entryFromIata(ap.iata);
-    if (cityK && (q.includes(cityK) || cityK.includes(q))) {
+    if (cityK && (q === cityK || aliasAsWordRegex(cityK).test(q))) {
       if (!best || q.length <= cityK.length) best = ap;
     }
   }
@@ -114,7 +174,7 @@ export function resolveAirport(text) {
  */
 export function parseRouteFromText(text) {
   const s = String(text || "").trim();
-  if (!s) return { from: null, to: null, label: "" };
+  if (!s || isContactFormUserMessage(s)) return { from: null, to: null, label: "" };
 
   const parts = s.split(ROUTE_SEP_RE).map((p) => p.trim()).filter(Boolean);
   if (parts.length >= 2) {
@@ -129,7 +189,9 @@ export function parseRouteFromText(text) {
   const single = resolveAirport(s);
   if (single) return { from: null, to: single.iata, label: single.label };
 
-  const codes = [...s.toUpperCase().matchAll(/\b([A-Z]{3})\b/g)].map((m) => m[1]);
+  const codes = [...s.toUpperCase().matchAll(/\b([A-Z]{3})\b/g)]
+    .map((m) => m[1])
+    .filter((c) => !isSpuriousIata(c));
   const uniq = [...new Set(codes)];
   if (uniq.length >= 2) {
     return {
@@ -140,7 +202,7 @@ export function parseRouteFromText(text) {
   }
   if (uniq.length === 1) {
     const e = entryFromIata(uniq[0]);
-    return { from: null, to: uniq[0], label: e?.label || uniq[0] };
+    if (e) return { from: null, to: uniq[0], label: e.label || uniq[0] };
   }
 
   return { from: null, to: null, label: s };
@@ -153,6 +215,32 @@ const DEST_PATTERNS = [
   /\b([a-zàâäéèêëïîôùûüç]{3,35})\s*(?:→|->|vers)\s*([a-zàâäéèêëïîôùûüç]{3,35})/gi,
 ];
 
+const DEPARTURE_QUESTION_RE =
+  /\b(d['']?o[uù]|depuis|from|partir|d[eé]part|ville de d[eé]part)\b/i;
+const DESTINATION_QUESTION_RE =
+  /\b(destination|arriv[eé]e|pour quelle destination|going to|what'?s your destination)\b/i;
+
+function applyCityToRoute({ ap, expectField, from, to }) {
+  if (!ap?.iata) return { from, to, expectField };
+  const code = ap.iata;
+  if (expectField === "from") {
+    return { from: code, to, expectField: null };
+  }
+  if (expectField === "to") {
+    return { from, to: code, expectField: null };
+  }
+  if (to && !from && code !== to) {
+    return { from: code, to, expectField: null };
+  }
+  if (!to) {
+    return { from, to: code, expectField: null };
+  }
+  if (!from) {
+    return { from: code, to, expectField: null };
+  }
+  return { from, to: code, expectField: null };
+}
+
 /**
  * Scanne l'historique de messages pour reconstruire la route confirmée.
  */
@@ -161,42 +249,93 @@ export function extractRouteFromMessages(messages) {
   let to = null;
   let label = "";
   let oneWay = false;
+  let expectField = null;
 
-  const userTexts = (messages || [])
-    .filter((m) => m.role === "user")
-    .map((m) => String(m.content || ""));
+  for (const m of messages || []) {
+    if (m.role === "assistant") {
+      const t = String(m.content || "");
+      if (DEPARTURE_QUESTION_RE.test(t)) expectField = "from";
+      else if (DESTINATION_QUESTION_RE.test(t)) expectField = "to";
+      continue;
+    }
+    if (m.role !== "user") continue;
 
-  for (const text of userTexts) {
+    const text = String(m.content || "").trim();
+    if (!text || isContactFormUserMessage(text)) continue;
+
     if (/\b(aller\s+simple|one\s*way|sans\s+retour)\b/i.test(text)) oneWay = true;
 
-    const ft = /\b(?:de|depuis|from)\s+([a-zàâäéèêëïîôùûüç\s'-]{2,40})\s+(?:vers|à|a|to)\s+([a-zàâäéèêëïîôùûüç\s'-]{2,40})/i.exec(text);
+    const ft =
+      /\b(?:de|depuis|from)\s+([a-zàâäéèêëïîôùûüç\s'-]{2,40})\s+(?:vers|à|a|to)\s+([a-zàâäéèêëïîôùûüç\s'-]{2,40})/i.exec(
+        text
+      );
     if (ft) {
       const f = resolveAirport(ft[1]);
       const t = resolveAirport(ft[2]);
       if (f) from = f.iata;
       if (t) to = t.iata;
+      expectField = null;
+      continue;
     }
 
     for (const re of DEST_PATTERNS) {
       re.lastIndex = 0;
-      let m;
-      while ((m = re.exec(text)) !== null) {
-        if (m[2]) {
-          const f = resolveAirport(m[1]);
-          const t = resolveAirport(m[2]);
+      let match;
+      while ((match = re.exec(text)) !== null) {
+        if (match[2]) {
+          const f = resolveAirport(match[1]);
+          const t = resolveAirport(match[2]);
           if (f) from = f.iata;
           if (t) to = t.iata;
-        } else if (m[1]) {
-          const t = resolveAirport(m[1].trim());
-          if (t) to = t.iata;
+          expectField = null;
+        } else if (match[1]) {
+          const t = resolveAirport(match[1].trim());
+          if (t) {
+            const applied = applyCityToRoute({
+              ap: t,
+              expectField: expectField || "to",
+              from,
+              to,
+            });
+            from = applied.from;
+            to = applied.to;
+            expectField = applied.expectField;
+          }
         }
       }
     }
 
+    if (isShortCityReply(text)) {
+      const ap = resolveAirport(text);
+      if (ap) {
+        const applied = applyCityToRoute({ ap, expectField, from, to });
+        from = applied.from;
+        to = applied.to;
+        expectField = applied.expectField;
+        continue;
+      }
+    }
+
     const route = parseRouteFromText(text);
-    if (route.from) from = route.from;
-    if (route.to) to = route.to;
-    if (route.label) label = route.label;
+    if (route.from && route.to) {
+      from = route.from;
+      to = route.to;
+      expectField = null;
+    } else {
+      if (route.from) from = route.from;
+      if (route.to && !isSpuriousIata(route.to)) {
+        const applied = applyCityToRoute({
+          ap: entryFromIata(route.to),
+          expectField,
+          from,
+          to,
+        });
+        from = applied.from;
+        to = applied.to;
+        expectField = applied.expectField;
+      }
+    }
+    if (route.label && route.from && route.to) label = route.label;
   }
 
   if (!label && (from || to)) {
@@ -244,8 +383,6 @@ export function reconcileScrapeRoute({ from, to, confirmed }) {
     out.corrected = true;
   }
 
-  // Pas d'origine par défaut (ex. CDG) : l'agent doit demander le départ au client.
-
   return out;
 }
 
@@ -277,7 +414,6 @@ export function getIataRegistry() {
   return out;
 }
 
-// Compat : ancien export BY_IATA / IATA_REGISTRY
 export const IATA_REGISTRY = new Proxy(
   {},
   {

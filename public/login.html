@@ -58,31 +58,41 @@ body{
 .foot{text-align:center;margin-top:28px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g2);}
 .foot a{color:var(--g);text-decoration:none;border-bottom:1px solid var(--l);padding-bottom:1px;}
 .foot a:hover{color:var(--w);}
+.lang-toggle{
+  position:fixed;top:20px;right:20px;
+  font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;
+  letter-spacing:3px;text-transform:uppercase;
+  color:var(--g);background:transparent;border:1px solid var(--l2);
+  padding:8px 14px;cursor:pointer;transition:all .2s;
+}
+.lang-toggle:hover,.lang-toggle.is-en{color:var(--w);border-color:var(--w);}
 </style>
+<script src="/i18n.js"></script>
 </head>
 <body>
+  <button type="button" class="lang-toggle" id="langToggle" aria-label="Switch language">EN</button>
   <div class="shell">
     <div class="brand">
       <img class="brand-logo" src="/assets/ola-logo.png" alt="Ola Flight" width="280" height="96" />
-      <div class="brand-mark">Private Travel</div>
-      <div class="brand-name">Ola <em>Flight</em></div>
-      <div class="brand-tag">Espace équipe</div>
+      <div class="brand-mark" data-i18n="login.brand.mark">Private Travel</div>
+      <div class="brand-name" data-i18n="login.brand.name">Ola <em>Flight</em></div>
+      <div class="brand-tag" data-i18n="login.brand.tag">Espace équipe</div>
     </div>
     <form class="card" id="login-form" autocomplete="on">
-      <div class="title">Connexion</div>
-      <div class="sub">Équipe Ola Flight</div>
+      <div class="title" data-i18n="login.title">Connexion</div>
+      <div class="sub" data-i18n="login.sub">Équipe Ola Flight</div>
       <div class="field">
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" autocomplete="username" required placeholder="vous@olaflight.com" />
+        <label for="email" data-i18n="login.label.email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="username" required placeholder="vous@olaflight.com" data-i18n-placeholder="login.placeholder.email" />
       </div>
       <div class="field">
-        <label for="password">Mot de passe</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" />
+        <label for="password" data-i18n="login.label.password">Mot de passe</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" data-i18n-placeholder="login.placeholder.password" />
       </div>
-      <button class="btn" type="submit" id="submit">Entrer</button>
+      <button class="btn" type="submit" id="submit" data-i18n="login.submit">Entrer</button>
       <div class="error" id="error"></div>
     </form>
-    <div class="foot"><a href="/">← retour au site</a></div>
+    <div class="foot"><a href="/" data-i18n="login.foot">← retour au site</a></div>
   </div>
 <script>
 (function(){
@@ -122,13 +132,18 @@ body{
       });
       const j = await r.json().catch(() => ({}));
       if(!r.ok){
-        errBox.textContent = j.error || 'Connexion impossible';
+        const apiErr = String(j.error || '');
+        if (apiErr === 'Identifiants incorrects' && typeof t === 'function') {
+          errBox.textContent = t('login.err.creds');
+        } else {
+          errBox.textContent = (typeof t === 'function') ? t('login.err.auth') : (apiErr || 'Connexion impossible');
+        }
         btn.disabled = false;
         return;
       }
       location.replace(destination(j.user));
     }catch(err){
-      errBox.textContent = 'Réseau indisponible';
+      errBox.textContent = (typeof t === 'function') ? t('login.err.network') : 'Réseau indisponible';
       btn.disabled = false;
     }
   });

@@ -21,6 +21,15 @@ export function stripContactFormMarker(text) {
   return String(text || "").replace(CONTACT_FORM_MARKER, "").trim();
 }
 
+/** Message utilisateur structuré après soumission du formulaire (ne pas parser comme route). */
+export function isContactFormUserMessage(text) {
+  const t = String(text || "").trim();
+  return (
+    /^\s*Identit[eé]\s+client\s*\(formulaire\s+web\)/i.test(t) ||
+    /^\s*Client identity\s*\(web form\)/i.test(t)
+  );
+}
+
 /** Message utilisateur structuré après soumission du formulaire. */
 export function formatContactFormSubmission({ prenom, nom, email, phoneE164 }) {
   const lines = [
