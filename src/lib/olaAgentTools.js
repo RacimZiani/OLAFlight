@@ -21,6 +21,16 @@ import { generateDevisPdf } from "./pdf.js";
 import { config } from "../config.js";
 import { buildPublicDevisPdfUrl, publicDevisPdfPath } from "./publicUrl.js";
 import { buildClientQuoteMessage, optionsForToolOutput } from "./devisQuoteMessage.js";
+import { coerceLeadRowForDb, leadBoolForDb, parseBoolish, parsePassagers } from "./dbCoerce.js";
+
+const zBoolishOptional = z.preprocess(
+  (v) => (v === undefined || v === null ? undefined : parseBoolish(v)),
+  z.boolean().optional()
+);
+const zPassagersOptional = z.preprocess(
+  (v) => (v === undefined || v === null || v === "" ? undefined : parsePassagers(v, 1)),
+  z.number().int().min(1).optional()
+);
 import { logAgentAction } from "./agentAudit.js";
 import { setConversationLeadId } from "./conversation.js";
 import { pickCloserForLead } from "./closerAssign.js";
@@ -156,18 +166,18 @@ const leadUpsertSchema = z.object({
   destination: z.string().optional(),
   dates: z.string().optional(),
   classe: z.string().optional(),
-  passagers: z.coerce.number().int().min(1).optional(),
+  passagers: zPassagersOptional,
   status: z.string().optional(),
   notes: z.string().optional(),
   apporteur_name: z.string().nullable().optional(),
   closer_name: z.string().nullable().optional(),
-  urgent: z.coerce.boolean().optional(),
+  urgent: zBoolishOptional,
   // Type de client : "particulier" → pas de comparatif marché dans le PDF.
   client_type: z.enum(["particulier", "pro", "corporate"]).optional(),
   // Besoins extras (hôtel optionnel, chauffeur OBLIGATOIRE de demander).
-  needs_hotel: z.coerce.boolean().optional(),
+  needs_hotel: zBoolishOptional,
   hotel_preference: z.string().optional(),
-  needs_driver: z.coerce.boolean().optional(),
+  needs_driver: zBoolishOptional,
   driver_pickup: z.string().optional(),
   driver_dropoff: z.string().optional(),
   extras_notes: z.string().optional(),
@@ -572,18 +582,18 @@ async function doUpsertLead(input, { context }) {
       return raw;
     })(),
     classe: args.classe || "",
-    passagers: Number(args.passagers || 1) || 1,
+    passagers: parsePassagers(args.passagers, 1),
     status: normalizedStatus,
     apporteur_name: resolvedProspecteur,
     closer_name: resolvedCloser,
     notes: args.notes || "",
-    urgent: Boolean(args.urgent),
+    urgent: leadBoolForDb(args.urgent),
     // Extras (peuvent être absents si la migration 008 n'a pas tourné — l'insertion
     // les ignore alors silencieusement côté Supabase via fallback ci-dessous).
     ...(args.client_type ? { client_type: args.client_type } : {}),
-    ...(args.needs_hotel != null ? { needs_hotel: Boolean(args.needs_hotel) } : {}),
+    ...(args.needs_hotel != null ? { needs_hotel: leadBoolForDb(args.needs_hotel) } : {}),
     ...(args.hotel_preference ? { hotel_preference: args.hotel_preference } : {}),
-    ...(args.needs_driver != null ? { needs_driver: Boolean(args.needs_driver) } : {}),
+    ...(args.needs_driver != null ? { needs_driver: leadBoolForDb(args.needs_driver) } : {}),
     ...(args.driver_pickup ? { driver_pickup: args.driver_pickup } : {}),
     ...(args.driver_dropoff ? { driver_dropoff: args.driver_dropoff } : {}),
     ...(args.extras_notes ? { extras_notes: args.extras_notes } : {}),
@@ -593,18 +603,20 @@ async function doUpsertLead(input, { context }) {
     "client_type", "needs_hotel", "hotel_preference",
     "needs_driver", "driver_pickup", "driver_dropoff", "extras_notes",
   ];
+  const dbPayload = coerceLeadRowForDb(payload);
+
   async function saveTolerant() {
     try {
       return existing
-        ? await store.leads.update(existing.id, payload)
-        : await store.leads.insert(payload);
+        ? await store.leads.update(existing.id, dbPayload)
+        : await store.leads.insert(dbPayload);
     } catch (e) {
       const msg = e?.message || String(e);
       // Si la migration 008 n'a pas tourné, Supabase rejette les colonnes extras.
       if (/(client_type|needs_hotel|needs_driver|hotel_preference|driver_pickup|driver_dropoff|extras_notes)/i.test(msg)
           && /column|cache|schema/i.test(msg)) {
         log.warn(`leads extras unsupported (run db/migrations/008_extras_hotel_driver.sql) → fallback`);
-        const reduced = { ...payload };
+        const reduced = coerceLeadRowForDb({ ...payload });
         for (const k of EXTRAS_KEYS) delete reduced[k];
         return existing
           ? await store.leads.update(existing.id, reduced)

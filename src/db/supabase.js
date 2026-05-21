@@ -16,6 +16,7 @@
 
 import { config } from "../config.js";
 import { createLogger } from "../logger.js";
+import { coerceLeadRowForDb, decodeLeadBools } from "../lib/dbCoerce.js";
 
 const log = createLogger("db:supabase");
 
@@ -41,6 +42,11 @@ async function getClient() {
 // Map application-level "id" (string aléatoire pour leads/devis JSON) → uuid
 // Postgres : on stocke l'id existant côté JSON dans la PK (devis.id est un text,
 // leads.id est uuid → on génère un uuid si absent).
+function normalizeRow(table, row, { forWrite = false } = {}) {
+  if (table !== "leads" || !row) return row;
+  return forWrite ? coerceLeadRowForDb(row) : decodeLeadBools(row);
+}
+
 function buildCollection(table, options = {}) {
   const { idField = "id", autoTimestamps = true } = options;
   return {
@@ -48,32 +54,34 @@ function buildCollection(table, options = {}) {
       const supabase = await getClient();
       const { data, error } = await supabase.from(table).select("*").order("created_at", { ascending: false });
       if (error) throw error;
-      return data || [];
+      return (data || []).map((r) => normalizeRow(table, r));
     },
     async findById(id) {
       const supabase = await getClient();
       const { data, error } = await supabase.from(table).select("*").eq(idField, id).maybeSingle();
       if (error) throw error;
-      return data || null;
+      return normalizeRow(table, data || null);
     },
     async findByField(field, value) {
       const supabase = await getClient();
       const { data, error } = await supabase.from(table).select("*").eq(field, value).maybeSingle();
       if (error) throw error;
-      return data || null;
+      return normalizeRow(table, data || null);
     },
     async insert(row) {
       const supabase = await getClient();
+      const base = normalizeRow(table, row, { forWrite: true });
       const payload = autoTimestamps
-        ? { ...row, created_at: row.created_at || new Date().toISOString(), updated_at: new Date().toISOString() }
-        : row;
+        ? { ...base, created_at: base.created_at || new Date().toISOString(), updated_at: new Date().toISOString() }
+        : base;
       const { data, error } = await supabase.from(table).insert(payload).select().single();
       if (error) throw error;
-      return data;
+      return normalizeRow(table, data);
     },
     async update(id, patch) {
       const supabase = await getClient();
-      const payload = autoTimestamps ? { ...patch, updated_at: new Date().toISOString() } : patch;
+      const base = normalizeRow(table, patch, { forWrite: true });
+      const payload = autoTimestamps ? { ...base, updated_at: new Date().toISOString() } : base;
       const { data, error } = await supabase
         .from(table)
         .update(payload)
@@ -81,7 +89,7 @@ function buildCollection(table, options = {}) {
         .select()
         .maybeSingle();
       if (error) throw error;
-      return data || null;
+      return normalizeRow(table, data || null);
     },
     async remove(id) {
       const supabase = await getClient();

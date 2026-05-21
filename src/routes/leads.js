@@ -18,6 +18,7 @@ import {
 import { summarizeLeadConversation } from "../lib/conversationSummary.js";
 import { requireBackoffice } from "../middleware/auth.js";
 import { createLogger } from "../logger.js";
+import { coerceLeadRowForDb, parsePassagers, leadBoolForDb } from "../lib/dbCoerce.js";
 
 const log = createLogger("leads");
 const router = Router();
@@ -37,7 +38,7 @@ function normalizeLeadInput(body) {
     destination: String(body.destination || body.dest || "").trim(),
     dates: String(body.dates || "").trim(),
     classe: String(body.classe || body.type || "").trim(),
-    passagers: Number(body.passagers || body.pax || 1) || 1,
+    passagers: parsePassagers(body.passagers ?? body.pax, 1),
     status: LEAD_STATUSES.safeParse(body.status).success ? body.status : "qualification",
     apporteur_name: body.apporteur_name || body.apporteuse || null,
     closer_name: body.closer_name || body.sdr || null,
@@ -46,7 +47,7 @@ function normalizeLeadInput(body) {
     notes: body.notes || "",
     value: Number(body.value || 0) || 0,
     margin: Number(body.margin || 0) || 0,
-    urgent: Boolean(body.urgent),
+    urgent: leadBoolForDb(body.urgent),
     created_at: now,
     updated_at: now,
   };
