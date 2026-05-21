@@ -188,6 +188,7 @@ export async function runAgent({ messages, lang = "fr", context = {} }) {
   const agentContext = {
     ...context,
     today,
+    conversationMessages: trimmed,
     confirmedRoute: confirmedRoute.to || confirmedRoute.from ? confirmedRoute : null,
     confirmedTravel: confirmedTravel.depart ? confirmedTravel : null,
     leadDestination,
@@ -244,7 +245,12 @@ export async function runAgent({ messages, lang = "fr", context = {} }) {
       ? { contact_form: true }
       : null;
 
-  return { text: displayText, lead: leadCreated, ui };
+  return {
+    text: displayText,
+    lead: leadCreated,
+    ui,
+    lead_id: agentContext.lead_id || context.lead_id || null,
+  };
 }
 
 export { CONTACT_FORM_MARKER };

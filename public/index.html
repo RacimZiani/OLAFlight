@@ -1541,6 +1541,19 @@ window.addEventListener('load', () => {
     state.convId = v;
     return v;
   }
+  function getLeadId(){
+    if (state.leadId) return state.leadId;
+    const k = 'ola_chat_lead_id';
+    try { state.leadId = localStorage.getItem(k) || null; } catch { state.leadId = null; }
+    return state.leadId;
+  }
+  function setLeadId(id){
+    state.leadId = id || null;
+    try {
+      if (id) localStorage.setItem('ola_chat_lead_id', id);
+      else localStorage.removeItem('ola_chat_lead_id');
+    } catch {}
+  }
 
   function currentLang(){
     return (typeof getLang === 'function') ? getLang() : ((document.documentElement.lang === 'en') ? 'en' : 'fr');
@@ -1643,7 +1656,12 @@ window.addEventListener('load', () => {
       const r = await fetch('/api/chat', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ lang, conversation_id: getConvId(), messages: state.msgs.slice(-12) })
+        body: JSON.stringify({
+          lang,
+          conversation_id: getConvId(),
+          lead_id: getLeadId() || undefined,
+          messages: state.msgs.slice(-12)
+        })
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'server error');
@@ -1652,6 +1670,7 @@ window.addEventListener('load', () => {
         reply = (typeof t === 'function') ? t('chat.err.empty') : 'Désolé, je n\'ai pas pu formuler de réponse. Réessayez.';
       }
       state.msgs.push({role:'assistant', content: reply});
+      if (data.lead_id) setLeadId(data.lead_id);
       if (data.ui && data.ui.contact_form) {
         setContactForm(true);
       } else if (detectContactFormFromText(reply)) {

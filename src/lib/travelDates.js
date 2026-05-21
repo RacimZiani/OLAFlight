@@ -90,6 +90,31 @@ export function parseTravelDatesFromText(text, ref = new Date()) {
   const s = String(text || "").trim();
   if (!s) return { depart: null, ret: null, label: "" };
 
+  const today = getTodayContext(ref);
+  if (/\b(?:aujourd'?hui|ajd|asap|le plus t[oô]t|d[`']?urgence|immédiat|immediate)\b/i.test(s)) {
+    return {
+      depart: today.iso,
+      ret: null,
+      label: `Dès que possible (${today.labelFr})`,
+    };
+  }
+  if (/\b(?:demain|tomorrow)\b/i.test(s)) {
+    const d = new Date(ref);
+    d.setDate(d.getDate() + 1);
+    const depart = toIsoDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    return { depart, ret: null, label: `Demain (${formatFrenchDate(depart)})` };
+  }
+  if (/\b(?:cette\s+semaine|this\s+week|semaine\s+prochaine)\b/i.test(s)) {
+    const d = new Date(ref);
+    d.setDate(d.getDate() + 2);
+    const depart = toIsoDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    return {
+      depart,
+      ret: null,
+      label: `Cette semaine (vers le ${formatFrenchDate(depart)})`,
+    };
+  }
+
   // ISO
   const iso = s.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
   if (iso) {

@@ -31,6 +31,40 @@ export function isContactFormUserMessage(text) {
 }
 
 /** Message utilisateur structuré après soumission du formulaire. */
+/** Extrait identité depuis le message formulaire web dans l'historique chat. */
+export function extractContactFromMessages(messages) {
+  for (const m of messages || []) {
+    if (m.role !== "user") continue;
+    const t = String(m.content || "").trim();
+    if (!isContactFormUserMessage(t)) continue;
+
+    const prenom =
+      t.match(/(?:pr[ée]nom|first\s*name)\s*:\s*(.+)/i)?.[1]?.trim() || "";
+    const nom =
+      t.match(/(?:^|\n)\s*[-•]?\s*nom\s*:\s*(.+)/im)?.[1]?.trim() ||
+      t.match(/(?:last\s*name|family\s*name)\s*:\s*(.+)/i)?.[1]?.trim() ||
+      "";
+    const email =
+      t.match(/(?:e-?mail|email)\s*:\s*([^\s\n]+)/i)?.[1]?.trim() || "";
+    const phone =
+      t.match(/(?:t[ée]l[ée]phone|phone|whatsapp|mobile)\s*:\s*([+\d\s().-]+)/i)?.[1]
+        ?.trim() || "";
+
+    const client_name = [prenom, nom].filter(Boolean).join(" ").trim();
+    if (!client_name && !email && !phone) return null;
+
+    return {
+      first_name: prenom,
+      last_name: nom,
+      client_name,
+      email,
+      phone,
+      client_contact: phone || email,
+    };
+  }
+  return null;
+}
+
 export function formatContactFormSubmission({ prenom, nom, email, phoneE164 }) {
   const lines = [
     "Identité client (formulaire web) :",

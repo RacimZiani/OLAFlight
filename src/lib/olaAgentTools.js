@@ -22,6 +22,7 @@ import { config } from "../config.js";
 import { buildPublicDevisPdfUrl, publicDevisPdfPath } from "./publicUrl.js";
 import { buildClientQuoteMessage, optionsForToolOutput } from "./devisQuoteMessage.js";
 import { coerceLeadRowForDb, leadBoolForDb, parseBoolish, parsePassagers } from "./dbCoerce.js";
+import { buildLeadUpsertPayload } from "./leadEnrichment.js";
 
 const zBoolishOptional = z.preprocess(
   (v) => (v === undefined || v === null ? undefined : parseBoolish(v)),
@@ -530,7 +531,18 @@ async function doUpsertLead(input, { context }) {
   const normalizedCanal =
     String(args.canal || "").toLowerCase().includes("insta") ? "instagram" : "whatsapp";
 
-  const existing = safeId ? await store.leads.findById(safeId) : null;
+  const contextLeadId =
+    context?.lead_id &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      String(context.lead_id)
+    )
+      ? context.lead_id
+      : null;
+  const existing = safeId
+    ? await store.leads.findById(safeId)
+    : contextLeadId
+      ? await store.leads.findById(contextLeadId)
+      : null;
   // Auto-dispatch : si on n'a pas de closer (ni dans args, ni sur le lead existant),
   // on assigne automatiquement le closer le moins chargé.
   let resolvedCloser = args.closer_name ?? existing?.closer_name ?? null;
@@ -550,50 +562,33 @@ async function doUpsertLead(input, { context }) {
     }
   }
 
+  const { payload: enriched } = buildLeadUpsertPayload({ args, existing, context });
+
   const payload = {
-    // Sur Supabase, leads.id est un uuid: si on ne fournit pas d'id, la DB le génère.
-    // Si on fournit un id non-uuid, on l'ignore pour éviter des erreurs.
-    ...(safeId ? { id: safeId } : {}),
-    client_name: args.client_name || "Client",
-    client_contact: args.client_contact || "",
-    canal: normalizedCanal,
-    destination: (() => {
-      const raw = args.destination || "";
-      if (!raw && context?.confirmedRoute) {
-        return formatDestinationLabel(context.confirmedRoute);
-      }
-      const parsed = parseRouteFromText(raw);
-      if (parsed.from || parsed.to) {
-        return formatDestinationLabel({
-          from: parsed.from,
-          to: parsed.to,
-          label: parsed.label || raw,
-        });
-      }
-      return raw;
-    })(),
-    dates: (() => {
-      const raw = args.dates || "";
-      if (context?.confirmedTravel?.depart) {
-        return formatLeadDatesLabel(context.confirmedTravel);
-      }
-      const parsed = parseTravelDatesFromText(raw);
-      if (parsed.depart) return formatLeadDatesLabel({ ...parsed, oneWay: context?.confirmedTravel?.oneWay });
-      return raw;
-    })(),
-    classe: args.classe || "",
-    passagers: parsePassagers(args.passagers, 1),
+    ...(safeId ? { id: safeId } : existing?.id ? { id: existing.id } : {}),
+    client_name: enriched.client_name,
+    client_contact: enriched.client_contact,
+    canal:
+      String(context?.channel || "").toLowerCase() === "web"
+        ? "whatsapp"
+        : normalizedCanal,
+    destination: enriched.destination,
+    dates: enriched.dates,
+    classe: enriched.classe,
+    passagers: parsePassagers(enriched.passagers, 1),
     status: normalizedStatus,
     apporteur_name: resolvedProspecteur,
     closer_name: resolvedCloser,
-    notes: args.notes || "",
-    urgent: leadBoolForDb(args.urgent),
-    // Extras (peuvent être absents si la migration 008 n'a pas tourné — l'insertion
-    // les ignore alors silencieusement côté Supabase via fallback ci-dessous).
-    ...(args.client_type ? { client_type: args.client_type } : {}),
-    ...(args.needs_hotel != null ? { needs_hotel: leadBoolForDb(args.needs_hotel) } : {}),
+    notes: enriched.notes,
+    urgent: leadBoolForDb(args.urgent ?? existing?.urgent),
+    ...(enriched.client_type ? { client_type: enriched.client_type } : {}),
+    ...(enriched.needs_hotel != null
+      ? { needs_hotel: leadBoolForDb(enriched.needs_hotel) }
+      : {}),
     ...(args.hotel_preference ? { hotel_preference: args.hotel_preference } : {}),
-    ...(args.needs_driver != null ? { needs_driver: leadBoolForDb(args.needs_driver) } : {}),
+    ...(enriched.needs_driver != null
+      ? { needs_driver: leadBoolForDb(enriched.needs_driver) }
+      : {}),
     ...(args.driver_pickup ? { driver_pickup: args.driver_pickup } : {}),
     ...(args.driver_dropoff ? { driver_dropoff: args.driver_dropoff } : {}),
     ...(args.extras_notes ? { extras_notes: args.extras_notes } : {}),

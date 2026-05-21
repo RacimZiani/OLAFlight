@@ -26,7 +26,46 @@ const MANUAL_FR_ALIASES = {
   bucharest: "OTP",
   londres: "LHR",
   london: "LHR",
+  bali: "DPS",
+  indonesie: "DPS",
+  indonésie: "DPS",
+  indonesia: "DPS",
+  denpasar: "DPS",
+  alger: "ALG",
+  algiers: "ALG",
+  "tizi ouzou": "ALG",
 };
+
+/** Mots FR courants — ne pas résoudre comme alias IATA (ex. « pas » → PAS Paros). */
+const BLOCKED_PLACE_WORDS = new Set([
+  "pas",
+  "non",
+  "oui",
+  "plus",
+  "sans",
+  "avec",
+  "pour",
+  "tres",
+  "très",
+  "bien",
+  "merci",
+  "ok",
+  "perso",
+  "personnel",
+  "hotel",
+  "hôtel",
+  "chauffeur",
+  "chauffeurs",
+  "entreprise",
+  "professionnel",
+  "ajd",
+  "meme",
+  "même",
+  "possible",
+  "semaine",
+  "tot",
+  "tôt",
+]);
 
 /** Codes 3 lettres qui ne sont pas des aéroports dans nos conversations. */
 const SPURIOUS_IATA = new Set([
@@ -88,6 +127,9 @@ function isShortCityReply(text) {
   if (!t || t.length > 55 || t.includes("\n")) return false;
   if (/^[\d\s+().@-]+$/.test(t)) return false;
   if (/^(oui|non|ok|yes|no|merci|thanks|business|first|entreprise|corporate)$/i.test(t)) return false;
+  if (/\b(?:ajd|aujourd|semaine|demain|asap|possible|passager|chauffeur|h[oô]tel|perso)\b/i.test(t)) {
+    return false;
+  }
   return true;
 }
 
@@ -120,8 +162,10 @@ export function getAirportEntry(iata) {
 export function resolveAirport(text) {
   const raw = String(text || "").trim();
   if (!raw) return null;
+  if (/\bpas\s+d['']?/i.test(raw)) return null;
 
   const key = normalizeKey(raw);
+  if (BLOCKED_PLACE_WORDS.has(key)) return null;
   if (MANUAL_FR_ALIASES[key]) return entryFromIata(MANUAL_FR_ALIASES[key]);
 
   const { aliases, byIata } = loadIndex();
@@ -137,7 +181,7 @@ export function resolveAirport(text) {
   if (key.length >= 3) {
     const candidates = [];
     for (const [alias, code] of Object.entries(aliases)) {
-      if (alias.length < 3) continue;
+      if (alias.length < 3 || BLOCKED_PLACE_WORDS.has(alias)) continue;
       if (alias === key) {
         candidates.push({ alias, code, len: alias.length, exact: true });
         continue;
@@ -186,12 +230,16 @@ export function parseRouteFromText(text) {
     return { from, to, label };
   }
 
+  if (/\bpas\s+d['']?/i.test(s)) {
+    return { from: null, to: null, label: s };
+  }
+
   const single = resolveAirport(s);
   if (single) return { from: null, to: single.iata, label: single.label };
 
   const codes = [...s.toUpperCase().matchAll(/\b([A-Z]{3})\b/g)]
     .map((m) => m[1])
-    .filter((c) => !isSpuriousIata(c));
+    .filter((c) => !isSpuriousIata(c) && !BLOCKED_PLACE_WORDS.has(c.toLowerCase()));
   const uniq = [...new Set(codes)];
   if (uniq.length >= 2) {
     return {
@@ -237,6 +285,10 @@ function applyCityToRoute({ ap, expectField, from, to }) {
   }
   if (!from) {
     return { from: code, to, expectField: null };
+  }
+  // Ville déjà en départ ou arrivée (ex. « ok pour Alger ») — ne pas écraser la destination.
+  if (code === from || code === to) {
+    return { from, to, expectField: null };
   }
   return { from, to: code, expectField: null };
 }
@@ -291,9 +343,15 @@ export function extractRouteFromMessages(messages) {
         } else if (match[1]) {
           const t = resolveAirport(match[1].trim());
           if (t) {
+            let field = expectField;
+            if (!field) {
+              if (!to) field = "to";
+              else if (!from) field = "from";
+              else field = null;
+            }
             const applied = applyCityToRoute({
               ap: t,
-              expectField: expectField || "to",
+              expectField: field,
               from,
               to,
             });

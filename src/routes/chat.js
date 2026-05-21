@@ -79,9 +79,23 @@ router.post("/", validate({ body: chatBodySchema }), async (req, res, next) => {
       /* best effort */
     }
 
+    let leadId = result.lead_id || lead_id || conv?.lead_id || null;
+    if (result.lead_id && conv?.id) {
+      try {
+        const store = await (await import("../db/index.js")).getStore();
+        if (store.conversations_ola?.update) {
+          await store.conversations_ola.update(conv.id, { lead_id: result.lead_id });
+          leadId = result.lead_id;
+        }
+      } catch {
+        /* best effort */
+      }
+    }
+
     res.json({
       response: result.text,
       lead: result.lead,
+      lead_id: leadId,
       conversation_id: convId,
       ui: result.ui || null,
     });
