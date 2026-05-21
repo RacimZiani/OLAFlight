@@ -21,8 +21,10 @@ import { getConversation } from "./conversation.js";
 import {
   shouldShowContactForm,
   stripContactFormMarker,
+  isContactFormUserMessage,
   CONTACT_FORM_MARKER,
 } from "./contactFormUi.js";
+import { runWebDevisPipeline } from "./webDevisPipeline.js";
 import { evaluateRoutePolicy, getBlockedPolicyStats } from "./routePolicy.js";
 
 const log = createLogger("agent");
@@ -206,6 +208,23 @@ export async function runAgent({ messages, lang = "fr", context = {} }) {
 
   if (agentContext.clientQuoteMessage) {
     text = agentContext.clientQuoteMessage;
+  }
+
+  // Web : après formulaire contact, pipeline serveur (upsert → scrape → devis).
+  const lastUserMsg = [...trimmed].reverse().find((m) => m.role === "user");
+  if (
+    context.channel === "web" &&
+    !agentContext.clientQuoteMessage &&
+    lastUserMsg &&
+    isContactFormUserMessage(lastUserMsg.content)
+  ) {
+    const pipeline = await runWebDevisPipeline({
+      messages: trimmed,
+      context: agentContext,
+      lang,
+    });
+    if (pipeline.lead_id) agentContext.lead_id = pipeline.lead_id;
+    if (pipeline.text) text = pipeline.text;
   }
 
   text = String(text || "").trim();

@@ -34,6 +34,12 @@ const MANUAL_FR_ALIASES = {
   alger: "ALG",
   algiers: "ALG",
   "tizi ouzou": "ALG",
+  "tel aviv": "TLV",
+  "tel-aviv": "TLV",
+  telaviv: "TLV",
+  paris: "CDG",
+  "new york": "JFK",
+  "new-york": "JFK",
 };
 
 /** Mots FR courants — ne pas résoudre comme alias IATA (ex. « pas » → PAS Paros). */
@@ -65,6 +71,9 @@ const BLOCKED_PLACE_WORDS = new Set([
   "semaine",
   "tot",
   "tôt",
+  "tel",
+  "tete",
+  "tête",
 ]);
 
 /** Codes 3 lettres qui ne sont pas des aéroports dans nos conversations. */
@@ -122,12 +131,20 @@ function isSpuriousIata(code) {
   return SPURIOUS_IATA.has(String(code || "").toUpperCase());
 }
 
+/** Réponses conversationnelles — ne pas en déduire une ville/IATA. */
+function isNonRouteUserReply(text) {
+  const t = String(text || "").trim();
+  return /\b(en\s+t[eê]te|trajets?|pas\s+les|je\s+n['']?ai\s+pas|oui\s+mais|pas\s+en\s+t[eê]te)\b/i.test(t);
+}
+
 function isShortCityReply(text) {
   const t = String(text || "").trim();
   if (!t || t.length > 55 || t.includes("\n")) return false;
   if (/^[\d\s+().@-]+$/.test(t)) return false;
   if (/^(oui|non|ok|yes|no|merci|thanks|business|first|entreprise|corporate)$/i.test(t)) return false;
-  if (/\b(?:ajd|aujourd|semaine|demain|asap|possible|passager|chauffeur|h[oô]tel|perso)\b/i.test(t)) {
+  if (
+    /\b(?:ajd|aujourd|semaine|demain|asap|possible|passager|chauffeur|h[oô]tel|perso|en\s+t[eê]te)\b/i.test(t)
+  ) {
     return false;
   }
   return true;
@@ -163,6 +180,7 @@ export function resolveAirport(text) {
   const raw = String(text || "").trim();
   if (!raw) return null;
   if (/\bpas\s+d['']?/i.test(raw)) return null;
+  if (/\ben\s+t[eê]te\b/i.test(raw)) return null;
 
   const key = normalizeKey(raw);
   if (BLOCKED_PLACE_WORDS.has(key)) return null;
@@ -181,7 +199,7 @@ export function resolveAirport(text) {
   if (key.length >= 3) {
     const candidates = [];
     for (const [alias, code] of Object.entries(aliases)) {
-      if (alias.length < 3 || BLOCKED_PLACE_WORDS.has(alias)) continue;
+      if (alias.length < 4 || BLOCKED_PLACE_WORDS.has(alias)) continue;
       if (alias === key) {
         candidates.push({ alias, code, len: alias.length, exact: true });
         continue;
@@ -314,6 +332,7 @@ export function extractRouteFromMessages(messages) {
 
     const text = String(m.content || "").trim();
     if (!text || isContactFormUserMessage(text)) continue;
+    if (isNonRouteUserReply(text)) continue;
 
     if (/\b(aller\s+simple|one\s*way|sans\s+retour)\b/i.test(text)) oneWay = true;
 

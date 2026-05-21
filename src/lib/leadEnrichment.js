@@ -55,8 +55,31 @@ export function extractLeadHintsFromMessages(messages) {
     }
 
     if (/pas\s+d['']?h[oô]tel|sans\s+h[oô]tel|no\s+hotel/i.test(t)) needs_hotel = false;
+    else if (/\b(?:oui|yes|ok)\b/i.test(t) && /h[oô]tel/i.test(t)) needs_hotel = true;
+
     if (/pas\s+de\s+chauffeur|sans\s+chauffeur|no\s+(?:driver|chauffeur)/i.test(t)) {
       needs_driver = false;
+    } else if (
+      /chauffeur/i.test(t) &&
+      /\b(oui|yes|ok)\b/i.test(t) &&
+      !/\bnon\b/i.test(t)
+    ) {
+      needs_driver = true;
+    }
+  }
+
+  // Réponse « oui » juste après la question chauffeur (sans le mot chauffeur).
+  if (needs_driver == null) {
+    for (let i = 0; i < (messages || []).length; i++) {
+      const m = messages[i];
+      if (m.role !== "user") continue;
+      const t = String(m.content || "");
+      if (!/\b(oui|yes|ok)\b/i.test(t) || /\bnon\b/i.test(t)) continue;
+      const prev = messages[i - 1];
+      if (prev?.role === "assistant" && /chauffeur/i.test(String(prev.content || ""))) {
+        needs_driver = true;
+        break;
+      }
     }
   }
 
