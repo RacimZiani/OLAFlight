@@ -15,9 +15,9 @@ import {
 } from "./travelDates.js";
 import {
   extractContactFromMessages,
-  extractLeadHintsFromMessages,
   isContactFormUserMessage,
 } from "./contactFormUi.js";
+import { extractLeadHintsFromMessages } from "./leadEnrichment.js";
 
 const log = createLogger("web-devis");
 
