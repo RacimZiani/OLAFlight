@@ -203,6 +203,10 @@ export async function runAgent({ messages, lang = "fr", context = {} }) {
     onToolUse: async ({ id: _id, name, input }) => runOlaTool({ name, input }, { context: agentContext }),
   });
 
+  if (agentContext.clientQuoteMessage) {
+    text = agentContext.clientQuoteMessage;
+  }
+
   text = String(text || "").trim();
   if (!text || /^\.{2,}$/.test(text)) {
     text =

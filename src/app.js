@@ -15,6 +15,7 @@ import webhooksRoutes from "./routes/webhooks.js";
 import agentRoutes from "./routes/agent.js";
 import notificationsRoutes from "./routes/notifications.js";
 import teamRoutes from "./routes/team.js";
+import publicDevisRoutes from "./routes/publicDevis.js";
 
 export function createApp() {
   const app = express();
@@ -36,7 +37,13 @@ export function createApp() {
 
   // Fichiers statiques (landing, login, CRM, Dalsim, admin).
   app.use(express.static(config.staticDir));
-  // Static PDFs générés (T05).
+
+  // PDF devis — accès public (prioritaire sur fichiers statiques /pdfs éphémères).
+  app.use("/api/public", publicDevisRoutes);
+  // Anciens liens /pdfs/devis-XXX.pdf → route API (évite S3 / fichiers perdus sur Railway).
+  app.get(`${config.pdf.publicPath}/devis-:id.pdf`, (req, res) => {
+    res.redirect(302, `/api/public/devis/${encodeURIComponent(req.params.id)}/pdf`);
+  });
   app.use(config.pdf.publicPath, express.static(config.pdf.outDir));
 
   // Health check.
@@ -66,9 +73,19 @@ export function createApp() {
 
   app.use(notFoundHandler);
 
-  // Fallback SPA — renvoie index.html pour toute autre URL.
-  app.get("*", (_req, res) => {
+  // Fallback SPA — sauf PDF publics et fichiers /pdfs.
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api/public/") || req.path.startsWith("/pdfs/")) {
+      return next();
+    }
     res.sendFile(path.join(config.staticDir, "index.html"));
+  });
+
+  app.use((req, res) => {
+    if (req.path.startsWith("/pdfs/")) {
+      return res.status(404).type("text/plain").send("PDF introuvable.");
+    }
+    res.status(404).type("text/plain").send("Page introuvable.");
   });
 
   app.use(errorHandler);

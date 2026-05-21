@@ -6,6 +6,7 @@ import { config } from "../config.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { ensureConversation } from "../lib/conversation.js";
 import { uid } from "../lib/ids.js";
+import { getPublicBaseUrlFromRequest } from "../lib/publicUrl.js";
 
 const router = Router();
 
@@ -46,6 +47,8 @@ router.post("/", validate({ body: chatBodySchema }), async (req, res, next) => {
       mergedMessages = serverMsgs;
     }
 
+    const publicBaseUrl = getPublicBaseUrlFromRequest(req);
+
     const result = await runAgent({
       messages: mergedMessages,
       lang,
@@ -55,6 +58,8 @@ router.post("/", validate({ body: chatBodySchema }), async (req, res, next) => {
         conversation_id: conv?.id || null,
         lead_id: lead_id || conv?.lead_id || null,
         lang,
+        publicBaseUrl,
+        req,
       },
     });
 

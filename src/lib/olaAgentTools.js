@@ -19,6 +19,8 @@ import { computeCommissions } from "./commissions.js";
 import { uid } from "./ids.js";
 import { generateDevisPdf } from "./pdf.js";
 import { config } from "../config.js";
+import { buildPublicDevisPdfUrl, publicDevisPdfPath } from "./publicUrl.js";
+import { buildClientQuoteMessage, optionsForToolOutput } from "./devisQuoteMessage.js";
 import { logAgentAction } from "./agentAudit.js";
 import { setConversationLeadId } from "./conversation.js";
 import { pickCloserForLead } from "./closerAssign.js";
@@ -227,7 +229,7 @@ export const OLA_AGENT_TOOLS = [
   {
     name: "create_devis_from_offer",
     description:
-      "Crée un devis Ola Flight UNIQUEMENT si scrape_flights a renvoyé scrape_ok:true avec des offres, le lead est complet (identité, contact, dates, route, client_type, needs_driver), et la route n'est pas bloquée. Sinon l'outil renvoie devis_refused — ne pas réessayer sans corriger. Fournir `options` (max 3) avec prix_public issus du scrape ; les noms d'aéroports sont injectés automatiquement depuis la base (ne pas inventer).",
+      "Crée un devis Ola Flight UNIQUEMENT si scrape_flights a renvoyé scrape_ok:true avec des offres, le lead est complet, et la route n'est pas bloquée. Fournir `options` (max 3) avec prix_public = coût brut scrape (le serveur calcule prix_vente + PDF). Retourne client_quote_fr/en (prix alignés PDF) — le serveur les envoie au client tel quel. Aéroports injectés automatiquement.",
     input_schema: {
       type: "object",
       properties: {
@@ -236,7 +238,7 @@ export const OLA_AGENT_TOOLS = [
         horaire_dep: { type: "string" },
         horaire_arr: { type: "string" },
         prix_marche: { type: "number" },
-        prix_public: { type: "number", description: "Prix public scrapé (mono-option). Inutile si `options` est fourni." },
+        prix_public: { type: "number", description: "Coût brut scrapé (mono-option), PAS le prix client. Inutile si `options` est fourni." },
         marge_souhaitee: { type: "number" },
         services_inclus: { type: "array", items: { type: "string" } },
         options: {
@@ -253,7 +255,7 @@ export const OLA_AGENT_TOOLS = [
               horaire_arr: { type: "string" },
               duration: { type: "string", description: "Ex: '7h45'" },
               stops: { type: "integer", description: "Nombre d'escales" },
-              prix_public: { type: "number" },
+              prix_public: { type: "number", description: "Coût brut scrape (price). Le serveur ajoute la marge → prix_vente dans PDF et client_quote." },
               prix_marche: { type: "number" },
               services_inclus: { type: "array", items: { type: "string" } },
             },
@@ -855,9 +857,14 @@ async function doCreateDevisFromOffer(input, { context }) {
   let pdf = null;
   if (args.generate_pdf) {
     const leadForPdf = inserted.lead_id ? await store.leads.findById(inserted.lead_id) : null;
-    const { publicUrl, filename } = await generateDevisPdf({ devis: inserted, lead: leadForPdf });
-    await store.devis.update(inserted.id, { pdf_url: publicUrl });
-    pdf = { pdf_url: publicUrl, filename };
+    const { filename } = await generateDevisPdf({ devis: inserted, lead: leadForPdf });
+    const pdfPath = publicDevisPdfPath(inserted.id);
+    await store.devis.update(inserted.id, { pdf_url: pdfPath });
+    pdf = {
+      pdf_url: pdfPath,
+      filename,
+      public_pdf_url: buildPublicDevisPdfUrl(inserted.id, context),
+    };
   }
 
   // Met à jour le lead pour suivi CRM (comme la route /api/devis).
@@ -890,37 +897,61 @@ async function doCreateDevisFromOffer(input, { context }) {
     log.warn(`notif devis failed: ${e?.message || e}`);
   }
 
+  const public_pdf_url =
+    pdf?.public_pdf_url ||
+    (pdf?.pdf_url ? buildPublicDevisPdfUrl(inserted.id, context) : null);
+
+  const routeLabel =
+    route?.label ||
+    formatDestinationLabel({ from: route?.from, to: route?.to }) ||
+    lead?.destination ||
+    "—";
+
+  const lang = context?.lang === "en" ? "en" : "fr";
+  const client_quote_fr = buildClientQuoteMessage({
+    options: priced,
+    routeLabel,
+    publicPdfUrl: public_pdf_url,
+    lang: "fr",
+    hotels: args.hotels,
+    driver: args.driver,
+  });
+  const client_quote_en = buildClientQuoteMessage({
+    options: priced,
+    routeLabel,
+    publicPdfUrl: public_pdf_url,
+    lang: "en",
+    hotels: args.hotels,
+    driver: args.driver,
+  });
+
   return {
     devis_id: inserted.id,
     lead_id: inserted.lead_id || null,
     prix_vente: main.prix_vente,
     marge_souhaitee: main.prix_vente - main.prix_revient,
     options_count: priced.length,
+    options_display: optionsForToolOutput(priced),
+    client_quote_fr,
+    client_quote_en,
+    instruction:
+      "Les prix client sont dans client_quote_fr (FR) / client_quote_en (EN). " +
+      "Le serveur affichera ce texte tel quel au client — les montants correspondent au PDF.",
     pdf,
-    public_pdf_url: pdf?.pdf_url ? `${config.publicUrl}${pdf.pdf_url}` : null,
+    public_pdf_url,
   };
 }
 
 export async function runOlaTool({ name, input }, { context = {} } = {}) {
-  const baseCtx = {
-    channel: context.channel || "web",
-    conversation_id: context.conversation_id || null,
-    lead_id: context.lead_id || null,
-    contact: context.contact || null,
-    lang: context.lang || "fr",
-    name: context.name || "",
-    confirmedRoute: context.confirmedRoute || null,
-    confirmedTravel: context.confirmedTravel || null,
-    leadDestination: context.leadDestination || "",
-    leadClasse: context.leadClasse || "",
-  };
+  const ctx = context;
+  if (!ctx.lang) ctx.lang = "fr";
   const startedAt = Date.now();
   try {
     let out;
     switch (name) {
       case "scrape_flights":
-        out = await doScrapeFlights(input, { context: baseCtx });
-        baseCtx.lastScrape = {
+        out = await doScrapeFlights(input, { context: ctx });
+        ctx.lastScrape = {
           scrape_ok: Boolean(out?.scrape_ok),
           offers_count: Number(out?.offers_count) || 0,
           from: out?.debug?.route_used?.from || input?.from,
@@ -936,44 +967,47 @@ export async function runOlaTool({ name, input }, { context = {} } = {}) {
         };
         break;
       case "upsert_lead":
-        out = await doUpsertLead(input, { context: baseCtx });
-        if (out?.lead_id) baseCtx.lead_id = out.lead_id;
+        out = await doUpsertLead(input, { context: ctx });
+        if (out?.lead_id) ctx.lead_id = out.lead_id;
         break;
       case "create_devis_from_offer":
-        out = await doCreateDevisFromOffer(input, { context: baseCtx });
-        if (out?.lead_id) baseCtx.lead_id = out.lead_id;
+        out = await doCreateDevisFromOffer(input, { context: ctx });
+        if (out?.lead_id) ctx.lead_id = out.lead_id;
+        if (out?.client_quote_fr && !out.devis_refused) {
+          ctx.clientQuoteMessage = ctx.lang === "en" ? out.client_quote_en : out.client_quote_fr;
+        }
         break;
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
 
     // Associe la conversation web au lead pour le tracking + décisions UI.
-    if (out?.lead_id && baseCtx.channel && baseCtx.contact) {
-      setConversationLeadId({ channel: baseCtx.channel, contact: baseCtx.contact, lead_id: out.lead_id }).catch(() => {});
+    if (out?.lead_id && ctx.channel && ctx.contact) {
+      setConversationLeadId({ channel: ctx.channel, contact: ctx.contact, lead_id: out.lead_id }).catch(() => {});
     }
 
     await logAgentAction({
-      channel: baseCtx.channel,
-      conversation_id: baseCtx.conversation_id,
-      lead_id: baseCtx.lead_id,
+      channel: ctx.channel,
+      conversation_id: ctx.conversation_id,
+      lead_id: ctx.lead_id,
       action: name,
       status: "ok",
       input,
       output: { ...out, _ms: Date.now() - startedAt },
-      context: baseCtx,
+      context: ctx,
     });
     return out;
   } catch (e) {
     await logAgentAction({
-      channel: baseCtx.channel,
-      conversation_id: baseCtx.conversation_id,
-      lead_id: baseCtx.lead_id,
+      channel: ctx.channel,
+      conversation_id: ctx.conversation_id,
+      lead_id: ctx.lead_id,
       action: name,
       status: "error",
       input,
       output: null,
       error: e?.message || String(e),
-      context: baseCtx,
+      context: ctx,
     });
     throw e;
   }

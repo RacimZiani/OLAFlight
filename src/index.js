@@ -4,9 +4,15 @@ import { logger } from "./logger.js";
 import { getStore } from "./db/index.js";
 import { seedAdminIfNeeded } from "./seeds/admin.js";
 import { refreshBlockedDestinationsIfStale } from "./lib/blockedDestinationsData.js";
+import { isBadPublicUrl } from "./lib/publicUrl.js";
 
 async function main() {
   for (const issue of assertCriticalConfig()) logger.warn(issue);
+  if (isBadPublicUrl(config.publicUrl)) {
+    logger.warn(
+      `PUBLIC_URL="${config.publicUrl}" invalide (S3/bucket) — liens PDF utiliseront le domaine de la requête (Host). Corrigez sur Railway : PUBLIC_URL=https://olaflight.fr`
+    );
+  }
 
   await getStore();           // ouvre la DB + applique les migrations
   await seedAdminIfNeeded();  // crée l'admin si users vide

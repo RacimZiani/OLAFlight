@@ -8,6 +8,7 @@ import { computeCommissions, sanitizeDevisForRole } from "../lib/commissions.js"
 import { generateDevisPdf } from "../lib/pdf.js";
 import { sendMessage } from "../lib/messaging/index.js";
 import { config } from "../config.js";
+import { buildPublicDevisPdfUrl, publicDevisPdfPath } from "../lib/publicUrl.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { requireBackoffice, requireRole, requireDevis } from "../middleware/auth.js";
 import { canAccessLead, normalizeRole, ROLES, filterLeadsForUser } from "../lib/roles.js";
@@ -244,8 +245,8 @@ router.patch(
           ...(patch.driver !== undefined ? { driver: patch.driver } : {}),
         };
         const lead = merged.lead_id ? await store.leads.findById(merged.lead_id) : null;
-        const r = await generateDevisPdf({ devis: merged, lead });
-        pdf_url = r.publicUrl;
+        await generateDevisPdf({ devis: merged, lead });
+        pdf_url = publicDevisPdfPath(merged.id);
         await store.devis.update(req.params.id, { pdf_url });
         if (updated) updated.pdf_url = pdf_url;
       }
@@ -277,9 +278,10 @@ router.post(
       if (!devis) throw new HttpError(404, "Devis introuvable");
       const lead = devis.lead_id ? await store.leads.findById(devis.lead_id) : null;
 
-      const { publicUrl, filename } = await generateDevisPdf({ devis, lead });
-      // On stocke l'URL dans le devis pour récupération directe dans le CRM.
-      await store.devis.update(devis.id, { pdf_url: publicUrl });
+      const { filename } = await generateDevisPdf({ devis, lead });
+      const pdfPath = `/api/public/devis/${encodeURIComponent(devis.id)}/pdf`;
+      await store.devis.update(devis.id, { pdf_url: pdfPath });
+      const publicUrl = buildPublicDevisPdfUrl(devis.id, { req });
 
       // Envoi auto au client si demandé.
       const sendTo = req.body?.send === true || req.body?.send === "client";
@@ -297,7 +299,7 @@ router.post(
           attachments: [
             {
               type: "document",
-              url: `${config.publicUrl}${publicUrl}`,
+              url: publicUrl,
               filename,
               caption: `Devis ${devis.id}`,
             },
@@ -305,7 +307,7 @@ router.post(
         });
       }
 
-      res.json({ pdf_url: publicUrl, filename, sent });
+      res.json({ pdf_url: publicUrl, pdf_path: pdfPath, filename, sent });
     } catch (e) { next(e); }
   }
 );
