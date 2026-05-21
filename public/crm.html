@@ -281,7 +281,10 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 <div class="notif-panel" id="notif-panel" onclick="event.stopPropagation()">
   <div class="notif-head">
     <div class="notif-title">Notifications</div>
-    <button class="notif-mark" onclick="markAllNotifsRead()">Tout marquer lu</button>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="notif-mark" type="button" onclick="openNtfyPushSetup(event)">Push mobile</button>
+      <button class="notif-mark" type="button" onclick="markAllNotifsRead()">Tout marquer lu</button>
+    </div>
   </div>
   <div class="notif-list" id="notif-list">
     <div class="notif-empty">Chargement…</div>
@@ -1454,6 +1457,41 @@ function onNotifClick(id, leadId) {
 function markAllNotifsRead() {
   fetch('/api/notifications/read-all', { method: 'POST', credentials: 'include' })
     .then(() => fetchNotifs()).catch(() => {});
+}
+
+async function openNtfyPushSetup(e) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  try {
+    const r = await fetch('/api/notifications/push/setup', { credentials: 'include' });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erreur serveur');
+    if (!d.enabled) {
+      alert(d.hint_fr || 'Push non configuré sur le serveur (NTFY_TOPIC_SECRET).');
+      return;
+    }
+    const msg = [
+      'Notifications push Ola Flight (ntfy)',
+      '',
+      'Vous recevez uniquement VOS alertes (comme la cloche du CRM), pas celles des autres.',
+      '',
+      '1) Installez l’app « ntfy » (iOS / Android) ou utilisez le site.',
+      '2) Abonnez-vous à votre topic personnel (lien ci-dessous).',
+      '3) Autorisez les notifications sur le téléphone.',
+      '',
+      'Lien d’abonnement :',
+      d.subscribe_url,
+      '',
+      'Ne partagez pas ce lien : il est personnel.',
+    ].join('\n');
+    if (navigator.clipboard && d.subscribe_url) {
+      try { await navigator.clipboard.writeText(d.subscribe_url); } catch {}
+    }
+    if (confirm(msg + '\n\nOuvrir le lien d’abonnement maintenant ?')) {
+      window.open(d.subscribe_url, '_blank', 'noopener');
+    }
+  } catch (err) {
+    alert('Impossible de charger la config push : ' + (err.message || err));
+  }
 }
 
 // Fermer le panel notifs au clic extérieur

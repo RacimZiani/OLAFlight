@@ -1,12 +1,12 @@
 // Bus interne de notifications back-office. Persiste en DB (collection
-// "notifications") + log + (futur) push mobile (FCM / Expo / WebPush /
-// Telegram). Pour l'instant, on se contente de la persistance + logs.
+// "notifications") + log + push ntfy.sh (optionnel, par utilisateur).
 
 import { getStore } from "../db/index.js";
 import { config } from "../config.js";
 import { uid } from "./ids.js";
 import { createLogger } from "../logger.js";
 import { normalizeRole, ROLES } from "./roles.js";
+import { pushNtfyForRecipients } from "./ntfy.js";
 
 const log = createLogger("notif");
 
@@ -44,7 +44,9 @@ export async function notify({
   const isSupabase = config.storage.driver === "supabase";
   const now = Date.now();
   const out = [];
-  for (const r of recipients) {
+  const recipientList = recipients?.length ? recipients : [{ role: "admin" }];
+
+  for (const r of recipientList) {
     const row = {
       ...(isSupabase ? {} : { id: uid() }),
       user_email: r.email || null,
@@ -74,6 +76,15 @@ export async function notify({
       log.warn(`notify insert failed: ${msg}`);
     }
   }
+
+  pushNtfyForRecipients({
+    recipients: recipientList,
+    type,
+    title,
+    body,
+    lead_id,
+  }).catch(() => {});
+
   return out;
 }
 

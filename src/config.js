@@ -131,6 +131,15 @@ export const config = {
     dalsimWhatsapp: csv(process.env.DALSIM_WHATSAPP),
     defaultCloserWhatsapp: process.env.DEFAULT_CLOSER_WHATSAPP || "",
   },
+
+  // ─── Push ntfy.sh (mobile / desktop) ─────────────────────────────────
+  ntfy: {
+    enabled: bool(process.env.NTFY_ENABLED, false) || Boolean(process.env.NTFY_TOPIC_SECRET),
+    server: (process.env.NTFY_SERVER || "https://ntfy.sh").replace(/\/$/, ""),
+    topicSecret: process.env.NTFY_TOPIC_SECRET || "",
+    topicPrefix: (process.env.NTFY_TOPIC_PREFIX || "olaflight").replace(/[^a-z0-9-]/gi, "-").slice(0, 32),
+    token: process.env.NTFY_TOKEN || "",
+  },
 };
 
 export function assertCriticalConfig() {
