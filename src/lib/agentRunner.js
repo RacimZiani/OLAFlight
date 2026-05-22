@@ -10,7 +10,7 @@ import { extractLeadFromConversation } from "./leadExtractor.js";
 import { getStore } from "../db/index.js";
 import { createLogger } from "../logger.js";
 import { notifyDalsimOfNewLead } from "./notifications.js";
-import { OLA_AGENT_TOOLS, runOlaTool } from "./olaAgentTools.js";
+import { toolsForChannel, runOlaTool } from "./olaAgentTools.js";
 import { extractRouteFromMessages, formatDestinationLabel } from "./airports.js";
 import {
   extractTravelDatesFromMessages,
@@ -49,6 +49,13 @@ Règles de sécurité supplémentaires :
 - Si un outil renvoie devis_refused ou scrape_ok:false, tu l’expliques brièvement et tu proposes une alternative (autres dates, autre aéroport, ou équipe humaine / devis_pending).
 
 Canal actuel: ${channel}.
+${channel === "web" ? `
+MODE WEB — RÈGLES STRICTES (Agent Ola) :
+- Tu ne donnes JAMAIS de prix, de montants en €, ni de comparatif chiffré dans le chat.
+- Tu n'appelles PAS scrape_flights ni create_devis_from_offer (refusés par le serveur).
+- Après le formulaire contact (${CONTACT_FORM_MARKER}), dis clairement que le client recevra son devis par **email** sous 24 h (deux options compagnies).
+- Call to action : inviter à compléter le formulaire ou confirmer la route — pas « voir le devis dans le chat ».
+` : ""}
 
 DATE DU JOUR (référence obligatoire — ne jamais proposer une date de voyage dans le passé) :
 - Aujourd'hui : ${context.today?.labelFr || "—"} (${context.today?.iso || "—"})
@@ -202,7 +209,7 @@ export async function runAgent({ messages, lang = "fr", context = {} }) {
   let { text } = await chatWithTools({
     system: buildSystem(lang, agentContext),
     messages: trimmed,
-    tools: OLA_AGENT_TOOLS,
+    tools: toolsForChannel(context.channel || agentContext.channel),
     onToolUse: async ({ id: _id, name, input }) => runOlaTool({ name, input }, { context: agentContext }),
   });
 

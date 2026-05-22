@@ -223,6 +223,20 @@ router.patch(
   }
 );
 
+router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) => {
+  try {
+    const store = await getStore();
+    const lead = await store.leads.findById(req.params.id);
+    if (!lead) throw new HttpError(404, "Lead introuvable");
+    if (!canAccessLead(req.user, lead)) {
+      throw new HttpError(403, "Lead hors périmètre");
+    }
+    res.json({ item: lead });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get("/:id/devis", validate({ params: idParamSchema }), async (req, res, next) => {
   try {
     const store = await getStore();

@@ -1726,10 +1726,8 @@ window.addEventListener('load', () => {
   }
 
   function detectDecisionMode(){
-    const lastAi = [...state.msgs].reverse().find(m => m.role === 'assistant');
-    const text = lastAi ? String(lastAi.content || '') : '';
-    // Heuristique: présence d'un lien PDF (devis) → on affiche les 3 choix.
-    return /\/pdfs\/devis-|\/api\/public\/devis\/|Télécharger le devis|Voir le devis/i.test(text) || /\[[^\]]+\]\(https?:\/\/[^)]+\/(?:pdfs\/devis-|api\/public\/devis\/)/i.test(text);
+    // Devis web : réponse par email (boutons accept/refuse/négocier dans le mail), pas dans le chat.
+    return false;
   }
 
   function setDecision(on){

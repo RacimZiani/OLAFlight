@@ -56,7 +56,9 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
 
   // Options : si plusieurs options (max 3), on bascule en mode comparatif.
   const optsRaw = Array.isArray(devis.options) ? devis.options : [];
-  const opts = optsRaw.filter((o) => o && Number(o.prix_vente) > 0).slice(0, 3);
+  const opts = optsRaw
+    .filter((o) => o && (Number(o.prix_vente) > 0 || String(o.compagnie || "").trim()))
+    .slice(0, 3);
   const multi = opts.length >= 2;
 
   // Extras (toujours affichés s'ils sont présents).
@@ -235,6 +237,11 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
           ${o.duration ? " · " + escapeHtml(o.duration) : ""}${stopsTxt ? " · " + stopsTxt : ""}
         </div>
         ${showCmp ? `<div class="opt-market">${fmtMoney(o.prix_marche)}</div>` : ""}
+        ${(Number(o.prix_vente_business) > 0 || Number(o.prix_vente_first) > 0) ? `
+        <div class="opt-meta" style="margin-top:8px">
+          ${Number(o.prix_vente_business) > 0 ? `Business : <strong>${fmtMoney(o.prix_vente_business)}</strong><br>` : ""}
+          ${Number(o.prix_vente_first) > 0 ? `First : <strong>${fmtMoney(o.prix_vente_first)}</strong>` : ""}
+        </div>` : ""}
         <div class="opt-price" ${isReco ? `style="color:var(--gold)"` : ""}>${fmtMoney(o.prix_vente)}</div>
         ${eco > 0 ? `<div class="opt-saving">économie ${fmtMoney(eco)} (${ecoPct}%)</div>` : ""}
         ${(Array.isArray(o.services_inclus) && o.services_inclus.length) ? `

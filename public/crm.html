@@ -830,12 +830,155 @@ async function loadLeadDevis(leadId) {
             </div>
             <div style="font-size:9px;margin-top:3px">${pdf}</div>
           </div>
+          ${isAdmin() && (dv.pricing_status === 'pending_admin' || !Number(dv.prix_vente)) ? `<button class="ma-btn ma-primary" style="font-size:8px" onclick="openAdminPricingEditor('${safe}')">Saisir tarifs</button>` : ''}
           <button class="ma-btn ma-ghost" style="font-size:8px" onclick="openDevisEditor('${safe}')">Modifier</button>
         </div>`;
     }).join('');
   } catch (e) {
     box.innerHTML = '<span style="color:var(--red-t)">Erreur de chargement des devis.</span>';
   }
+}
+
+// ─── Saisie tarifs admin (2 compagnies — flux Agent Ola web) ───
+async function openAdminPricingEditor(devisId) {
+  if (!isAdmin()) return alert('Réservé aux administrateurs.');
+  const dr = await fetch('/api/devis/' + encodeURIComponent(devisId), { credentials: 'include' });
+  if (!dr.ok) return alert('Devis introuvable');
+  const d = (await dr.json()).item || {};
+  let lead = null;
+  if (d.lead_id) {
+    const lr = await fetch('/api/leads/' + encodeURIComponent(d.lead_id), { credentials: 'include' });
+    if (lr.ok) lead = (await lr.json()).item;
+  }
+  const opts = Array.isArray(d.options) && d.options.length >= 2
+    ? d.options.slice(0, 2)
+    : [{ label: 'Option 1' }, { label: 'Option 2' }];
+  const showHotel = !!(lead && lead.needs_hotel);
+  const showDriver = !!(lead && lead.needs_driver);
+  const hotels = Array.isArray(d.hotels) ? d.hotels : [];
+  const driver = d.driver || {};
+
+  function optRow(o, i) {
+    return `
+    <div class="dev-opt-card" data-ap-opt="${i}">
+      <div class="dev-opt-head">Compagnie ${i + 1}</div>
+      <div class="dev-grid">
+        <label>Compagnie aérienne<input data-k="compagnie" value="${escapeHtmlCrm(o.compagnie || '')}" required></label>
+        <label>Prix Business (€)<input type="number" min="1" data-k="prix_vente_business" value="${Number(o.prix_vente_business || o.prix_vente || 0) || ''}"></label>
+        <label>Prix First (€)<input type="number" min="0" data-k="prix_vente_first" value="${Number(o.prix_vente_first || 0) || ''}"></label>
+      </div>
+    </div>`;
+  }
+
+  const content = document.getElementById('modal-content');
+  content.innerHTML = `
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Tarifs — ${escapeHtmlCrm(d.id)}</div>
+        <div style="font-size:9px;color:var(--g);margin-top:6px">${escapeHtmlCrm(lead?.client_name || '')} · ${escapeHtmlCrm(lead?.destination || '')}</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="ap-form">
+      <div class="modal-section">
+        <div class="ms-title">Deux options compagnies (obligatoire)</div>
+        ${opts.map((o, i) => optRow(o, i)).join('')}
+      </div>
+      ${showHotel ? `
+      <div class="modal-section" id="ap-hotels">
+        <div class="ms-title">Hôtel (demandé par le client)</div>
+        <label>Nom de l'hôtel<input id="ap-hotel-name" value="${escapeHtmlCrm(hotels[0]?.name || '')}"></label>
+        <label>Total hôtel (€)<input type="number" min="0" id="ap-hotel-total" value="${Number(hotels[0]?.total_price || 0)}"></label>
+      </div>` : ''}
+      ${showDriver ? `
+      <div class="modal-section" id="ap-driver">
+        <div class="ms-title">Chauffeur privé (demandé par le client)</div>
+        <label>Forfait chauffeur (€)<input type="number" min="1" id="ap-driver-total" value="${Number(driver.total_price || 0)}"></label>
+      </div>` : ''}
+      <div class="modal-actions">
+        <button class="ma-btn ma-primary" id="ap-save-btn">Enregistrer et prévisualiser</button>
+        <button class="ma-btn ma-ghost" onclick="closeModal()">Annuler</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-bg').classList.add('open');
+  document.getElementById('ap-save-btn').onclick = () => submitAdminPricing(devisId, { showHotel, showDriver, leadId: d.lead_id });
+}
+
+function readApOptions() {
+  return [0, 1].map((i) => {
+    const card = document.querySelector(`[data-ap-opt="${i}"]`);
+    const o = { label: i === 0 ? 'Option 1' : 'Option 2' };
+    if (!card) return o;
+    card.querySelectorAll('[data-k]').forEach((el) => {
+      const v = el.value;
+      if (el.type === 'number') o[el.dataset.k] = Number(v) || 0;
+      else o[el.dataset.k] = v;
+    });
+    return o;
+  });
+}
+
+async function submitAdminPricing(devisId, flags) {
+  const options = readApOptions();
+  const body = { options, regenerate_pdf: true };
+  if (flags.showHotel) {
+    const name = document.getElementById('ap-hotel-name')?.value?.trim();
+    const total = Number(document.getElementById('ap-hotel-total')?.value) || 0;
+    if (!name || total <= 0) return alert('Renseignez l\'hôtel et son tarif.');
+    body.hotels = [{ name, total_price: total }];
+  }
+  if (flags.showDriver) {
+    const total = Number(document.getElementById('ap-driver-total')?.value) || 0;
+    if (total <= 0) return alert('Renseignez le forfait chauffeur.');
+    body.driver = { total_price: total, vehicle: 'Berline premium' };
+  }
+  const r = await fetch('/api/devis/' + encodeURIComponent(devisId) + '/admin-pricing', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    return alert('Erreur : ' + (t || r.status));
+  }
+  const data = await r.json();
+  showAdminPricingRecap(devisId, data.recap, flags.leadId);
+}
+
+function showAdminPricingRecap(devisId, recap, leadId) {
+  const optsHtml = (recap.options || []).map((o) =>
+    `<li>${escapeHtmlCrm(o.compagnie)} — Business ${Number(o.prix_vente_business).toLocaleString('fr-FR')} €` +
+    (o.prix_vente_first ? ` · First ${Number(o.prix_vente_first).toLocaleString('fr-FR')} €` : '') + `</li>`
+  ).join('');
+  const content = document.getElementById('modal-content');
+  content.innerHTML = `
+    <div class="modal-head">
+      <div class="modal-title">Envoyer le devis par email</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--g);font-size:14px;line-height:1.7">Destinataire : <strong style="color:var(--w)">${escapeHtmlCrm(recap.client_email || '— email manquant —')}</strong></p>
+      <ul style="margin:16px 0;padding-left:20px;color:var(--w);font-size:14px;line-height:1.8">${optsHtml}</ul>
+      ${!recap.smtp_ready ? '<p style="color:var(--red-t);font-size:12px">SMTP non configuré sur le serveur — configurez SMTP_HOST / SMTP_USER / SMTP_PASS.</p>' : ''}
+      <div class="modal-actions">
+        <button class="ma-btn ma-primary" id="ap-send-email" ${recap.smtp_ready && recap.client_email ? '' : 'disabled'}>Envoyer au client</button>
+        <button class="ma-btn ma-ghost" onclick="closeModal()">Fermer</button>
+      </div>
+    </div>`;
+  document.getElementById('ap-send-email')?.addEventListener('click', async () => {
+    const r = await fetch('/api/devis/' + encodeURIComponent(devisId) + '/send-email', {
+      method: 'POST', credentials: 'include',
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      return alert('Envoi échoué : ' + (t || r.status));
+    }
+    alert('Devis envoyé par email au client.');
+    closeModal();
+    if (leadId) openLeadModal(leadId);
+    fetchNotifs();
+  });
 }
 
 // ─── Édition d'un devis (admin/closer) ───
@@ -1426,7 +1569,7 @@ function renderNotifPanel() {
     return;
   }
   list.innerHTML = notifs.map(n => `
-    <div class="notif-item ${n.read ? '' : 'unread'}" onclick="onNotifClick('${String(n.id).replace(/'/g,"\\\\'")}', ${n.lead_id ? `'${String(n.lead_id).replace(/'/g,"\\\\'")}'` : 'null'})">
+    <div class="notif-item ${n.read ? '' : 'unread'}" onclick="onNotifClick('${String(n.id).replace(/'/g,"\\\\'")}', ${n.lead_id ? `'${String(n.lead_id).replace(/'/g,"\\\\'")}'` : 'null'}, ${n.devis_id ? `'${String(n.devis_id).replace(/'/g,"\\\\'")}'` : 'null'}, '${String(n.type || '').replace(/'/g,"\\\\'")}')">
       <div class="notif-item-head">
         <div class="notif-item-title">${escapeHtmlCrm(n.title || '')}</div>
         <div class="notif-item-time">${fmtRelative(n.created_at)}</div>
@@ -1443,15 +1586,16 @@ function toggleNotifPanel(e) {
   if (p.classList.contains('open')) fetchNotifs();
 }
 
-function onNotifClick(id, leadId) {
-  // Mark read + open lead modal if applicable.
+function onNotifClick(id, leadId, devisId, notifType) {
   fetch('/api/notifications/' + encodeURIComponent(id) + '/read', {
     method: 'PATCH', credentials: 'include',
   }).then(() => fetchNotifs()).catch(() => {});
-  if (leadId && leadId !== 'null') {
-    document.getElementById('notif-panel').classList.remove('open');
-    openLeadModal(leadId);
+  document.getElementById('notif-panel').classList.remove('open');
+  if (notifType === 'devis_prices_needed' && devisId && devisId !== 'null' && isAdmin()) {
+    openAdminPricingEditor(devisId);
+    return;
   }
+  if (leadId && leadId !== 'null') openLeadModal(leadId);
 }
 
 function markAllNotifsRead() {

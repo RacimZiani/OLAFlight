@@ -140,6 +140,16 @@ export const config = {
     topicPrefix: (process.env.NTFY_TOPIC_PREFIX || "olaflight").replace(/[^a-z0-9-]/gi, "-").slice(0, 32),
     token: process.env.NTFY_TOKEN || "",
   },
+
+  /** Email transactionnel (Hostinger SMTP — noreply@olaflight.fr) */
+  smtp: {
+    host: process.env.SMTP_HOST || "",
+    port: num(process.env.SMTP_PORT, 465),
+    secure: bool(process.env.SMTP_SECURE, true),
+    user: process.env.SMTP_USER || "",
+    pass: process.env.SMTP_PASS || "",
+    from: process.env.SMTP_FROM || "noreply@olaflight.fr",
+  },
 };
 
 export function assertCriticalConfig() {

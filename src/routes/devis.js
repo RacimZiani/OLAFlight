@@ -10,7 +10,10 @@ import { sendMessage } from "../lib/messaging/index.js";
 import { config } from "../config.js";
 import { buildPublicDevisPdfUrl, publicDevisPdfPath } from "../lib/publicUrl.js";
 import { HttpError } from "../middleware/errorHandler.js";
-import { requireBackoffice, requireRole, requireDevis } from "../middleware/auth.js";
+import { requireBackoffice, requireRole, requireDevis, requireAdmin } from "../middleware/auth.js";
+import { normalizeAdminOptions } from "../lib/draftDevis.js";
+import { sendDevisEmailToClient, isEmailConfigured } from "../lib/email.js";
+import { resolvePublicBaseUrl } from "../lib/publicUrl.js";
 import { canAccessLead, normalizeRole, ROLES, filterLeadsForUser } from "../lib/roles.js";
 
 const router = Router();
@@ -138,6 +141,24 @@ const driverEditSchema = z.object({
   notes: z.string().optional(),
 }).nullable();
 
+const adminOptionSchema = z.object({
+  label: z.string().optional(),
+  compagnie: z.string().min(1),
+  prix_vente_business: z.coerce.number().min(1),
+  prix_vente_first: z.coerce.number().min(0).optional().default(0),
+  horaire_dep: z.string().optional(),
+  horaire_arr: z.string().optional(),
+  prix_revient: z.coerce.number().min(0).optional(),
+  prix_marche: z.coerce.number().min(0).optional(),
+});
+
+const adminPricingSchema = z.object({
+  options: z.array(adminOptionSchema).length(2),
+  hotels: z.array(hotelEditSchema).optional(),
+  driver: driverEditSchema.optional(),
+  regenerate_pdf: z.coerce.boolean().optional().default(true),
+});
+
 const devisPatchSchema = z.object({
   compagnie: z.string().optional(),
   horaire_dep: z.string().optional(),
@@ -263,6 +284,161 @@ router.patch(
 
       res.json({ item: updated, pdf_url });
     } catch (e) { next(e); }
+  }
+);
+
+// ─── Saisie tarifs admin (2 compagnies) — web Agent Ola ───────────────
+router.post(
+  "/:id/admin-pricing",
+  requireAdmin,
+  validate({ params: idParamSchema, body: adminPricingSchema }),
+  async (req, res, next) => {
+    try {
+      const store = await getStore();
+      const before = await store.devis.findById(req.params.id);
+      if (!before) throw new HttpError(404, "Devis introuvable");
+      const lead = before.lead_id ? await store.leads.findById(before.lead_id) : null;
+      if (!lead) throw new HttpError(400, "Lead introuvable pour ce devis");
+
+      const body = req.body;
+      const options = normalizeAdminOptions(body.options, lead);
+
+      if (lead.needs_hotel && body.hotels?.length) {
+        /* ok */
+      } else if (lead.needs_hotel && !body.hotels?.length) {
+        throw new HttpError(400, "Hôtel demandé par le client — renseignez au moins un hôtel.");
+      }
+
+      if (lead.needs_driver) {
+        const d = body.driver;
+        if (!d?.total_price || Number(d.total_price) <= 0) {
+          throw new HttpError(400, "Chauffeur demandé — renseignez le forfait chauffeur.");
+        }
+      }
+
+      const main = options[0];
+      const isSupabase = config.storage.driver === "supabase";
+      const recomputed = !isSupabase
+        ? computeCommissions({
+            prix_vente: main.prix_vente,
+            prix_revient: main.prix_revient || 0,
+            apporteur_name: before.apporteur_name || null,
+          })
+        : null;
+
+      const patch = {
+        options,
+        compagnie: main.compagnie,
+        horaire_dep: main.horaire_dep || "",
+        horaire_arr: main.horaire_arr || "",
+        prix_vente: main.prix_vente,
+        prix_revient: main.prix_revient || 0,
+        prix_marche: main.prix_marche || 0,
+        pricing_status: "ready",
+        ...(body.hotels !== undefined ? { hotels: body.hotels } : {}),
+        ...(body.driver !== undefined ? { driver: body.driver } : {}),
+        ...(recomputed
+          ? {
+              marge: recomputed.marge,
+              closer_commission: recomputed.closer_commission,
+              apporteur_commission: recomputed.apporteur_commission,
+            }
+          : {}),
+        valide_jusqu_au: isSupabase
+          ? new Date(Date.now() + DAY).toISOString()
+          : Date.now() + DAY,
+      };
+
+      async function updateTolerant(p) {
+        try {
+          return await store.devis.update(req.params.id, p);
+        } catch (e) {
+          const msg = e?.message || String(e);
+          if (/pricing_status|email_sent_at|client_decision/i.test(msg) && /column|schema/i.test(msg)) {
+            const reduced = { ...p };
+            delete reduced.pricing_status;
+            delete reduced.email_sent_at;
+            delete reduced.client_decision;
+            return updateTolerant(reduced);
+          }
+          throw e;
+        }
+      }
+
+      let updated = await updateTolerant(patch);
+
+      if (body.regenerate_pdf !== false) {
+        const merged = { ...(updated || before), ...patch };
+        const leadForPdf = lead;
+        await generateDevisPdf({ devis: merged, lead: leadForPdf });
+        const pdfPath = publicDevisPdfPath(merged.id);
+        updated = await updateTolerant({ pdf_url: pdfPath });
+      }
+
+      if (lead.id) {
+        await store.leads.update(lead.id, {
+          value: main.prix_vente,
+          margin: recomputed?.marge ?? main.prix_vente - (main.prix_revient || 0),
+        });
+      }
+
+      const recap = {
+        devis_id: updated.id,
+        lead_name: lead.client_name,
+        destination: lead.destination,
+        options: options.map((o) => ({
+          label: o.label,
+          compagnie: o.compagnie,
+          prix_vente_business: o.prix_vente_business,
+          prix_vente_first: o.prix_vente_first,
+          prix_vente: o.prix_vente,
+        })),
+        hotels: updated.hotels || patch.hotels || [],
+        driver: updated.driver || patch.driver || null,
+        client_email: String(lead.client_contact || "").match(/[^\s@]+@[^\s@]+\.[^\s@]+/)?.[0] || "",
+        smtp_ready: isEmailConfigured(),
+      };
+
+      res.json({ item: sanitizeDevisForRole(updated, req.user.role), recap });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.post(
+  "/:id/send-email",
+  requireAdmin,
+  validate({ params: idParamSchema }),
+  async (req, res, next) => {
+    try {
+      const store = await getStore();
+      const devis = await store.devis.findById(req.params.id);
+      if (!devis) throw new HttpError(404, "Devis introuvable");
+      const lead = devis.lead_id ? await store.leads.findById(devis.lead_id) : null;
+      if (!lead) throw new HttpError(400, "Lead manquant");
+
+      const opts = normalizeAdminOptions(devis.options || [], lead);
+      if (!opts.every((o) => o.compagnie && o.prix_vente > 0)) {
+        throw new HttpError(400, "Tarifs incomplets — saisissez les 2 compagnies avant envoi.");
+      }
+
+      const baseUrl = resolvePublicBaseUrl(req);
+      const lang = lead.lang === "en" ? "en" : "fr";
+      const sent = await sendDevisEmailToClient({ devis: { ...devis, options: opts }, lead, baseUrl, lang });
+      if (!sent.ok) throw new HttpError(502, sent.error || "Envoi email échoué");
+
+      const now = Date.now();
+      await store.devis.update(devis.id, {
+        pricing_status: "sent",
+        email_sent_at: config.storage.driver === "supabase" ? new Date(now).toISOString() : now,
+      });
+      await store.leads.update(lead.id, { status: "devis_sent", value: opts[0].prix_vente });
+
+      res.json({ ok: true, messageId: sent.messageId });
+    } catch (e) {
+      next(e);
+    }
   }
 );
 

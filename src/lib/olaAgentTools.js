@@ -949,9 +949,28 @@ async function doCreateDevisFromOffer(input, { context }) {
   };
 }
 
+/** Outils exposés au LLM selon le canal (web = qualification uniquement, pas de prix auto). */
+export function toolsForChannel(channel) {
+  if (channel === "web") {
+    return OLA_AGENT_TOOLS.filter((t) => t.name === "upsert_lead");
+  }
+  return OLA_AGENT_TOOLS;
+}
+
 export async function runOlaTool({ name, input }, { context = {} } = {}) {
   const ctx = context;
   if (!ctx.lang) ctx.lang = "fr";
+  if (
+    ctx.channel === "web" &&
+    (name === "scrape_flights" || name === "create_devis_from_offer")
+  ) {
+    return {
+      tool_refused: true,
+      reason: "web_channel_no_auto_pricing",
+      instruction:
+        "Sur le site web, ne jamais scraper ni créer de devis avec des prix. Après le formulaire contact, le client reçoit son devis par email sous 24 h. Utilisez uniquement upsert_lead.",
+    };
+  }
   const startedAt = Date.now();
   try {
     let out;
