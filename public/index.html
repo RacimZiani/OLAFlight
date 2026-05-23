@@ -40,7 +40,7 @@ nav{
   z-index:200;
   backdrop-filter:blur(24px);
 }
-.nav-logo img{ height:56px; width:auto; display:block; }
+.nav-logo img{ height:56px; width:auto; display:block; mix-blend-mode:screen; }
 .nav-links{ display:flex; align-items:center; gap:52px; }
 .nav-link{
   font-family:'Montserrat',sans-serif;
@@ -932,7 +932,7 @@ html.no-gsap [data-hero-anim]{
   </div>
   <div class="chiffres-row">
     <div class="chiffre fade"><div class="chiffre-n">200+</div><div class="chiffre-l" data-i18n="stats.1.label">Voyages réalisés</div></div>
-    <div class="chiffre fade"><div class="chiffre-n">2 ans</div><div class="chiffre-l" data-i18n="stats.2.label">Expérience OLA</div></div>
+    <div class="chiffre fade"><div class="chiffre-n" data-i18n="stats.2.value">2 ans</div><div class="chiffre-l" data-i18n="stats.2.label">Expérience OLA</div></div>
     <div class="chiffre fade"><div class="chiffre-n">0</div><div class="chiffre-l" data-i18n="stats.3.label">Noms divulgués</div></div>
   </div>
   <div class="marquee-wrap">
@@ -1108,7 +1108,13 @@ window.addEventListener('load', () => {
   }
 
   // ── Timeline d'intro cinématique ──
-  const tl = gsap.timeline({ defaults: { ease: 'expo.out', duration: 1.1 } });
+  const tl = gsap.timeline({
+    defaults: { ease: 'expo.out', duration: 1.1 },
+    onComplete() {
+      // Libère les layers GPU après l'animation — évite la disparition sur inactivité ou text-select
+      document.querySelectorAll('[data-hero-anim]').forEach(el => { el.style.willChange = 'auto'; });
+    },
+  });
 
   // 1) Cinema mask : barres noires se rétractent (ouverture 21:9 → plein écran)
   tl.fromTo('.cinema-bar.cinema-top',    { yPercent: 0 }, { yPercent: -100, duration: 1.1, ease: 'power4.inOut' }, 0)
