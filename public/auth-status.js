@@ -34,7 +34,7 @@
         a.hidden = allowed.length > 0 && !ok;
       });
     } else {
-      if(loginLink) loginLink.hidden = false;
+      if(loginLink) loginLink.hidden = true;
       if(logoutBtn) logoutBtn.hidden = true;
       backLinks.forEach((a) => { a.hidden = true; });
     }
