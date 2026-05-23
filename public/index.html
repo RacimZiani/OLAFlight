@@ -1197,10 +1197,12 @@ window.addEventListener('load', () => {
     });
 
     // Parallax léger sur le hero pendant le scroll initial
-    gsap.to('#heroLogo', {
-      y: -60, opacity: 0.85, ease: 'none',
-      scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true },
-    });
+    gsap.fromTo('#heroLogo',
+      { y: 0, opacity: 1 },
+      { y: -60, opacity: 0.85, ease: 'none',
+        scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true },
+      }
+    );
     gsap.to('.flight-path', {
       y: -90, opacity: 0, ease: 'none',
       scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true },
@@ -1668,7 +1670,12 @@ window.addEventListener('load', () => {
     if (contactErr && contactErr.classList.contains('show') && typeof t === 'function'){
       contactErr.textContent = t('chat.form.err');
     }
-    if (typeof window._olaSplitHeroTitle === 'function') window._olaSplitHeroTitle();
+    if (typeof window._olaSplitHeroTitle === 'function') {
+      window._olaSplitHeroTitle();
+      document.querySelectorAll('.hero-title .word > span').forEach(function(span) {
+        span.style.transform = 'translate3d(0, 0, 0)';
+      });
+    }
     render();
   }
   document.addEventListener('ola:langchange', onLangChange);
