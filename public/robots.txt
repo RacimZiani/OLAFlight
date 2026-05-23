@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /crm
+Disallow: /login
+Disallow: /admin
+Disallow: /api/
+Disallow: /pdfs/
+Disallow: /email-preview
+
+Sitemap: https://olaflight.fr/sitemap.xml
