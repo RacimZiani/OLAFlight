@@ -13,6 +13,8 @@ data/*.db-shm
 data/*.db-wal
 data/*.json
 !data/.gitkeep
+!data/airports-index.json
+!data/blocked-destinations.json
 pdfs
 *.log
 # Réduit le contexte de build (pas nécessaires au runtime)
