@@ -1460,17 +1460,23 @@ window.addEventListener('load', () => {
 }
 .ola-contact-phone:focus-within{ border-color:var(--grey2); }
 .ola-contact-dial{
-  flex:0 0 118px;
-  max-width:42%;
+  flex:0 0 88px;
+  max-width:36%;
   background:var(--black2);
   border:none;
   border-right:1px solid var(--line2);
   color:var(--white);
   font-family:'Montserrat',sans-serif;
-  font-size:11px; font-weight:300;
-  padding:10px 8px;
+  font-size:12px; font-weight:300;
+  padding:10px 6px 10px 8px;
   outline:none;
   cursor:pointer;
+  appearance:none;
+  -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(248,245,240,.4)'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 5px center;
+  padding-right:18px;
 }
 .ola-contact-dial option{ background:var(--black); color:var(--white); }
 .ola-contact-phone input{
@@ -1508,7 +1514,7 @@ window.addEventListener('load', () => {
 .ola-contact-err.show{ display:block; }
 @media(max-width:480px){
   .ola-contact-grid{ grid-template-columns:1fr; }
-  .ola-contact-dial{ flex:0 0 108px; }
+  .ola-contact-dial{ flex:0 0 80px; }
 }
 
 @media(max-width:480px){
@@ -1603,7 +1609,7 @@ window.addEventListener('load', () => {
     window.OLA_DIAL_CODES.forEach((c) => {
       const opt = document.createElement('option');
       opt.value = c.dial;
-      opt.textContent = (c.flag ? c.flag + ' ' : '') + c.dial + ' ' + c.name;
+      opt.textContent = (c.flag ? c.flag + ' ' : '') + c.dial + ' ' + c.name;
       opt.dataset.iso = c.iso;
       if (c.iso === 'FR') opt.selected = true;
       contactDial.appendChild(opt);
