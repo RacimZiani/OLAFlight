@@ -35,8 +35,17 @@ export function createApp() {
   app.use(requestLogger);
   app.use(attachUser);
 
+  // Redirige les URLs avec .html vers l'URL propre (/login.html → /login).
+  app.use((req, res, next) => {
+    if (req.path.endsWith('.html') && req.path !== '/index.html') {
+      return res.redirect(301, req.path.slice(0, -5) + (req.url.slice(req.path.length) || ''));
+    }
+    next();
+  });
+
   // Fichiers statiques (landing, login, CRM, Dalsim, admin).
-  app.use(express.static(config.staticDir));
+  // extensions:['html'] permet de servir /login → login.html sans extension dans l'URL.
+  app.use(express.static(config.staticDir, { extensions: ['html'] }));
 
   // PDF devis — accès public (prioritaire sur fichiers statiques /pdfs éphémères).
   app.use("/api/public", publicDevisRoutes);
