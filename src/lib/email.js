@@ -91,7 +91,7 @@ function buildDevisEmailHtml({ devis, lead, baseUrl, lang = "fr" }) {
 
   return `<!DOCTYPE html><html><body style="margin:0;background:#0a0a0a;padding:32px 16px">
   <div style="max-width:560px;margin:0 auto;background:#111;border:1px solid #333;padding:40px 32px">
-    <div style="margin:0 0 28px"><img src="${baseUrl}/images/logo-static.png" alt="Ola Flight" style="height:120px;width:auto;display:block;mix-blend-mode:screen"></div>
+    <div style="margin:0 0 28px"><img src="${baseUrl}/images/logo-texte.png" alt="Ola Flight" style="height:120px;width:auto;display:block"></div>
     <h1 style="font-family:Georgia,serif;font-weight:300;font-size:28px;color:#f8f5f0;margin:0 0 16px">
       ${fr ? `Votre proposition, ${name}` : `Your proposal, ${name}`}
     </h1>
