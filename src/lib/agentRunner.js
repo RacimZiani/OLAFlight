@@ -212,6 +212,7 @@ export async function runAgent({ messages, lang = "fr", context = {} }) {
     messages: trimmed,
     tools: toolsForChannel(context.channel || agentContext.channel),
     onToolUse: async ({ id: _id, name, input }) => runOlaTool({ name, input }, { context: agentContext }),
+    maxTurns: 10,
   });
 
   if (agentContext.clientQuoteMessage) {

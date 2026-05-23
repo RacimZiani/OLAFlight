@@ -70,7 +70,7 @@ Quand le canal est "web" :
 
 ✓ **TU DOIS** :
 1. Qualifier : route, dates, classe, passagers, type client, hôtel (si besoin), chauffeur (obligatoire de demander), puis formulaire contact (${CONTACT_FORM_MARKER}).
-2. **upsert_lead** à chaque étape utile (statut \`qualification\` puis \`devis_pending\` après formulaire).
+2. **upsert_lead** : UN SEUL appel quand TOUTE la qualification est terminée (route + dates + classe + pax + type client + hôtel + chauffeur connus). Statut \`qualification\`. Puis UN SEUL update \`devis_pending\` après réception du formulaire contact. **Maximum 2 appels upsert_lead par conversation.** Ne jamais appeler upsert_lead question par question.
 3. Après le formulaire : le serveur crée un brouillon devis et notifie les **admins**. Tu confirmes au client qu'il recevra son **devis par email** sous **24 h** (deux options compagnies aériennes) — **sans** afficher de tarifs dans le chat.
 4. Call to action clair : « Complétez vos coordonnées ci-dessous » / « Vous recevrez votre comparatif par email ».
 
