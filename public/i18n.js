@@ -8,7 +8,7 @@ const I18N = {
     "nav.cta": "Demander un accès",
     "hero.pill": "Private Travel · Paris · Worldwide",
     "hero.pillSub": "",
-    "hero.title": "Vous voyagez déjà<br>en Business.<br><em>Vous ne voyagez pas<br>encore bien.</em>",
+    "hero.title": "Volez différemment.",
     "hero.body": "First &amp; Business Class · Jets privés · Hôtels d'exception<br>Des conditions que le marché ne publie pas",
     "hero.btn": "Demander l'accès",
     "hero.note": "Sans engagement · Réponse en moins de 24h",
