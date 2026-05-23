@@ -25,6 +25,7 @@ import {
   CONTACT_FORM_MARKER,
 } from "./contactFormUi.js";
 import { runWebDevisPipeline } from "./webDevisPipeline.js";
+import { createDraftDevisForLead } from "./draftDevis.js";
 import { evaluateRoutePolicy, getBlockedPolicyStats } from "./routePolicy.js";
 
 const log = createLogger("agent");
@@ -259,6 +260,13 @@ export async function runAgent({ messages, lang = "fr", context = {} }) {
         notifyDalsimOfNewLead(lead).catch((e) =>
           log.warn(`notif dalsim a échoué: ${e.message}`)
         );
+        // Brouillon devis + notif admin (saisie tarifs) — canaux non-web uniquement
+        // (le canal web est géré par runWebDevisPipeline ci-dessus).
+        if (context.channel !== "web") {
+          createDraftDevisForLead(lead, agentContext).catch((e) =>
+            log.warn(`draft devis creation failed: ${e.message}`)
+          );
+        }
       }
     } catch (err) {
       log.error(`extraction/persist lead: ${err?.message || err}`);

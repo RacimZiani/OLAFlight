@@ -709,9 +709,18 @@ function enterZoom(s) { pipelineState.zoom = s; renderKanban(); }
 function exitZoom() { pipelineState.zoom = null; renderKanban(); }
 
 // ─── LEAD MODAL ───
-function openLeadModal(id) {
-  const l = leads.find(x => String(x.id) === String(id));
-  if(!l) return;
+async function openLeadModal(id) {
+  let l = leads.find(x => String(x.id) === String(id));
+  if (!l) {
+    try {
+      const r = await fetch('/api/leads/' + encodeURIComponent(id), { credentials: 'include' });
+      if (r.ok) {
+        const data = await r.json();
+        if (data.item) { l = normalizeApiLead(data.item); leads.push(l); }
+      }
+    } catch {}
+  }
+  if (!l) return;
   const content = document.getElementById('modal-content');
   const safeId = String(l.id).replace(/'/g, "\\'");
   content.innerHTML = `
@@ -787,7 +796,7 @@ function openLeadModal(id) {
     ${l.followup?`<div class="modal-section"><div class="ms-title">Prochain suivi</div><div style="font-family:Montserrat,sans-serif;font-size:9px;font-weight:300;color:var(--yellow-t)">${fmtFollowup(l.followup)}</div></div>`:''}
     <div class="modal-actions">
       <button class="ma-btn ma-primary" onclick="alert('Lien WhatsApp : wa.me/${l.contact.replace('@','')}')">Contacter sur WhatsApp</button>
-      <button class="ma-btn ma-ghost">Envoyer une offre</button>
+      ${isAdmin() ? `<button class="ma-btn ma-ghost" onclick="openLatestPendingDevisForLead('${safeId}')">Saisir les tarifs</button>` : ''}
       <button class="ma-btn ma-ghost">Programmer relance</button>
       <button class="ma-btn ma-danger" onclick="updateStatus('${safeId}','lost');closeModal();">Marquer perdu</button>
     </div>
@@ -979,6 +988,20 @@ function showAdminPricingRecap(devisId, recap, leadId) {
     if (leadId) openLeadModal(leadId);
     fetchNotifs();
   });
+}
+
+async function openLatestPendingDevisForLead(leadId) {
+  if (!isAdmin()) return;
+  try {
+    const r = await fetch('/api/leads/' + encodeURIComponent(leadId) + '/devis', { credentials: 'include' });
+    if (!r.ok) throw new Error('http ' + r.status);
+    const d = await r.json();
+    const pending = (d.items || []).find(dv => dv.pricing_status === 'pending_admin' || !Number(dv.prix_vente));
+    if (!pending) return alert('Aucun devis en attente de tarifs pour ce lead.');
+    openAdminPricingEditor(pending.id);
+  } catch (e) {
+    alert('Erreur : ' + (e.message || e));
+  }
 }
 
 // ─── Édition d'un devis (admin/closer) ───
@@ -1591,11 +1614,10 @@ function onNotifClick(id, leadId, devisId, notifType) {
     method: 'PATCH', credentials: 'include',
   }).then(() => fetchNotifs()).catch(() => {});
   document.getElementById('notif-panel').classList.remove('open');
-  if (notifType === 'devis_prices_needed' && devisId && devisId !== 'null' && isAdmin()) {
-    openAdminPricingEditor(devisId);
-    return;
-  }
   if (leadId && leadId !== 'null') openLeadModal(leadId);
+  else if (notifType === 'devis_prices_needed' && devisId && devisId !== 'null' && isAdmin()) {
+    openAdminPricingEditor(devisId);
+  }
 }
 
 function markAllNotifsRead() {
