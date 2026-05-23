@@ -40,7 +40,7 @@ nav{
   z-index:200;
   backdrop-filter:blur(24px);
 }
-.nav-logo video{ height:80px; width:auto; display:block; mix-blend-mode:screen; }
+.nav-logo img{ height:56px; width:auto; display:block; }
 .nav-links{ display:flex; align-items:center; gap:52px; }
 .nav-link{
   font-family:'Montserrat',sans-serif;
@@ -615,7 +615,7 @@ footer{
   display:grid; grid-template-columns:1fr auto 1fr;
   align-items:center; gap:40px;
 }
-.footer-logo video{ height:24px; width:auto; display:block; }
+.footer-logo img{ height:24px; width:auto; display:block; }
 .footer-center{
   font-family:'Montserrat',sans-serif; font-size:8px; font-weight:300;
   letter-spacing:3px; text-transform:uppercase;
@@ -741,7 +741,7 @@ html.no-gsap [data-hero-anim]{
 <!-- NAV -->
 <nav>
   <div class="nav-logo">
-    <video autoplay muted loop playsinline><source src="/videos/logo.webm" type="video/webm"><source src="/videos/logo.mp4" type="video/mp4"></video>
+    <img src="/images/logo-static.png" alt="Ola Flight">
   </div>
   <div class="nav-links">
     <a href="#services" class="nav-link" data-i18n="nav.services">Services</a>
@@ -783,7 +783,7 @@ html.no-gsap [data-hero-anim]{
   </svg>
 
   <div class="hero-logo-wrap" id="heroLogo" data-hero-anim>
-    <video autoplay muted loop playsinline><source src="/videos/logo.webm" type="video/webm"><source src="/videos/logo.mp4" type="video/mp4"></video>
+    <video id="heroLogoVideo" autoplay muted playsinline><source src="/videos/logo.webm" type="video/webm"><source src="/videos/logo.mp4" type="video/mp4"></video>
   </div>
   <div class="hero-pill" id="heroPill" data-hero-anim>
     <span class="ola-pulse" aria-hidden="true"></span>
@@ -1023,7 +1023,7 @@ html.no-gsap [data-hero-anim]{
 
 <footer>
   <div class="footer-logo">
-    <video autoplay muted loop playsinline><source src="/videos/logo.webm" type="video/webm"><source src="/videos/logo.mp4" type="video/mp4"></video>
+    <img src="/images/logo-static.png" alt="Ola Flight">
   </div>
   <div class="footer-center" data-i18n="footer.center">© 2026 Ola Flight · Confidentiel · Tous droits réservés</div>
   <div class="footer-links">
@@ -1198,6 +1198,16 @@ window.addEventListener('load', () => {
     gsap.to('.flight-path', {
       y: -90, opacity: 0, ease: 'none',
       scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: true },
+    });
+  }
+
+  // Freeze logo vidéo sur la dernière image (joue une fois puis pause)
+  const heroVid = document.getElementById('heroLogoVideo');
+  if (heroVid) {
+    heroVid.addEventListener('timeupdate', () => {
+      if (heroVid.duration && heroVid.currentTime >= heroVid.duration - 0.08) {
+        heroVid.pause();
+      }
     });
   }
 });
