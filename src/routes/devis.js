@@ -73,6 +73,9 @@ router.post("/", requireDevis, validate({ body: devisCreateSchema }), async (req
     });
 
     const now = Date.now();
+    const isSupabase = config.storage.driver === "supabase";
+    const tsNow = isSupabase ? new Date(now).toISOString() : now;
+    const tsValide = isSupabase ? new Date(now + DAY).toISOString() : now + DAY;
     const devis = {
       id: body.id || `OLA-${uid().slice(0, 6)}`,
       lead_id: body.lead_id,
@@ -87,10 +90,10 @@ router.post("/", requireDevis, validate({ body: devisCreateSchema }), async (req
       apporteur_name: body.apporteur_name || null,
       services_inclus: parseServices(body.services_inclus),
       pdf_url: body.pdf_url || null,
-      valide_jusqu_au: now + DAY,
+      valide_jusqu_au: tsValide,
       paiement_recu: false,
-      created_at: now,
-      updated_at: now,
+      created_at: tsNow,
+      updated_at: tsNow,
     };
 
     const store = await getStore();
