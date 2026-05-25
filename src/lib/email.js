@@ -123,12 +123,13 @@ export function isEmailConfigured() {
  */
 export async function sendDevisEmailToClient({ devis, lead, baseUrl, lang = "fr" }) {
   const transport = getTransport();
-  const to = String(lead?.client_contact || "").trim();
-  const emailMatch = to.match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
-  const recipient = emailMatch ? emailMatch[0] : (to.includes("@") ? to : "");
+  const emailRegex = /[^\s@]+@[^\s@]+\.[^\s@]+/;
+  const recipient = [lead?.client_contact, lead?.notes]
+    .map(s => String(s || "").match(emailRegex)?.[0])
+    .find(Boolean) || "";
 
   if (!recipient) {
-    return { ok: false, error: "Aucune adresse email client sur le lead" };
+    return { ok: false, error: "Aucune adresse email client sur le lead (renseigner dans contact ou notes)" };
   }
   if (!transport) {
     log.warn("SMTP non configuré — email non envoyé");

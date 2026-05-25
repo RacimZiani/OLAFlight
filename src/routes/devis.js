@@ -99,12 +99,15 @@ router.post("/", requireDevis, validate({ body: devisCreateSchema }), async (req
     const store = await getStore();
     await store.devis.insert(devis);
 
-    // Met à jour le lead lié → devis_sent + propage value/margin (lecture CRM).
+    // Mise à jour du lead non-bloquante : si elle échoue le devis est déjà créé.
     if (devis.lead_id) {
-      await store.leads.update(devis.lead_id, {
-        status: "devis_sent",
+      const leadUpdate = {
+        status: devis.prix_vente > 0 ? "devis_sent" : "devis_pending",
         value: devis.prix_vente,
         margin: marge,
+      };
+      store.leads.update(devis.lead_id, leadUpdate).catch((e) => {
+        console.warn("[devis] lead update failed (non-blocking):", e?.message || e);
       });
     }
 
@@ -387,7 +390,7 @@ router.post(
         })),
         hotels: updated.hotels || patch.hotels || [],
         driver: updated.driver || patch.driver || null,
-        client_email: String(lead.client_contact || "").match(/[^\s@]+@[^\s@]+\.[^\s@]+/)?.[0] || "",
+        client_email: [lead.client_contact, lead.notes].map(s => String(s||"").match(/[^\s@]+@[^\s@]+\.[^\s@]+/)?.[0]).find(Boolean) || "",
         smtp_ready: isEmailConfigured(),
       };
 
