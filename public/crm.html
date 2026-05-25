@@ -374,9 +374,17 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
         <option>Raya</option>
       </select>
     </div>
-    <div class="form-group">
-      <label class="form-label">Apporteuse (si applicable)</label>
-      <input class="form-input" id="nl-apporteuse" placeholder="Nom de l'apporteuse">
+    <div class="form-group" id="nl-apporteur-group">
+      <label class="form-label">Prospecteur</label>
+      <select class="form-select" id="nl-apporteur">
+        <option value="">— Non assigné —</option>
+      </select>
+    </div>
+    <div class="form-group" id="nl-closer-group">
+      <label class="form-label">Closer</label>
+      <select class="form-select" id="nl-closer">
+        <option value="">— Non assigné —</option>
+      </select>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -797,6 +805,7 @@ async function openLeadModal(id) {
       <button class="ma-btn ma-primary" id="devis-action-btn" style="background:var(--yellow-t);color:var(--b)" onclick="createAndOpenDevis('${safeId}')">+ Préparer un devis</button>
       <button class="ma-btn ma-ghost">Programmer relance</button>
       <button class="ma-btn ma-danger" onclick="updateStatus('${safeId}','lost');closeModal();">Marquer perdu</button>
+      ${isAdmin() ? `<button class="ma-btn ma-danger" style="margin-top:8px;opacity:.7" onclick="deleteLead('${safeId}')">Supprimer le lead</button>` : ''}
     </div>
   </div>`;
   document.getElementById('modal-bg').classList.add('open');
@@ -1323,14 +1332,52 @@ function closeModal(e) {
 }
 
 // ─── NEW LEAD ───
-function openNewLead() { document.getElementById('new-lead-panel').classList.add('open'); }
+function openNewLead() {
+  // Peupler les sélecteurs closer/prospecteur (admin seulement)
+  const closerSel = document.getElementById('nl-closer');
+  const apporteurSel = document.getElementById('nl-apporteur');
+  if (closerSel) {
+    closerSel.innerHTML = '<option value="">— Non assigné —</option>' +
+      closers.map(c => `<option value="${escapeHtmlCrm(c.email)}">${escapeHtmlCrm(c.name || c.email)}</option>`).join('');
+  }
+  if (apporteurSel) {
+    apporteurSel.innerHTML = '<option value="">— Non assigné —</option>' +
+      apporteuses.map(p => `<option value="${escapeHtmlCrm(p.email)}">${escapeHtmlCrm(p.name || p.email)}</option>`).join('');
+  }
+  // Masquer les sélecteurs si pas admin
+  const show = isAdmin();
+  ['nl-closer-group','nl-apporteur-group'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = show ? '' : 'none';
+  });
+  document.getElementById('new-lead-panel').classList.add('open');
+}
 function closeNewLead() { document.getElementById('new-lead-panel').classList.remove('open'); }
+
+async function deleteLead(leadId) {
+  if (!isAdmin()) return;
+  if (!confirm('Supprimer définitivement ce lead ? Cette action est irréversible.')) return;
+  try {
+    const r = await fetch('/api/leads/' + encodeURIComponent(leadId), {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      return alert('Suppression impossible : ' + (body.message || body.error || r.status));
+    }
+    closeModal();
+    await fetchLeadsFromApi();
+  } catch (e) {
+    alert('Réseau indisponible');
+  }
+}
 
 function saveNewLead() {
   const name = document.getElementById('nl-name').value.trim();
   if (!name) return alert('Le nom du client est obligatoire.');
   const fu = document.getElementById('nl-followup').value;
-  const next_followup = fu ? Date.parse(fu + 'T12:00:00') : null;
+  const next_followup = fu ? new Date(fu + 'T12:00:00').toISOString() : null;
   const u = window.OlaAuth && window.OlaAuth.user;
   const payload = {
     client_name: name,
@@ -1339,9 +1386,9 @@ function saveNewLead() {
     destination: document.getElementById('nl-dest').value,
     dates: document.getElementById('nl-dates').value,
     classe: document.getElementById('nl-type').value,
-    apporteur_name: isProspecteur() ? u.email : (document.getElementById('nl-apporteuse').value || null),
-    closer_name: isCloser() ? u.email : (document.getElementById('nl-closer')?.value || u?.email || null),
-    next_followup: Number.isFinite(next_followup) ? next_followup : null,
+    apporteur_name: isProspecteur() ? u.email : (document.getElementById('nl-apporteur')?.value || null),
+    closer_name: isCloser() ? u.email : (document.getElementById('nl-closer')?.value || null),
+    next_followup,
     notes: document.getElementById('nl-notes').value,
     value: parseInt(document.getElementById('nl-value').value, 10) || 0,
     status: 'qualification',
@@ -1352,8 +1399,11 @@ function saveNewLead() {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
-  }).then(r => {
-    if (!r.ok) return alert('Impossible de créer le lead');
+  }).then(async r => {
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      return alert('Impossible de créer le lead : ' + (body.message || body.error || r.status));
+    }
     closeNewLead();
     ['nl-name','nl-contact','nl-dest','nl-dates','nl-notes','nl-value'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('nl-followup').value = '';

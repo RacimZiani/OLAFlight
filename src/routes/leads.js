@@ -6,8 +6,8 @@ import { uid } from "../lib/ids.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { notifyDalsimOfNewLead } from "../lib/notifications.js";
 import { notify } from "../lib/notifBus.js";
-import { pickCloserForLead } from "../lib/closerAssign.js";
-import { pickProspecteurForLead } from "../lib/prospecteurAssign.js";
+import { config } from "../config.js";
+// pickCloserForLead / pickProspecteurForLead retirés : assignation manuelle par l'admin uniquement.
 import {
   filterLeadsForUser,
   canAccessLead,
@@ -28,8 +28,17 @@ const DALSIM_TRIGGER_STATUSES = new Set(["devis_pending"]);
 // Toutes les routes leads sont réservées au back-office (admin / dalsim / closeuse).
 router.use(requireBackoffice);
 
+function toIsoIfSupabase(v) {
+  if (!v) return null;
+  if (config.storage.driver !== "supabase") return v;
+  if (typeof v === "number") return new Date(v).toISOString();
+  return v;
+}
+
 function normalizeLeadInput(body) {
   const now = Date.now();
+  const isSupabase = config.storage.driver === "supabase";
+  const tsNow = isSupabase ? new Date(now).toISOString() : now;
   return {
     id: body.id || uid(),
     client_name: String(body.client_name || body.name || "").trim() || "Client",
@@ -43,13 +52,13 @@ function normalizeLeadInput(body) {
     apporteur_name: body.apporteur_name || body.apporteuse || null,
     closer_name: body.closer_name || body.sdr || null,
     calendly_link: body.calendly_link || null,
-    next_followup: body.next_followup || body.followup || null,
+    next_followup: toIsoIfSupabase(body.next_followup || body.followup || null),
     notes: body.notes || "",
     value: Number(body.value || 0) || 0,
     margin: Number(body.margin || 0) || 0,
     urgent: leadBoolForDb(body.urgent),
-    created_at: now,
-    updated_at: now,
+    created_at: tsNow,
+    updated_at: tsNow,
   };
 }
 
@@ -132,16 +141,6 @@ router.post("/", validate({ body: leadCreateSchema }), async (req, res, next) =>
     const role = normalizeRole(req.user.role);
     if (role === ROLES.CLOSER) lead.closer_name = req.user.email;
     if (role === ROLES.PROSPECTEUR) lead.apporteur_name = req.user.email;
-    if (!lead.closer_name && role !== ROLES.CLOSER) {
-      try { lead.closer_name = await pickCloserForLead(); } catch (e) {
-        log.warn(`auto-dispatch closer failed: ${e?.message || e}`);
-      }
-    }
-    if (!lead.apporteur_name && role !== ROLES.PROSPECTEUR) {
-      try { lead.apporteur_name = await pickProspecteurForLead(); } catch (e) {
-        log.warn(`auto-dispatch prospecteur failed: ${e?.message || e}`);
-      }
-    }
     const store = await getStore();
     const inserted = await store.leads.insert(lead);
     if (DALSIM_TRIGGER_STATUSES.has(lead.status)) {

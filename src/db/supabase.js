@@ -71,8 +71,9 @@ function buildCollection(table, options = {}) {
     async insert(row) {
       const supabase = await getClient();
       const base = normalizeRow(table, row, { forWrite: true });
+      const toIso = (v) => typeof v === "number" ? new Date(v).toISOString() : (v || new Date().toISOString());
       const payload = autoTimestamps
-        ? { ...base, created_at: base.created_at || new Date().toISOString(), updated_at: new Date().toISOString() }
+        ? { ...base, created_at: toIso(base.created_at), updated_at: new Date().toISOString() }
         : base;
       const { data, error } = await supabase.from(table).insert(payload).select().single();
       if (error) throw error;
