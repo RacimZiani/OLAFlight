@@ -5,8 +5,8 @@
 // ─────────────────────────────────────────────────────────────
 
 export const COMMISSION_RATES = {
-  closer: 0.10,    // 10 % de la marge nette
-  apporteur: 0.20, // 20 % de la marge nette (uniquement si apporteur attribué)
+  closer: 0.10,   // 10 % de la marge nette
+  apporteur: 0.05, // 5 % de la marge nette (uniquement si apporteur attribué)
 };
 
 // Marge négative → toutes les commissions tombent à 0 (règle S04 du brief).

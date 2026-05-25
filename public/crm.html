@@ -535,7 +535,7 @@ function renderDashboard() {
   const totalCA = won.reduce((s,l)=>s+l.value,0);
   const me = window.OlaAuth && window.OlaAuth.user && window.OlaAuth.user.email;
   const myWon = me ? won.filter(l => l.sdr === me) : won;
-  const totalComm1 = myWon.reduce((s,l)=>s+l.margin*0.2,0);
+  const totalComm1 = myWon.reduce((s,l)=>s+l.margin*0.10,0);
   const pipeline = active.reduce((s,l)=>s+l.value,0);
   const today = leads.filter(l => {
     if (l.followup == null || l.followup === '') return false;
@@ -574,7 +574,7 @@ function renderDashboard() {
           ${leads.filter(l=>l.status==='won').map(l=>`
           <div class="cb-row">
             <div><div class="cb-name">${l.name}</div><div class="cb-num">${l.dest}</div></div>
-            <div class="cb-val">+${Math.round(l.margin*0.2).toLocaleString('fr-FR')} €</div>
+            <div class="cb-val">+${Math.round(l.margin*0.10).toLocaleString('fr-FR')} €</div>
           </div>`).join('')}
           ${leads.filter(l=>l.status==='won').length===0?'<div style="color:var(--g);font-size:14px;padding:20px 0;">Aucun deal closé ce mois.</div>':''}
         </div>
@@ -761,8 +761,8 @@ async function openLeadModal(id) {
       <div class="modal-grid">
         <div class="mf"><div class="mf-label">Valeur du deal</div><div class="mf-val">${l.value>0?l.value.toLocaleString('fr-FR')+' €':'À définir'}</div></div>
         <div class="mf"><div class="mf-label">Marge</div><div class="mf-val">${l.margin>0?l.margin.toLocaleString('fr-FR')+' €':'—'}</div></div>
-        <div class="mf"><div class="mf-label">Commission SDR (15%)</div><div class="mf-val" style="color:var(--green-t)">${l.margin>0?Math.round(l.margin*0.15).toLocaleString('fr-FR')+' €':'—'}</div></div>
-        <div class="mf"><div class="mf-label">Commission Closer (20%)</div><div class="mf-val" style="color:var(--green-t)">${l.margin>0?Math.round(l.margin*0.2).toLocaleString('fr-FR')+' €':'—'}</div></div>
+        <div class="mf"><div class="mf-label">Commission Prospecteur (5%)</div><div class="mf-val" style="color:var(--green-t)">${l.margin>0?Math.round(l.margin*0.05).toLocaleString('fr-FR')+' €':'—'}</div></div>
+        <div class="mf"><div class="mf-label">Commission Closer (10%)</div><div class="mf-val" style="color:var(--green-t)">${l.margin>0?Math.round(l.margin*0.10).toLocaleString('fr-FR')+' €':'—'}</div></div>
       </div>
     </div>
     <div class="modal-section">
@@ -1367,7 +1367,7 @@ function renderCommissions() {
   const myWon = me ? wonLeads.filter(l => l.sdr === me) : wonLeads;
   const totalCA = myWon.reduce((s,l)=>s+l.value,0);
   const totalMargin = myWon.reduce((s,l)=>s+l.margin,0);
-  const myComm = myWon.reduce((s,l)=>s+l.margin*0.2,0);
+  const myComm = myWon.reduce((s,l)=>s+l.margin*0.10,0);
 
   document.getElementById('v-commissions-inner').innerHTML = `
   <div style="padding:40px 32px;">
@@ -1377,7 +1377,7 @@ function renderCommissions() {
     <div class="comm-kpis">
       <div class="ck"><div class="ck-label">Chiffre d'affaires total</div><div class="ck-val">${totalCA.toLocaleString('fr-FR')} €</div><div class="ck-sub">${myWon.length} deals closés</div></div>
       <div class="ck"><div class="ck-label">Marge totale</div><div class="ck-val">${totalMargin.toLocaleString('fr-FR')} €</div><div class="ck-sub">${totalCA>0?Math.round(totalMargin/totalCA*100):0}% de marge</div></div>
-      <div class="ck"><div class="ck-label">Commissions (20%)</div><div class="ck-val ck-green">${Math.round(myComm).toLocaleString('fr-FR')} €</div><div class="ck-sub">${me ? 'Vos deals' : 'Tous closers'}</div></div>
+      <div class="ck"><div class="ck-label">Commissions (10%)</div><div class="ck-val ck-green">${Math.round(myComm).toLocaleString('fr-FR')} €</div><div class="ck-sub">${me ? 'Vos deals' : 'Tous closers'}</div></div>
     </div>
     <div class="comm-table-wrap">
       <div class="ct-header">
@@ -1385,7 +1385,7 @@ function renderCommissions() {
         <div class="ct-th">Destination</div>
         <div class="ct-th">Valeur deal</div>
         <div class="ct-th">Marge</div>
-        <div class="ct-th">Commission (20%)</div>
+        <div class="ct-th">Commission (10%)</div>
       </div>
       ${myWon.length>0?myWon.map(l=>`
       <div class="ct-row">
@@ -1393,15 +1393,15 @@ function renderCommissions() {
         <div class="ct-cell muted">${l.dest}</div>
         <div class="ct-cell">${l.value.toLocaleString('fr-FR')} €</div>
         <div class="ct-cell muted">${l.margin.toLocaleString('fr-FR')} €</div>
-        <div class="ct-cell green">+${Math.round(l.margin*0.2).toLocaleString('fr-FR')} €</div>
+        <div class="ct-cell green">+${Math.round(l.margin*0.10).toLocaleString('fr-FR')} €</div>
       </div>`).join(''):`<div style="padding:32px;color:var(--g);font-size:15px;font-style:italic">Aucun deal closé ce mois.</div>`}
     </div>
     <div style="margin-top:24px;background:var(--b2);border:1px solid var(--l);padding:24px;">
       <div style="font-family:Montserrat,sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:16px;">Structure des commissions</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--l);">
-        <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">SDR / Apporteur</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">15 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
-        <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">Closer</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">20 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
-        <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">Ola Flight</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">65 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
+        <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">Prospecteur</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">5 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
+        <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">Closer</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">10 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
+        <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">Ola Flight</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">85 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
       </div>
     </div>
   </div>`;
@@ -1466,7 +1466,7 @@ function renderApporteuses() {
           <select class="form-select" id="ap-rate">
             <option value="5">5% sur marge</option>
             <option value="7">7% sur marge</option>
-            <option value="10" selected>10% sur marge</option>
+            <option value="5" selected>5% sur marge</option>
           </select>
         </div>
         <div class="form-group">
