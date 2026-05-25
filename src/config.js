@@ -55,7 +55,7 @@ export const config = {
 
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || "",
-    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
     maxTokens: num(process.env.ANTHROPIC_MAX_TOKENS, 600),
   },
 

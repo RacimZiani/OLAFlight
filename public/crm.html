@@ -796,7 +796,8 @@ async function openLeadModal(id) {
     ${l.followup?`<div class="modal-section"><div class="ms-title">Prochain suivi</div><div style="font-family:Montserrat,sans-serif;font-size:9px;font-weight:300;color:var(--yellow-t)">${fmtFollowup(l.followup)}</div></div>`:''}
     <div class="modal-actions">
       <button class="ma-btn ma-primary" onclick="alert('Lien WhatsApp : wa.me/${l.contact.replace('@','')}')">Contacter sur WhatsApp</button>
-      ${isAdmin() ? `<button class="ma-btn ma-ghost" onclick="openLatestPendingDevisForLead('${safeId}')">Saisir les tarifs</button>` : ''}
+      <button class="ma-btn ma-primary" style="background:var(--yellow-t);color:var(--b)" onclick="createAndOpenDevis('${safeId}')">+ Préparer un devis</button>
+      ${isAdmin() ? `<button class="ma-btn ma-ghost" onclick="openLatestPendingDevisForLead('${safeId}')">Saisir les tarifs (existant)</button>` : ''}
       <button class="ma-btn ma-ghost">Programmer relance</button>
       <button class="ma-btn ma-danger" onclick="updateStatus('${safeId}','lost');closeModal();">Marquer perdu</button>
     </div>
@@ -1001,6 +1002,48 @@ async function openLatestPendingDevisForLead(leadId) {
     openAdminPricingEditor(pending.id);
   } catch (e) {
     alert('Erreur : ' + (e.message || e));
+  }
+}
+
+// ─── Créer un nouveau devis depuis la fiche lead ───
+async function createAndOpenDevis(leadId) {
+  const lead = leads.find(x => String(x.id) === String(leadId));
+  const btn = event && event.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Création…'; }
+  try {
+    const r = await fetch('/api/devis', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lead_id: String(leadId) }),
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      throw new Error(t || r.status);
+    }
+    const data = await r.json();
+    const newId = data.item && data.item.id;
+    if (!newId) throw new Error('ID manquant dans la réponse');
+    // Passe le lead en "devis à préparer" si pas encore avancé
+    if (lead && ['qualification', 'new', 'contacted'].includes(lead.apiStatus)) {
+      await fetch('/api/leads/' + encodeURIComponent(leadId), {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'devis_pending' }),
+      }).catch(() => {});
+      await fetchLeadsFromApi();
+    }
+    if (isAdmin()) {
+      openAdminPricingEditor(newId);
+    } else {
+      alert('Devis ' + newId + ' créé. Un administrateur doit maintenant saisir les tarifs.');
+      closeModal();
+      openLeadModal(leadId);
+    }
+  } catch (e) {
+    alert('Impossible de créer le devis : ' + (e.message || e));
+    if (btn) { btn.disabled = false; btn.textContent = '+ Préparer un devis'; }
   }
 }
 

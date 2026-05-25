@@ -1,0 +1,344 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{colortbl}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{lmodern}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{hhline}
+
+\geometry{top=2cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
+
+% ── Couleurs ──────────────────────────────────────────────────────────────────
+\definecolor{primary}{RGB}{30, 64, 120}
+\definecolor{accent}{RGB}{220, 53, 69}
+\definecolor{lightgray}{RGB}{245, 246, 248}
+\definecolor{midgray}{RGB}{180, 185, 195}
+\definecolor{success}{RGB}{40, 167, 69}
+\definecolor{warning}{RGB}{255, 193, 7}
+
+% ── En-têtes / pieds de page ──────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\small\color{midgray} Document confidentiel — OLAFlight · \thepage}
+
+% ── Titres de section ─────────────────────────────────────────────────────────
+\titleformat{\section}{\large\bfseries\color{primary}}{}{0em}{}[\color{primary}\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\color{primary}}{}{0em}{}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+
+% ── Commande champ vide ───────────────────────────────────────────────────────
+\newcommand{\champ}[1]{\underline{\hspace{#1}}}
+
+\begin{document}
+
+% ════════════════════════════════════════════════════════════════════════════
+%  EN-TÊTE DU DOCUMENT
+% ════════════════════════════════════════════════════════════════════════════
+\begin{minipage}[t]{0.48\textwidth}
+  {\LARGE\bfseries\color{primary} FACTURE \& CONTRAT}\\[2pt]
+  {\large\color{accent} Développement Web — OLAFlight}\\[8pt]
+  {\small\color{midgray} N° \champ{4cm} \quad Date : 25 mai 2026}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+  \raggedleft
+  \colorbox{primary}{\parbox{0.9\textwidth}{
+    \vspace{4pt}
+    \centering\color{white}
+    {\large\bfseries TOTAL DÛ}\\[2pt]
+    {\LARGE\bfseries 2 500,00 €\,HT}\\[2pt]
+    {\small dont 500,00 € déjà réglés}
+    \vspace{4pt}
+  }}
+\end{minipage}
+
+\vspace{12pt}
+\color{midgray}\hrule\color{black}
+\vspace{10pt}
+
+% ════════════════════════════════════════════════════════════════════════════
+%  PARTIES
+% ════════════════════════════════════════════════════════════════════════════
+\begin{minipage}[t]{0.46\textwidth}
+  \colorbox{lightgray}{\parbox{\textwidth}{
+    \vspace{6pt}
+    \textbf{\color{primary} PRESTATAIRE}\\[4pt]
+    Nom / Société : \champ{5cm}\\[3pt]
+    Adresse : \champ{5.5cm}\\[3pt]
+    \hspace{2.35cm} \champ{5.5cm}\\[3pt]
+    SIRET : \champ{4.5cm}\\[3pt]
+    Email : \champ{5cm}\\[3pt]
+    Tél : \champ{4cm}
+    \vspace{6pt}
+  }}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.46\textwidth}
+  \colorbox{lightgray}{\parbox{\textwidth}{
+    \vspace{6pt}
+    \textbf{\color{primary} CLIENT}\\[4pt]
+    Nom / Société : \champ{5cm}\\[3pt]
+    Adresse : \champ{5.5cm}\\[3pt]
+    \hspace{2.35cm} \champ{5.5cm}\\[3pt]
+    SIRET : \champ{4.5cm}\\[3pt]
+    Email : \champ{5cm}\\[3pt]
+    Tél : \champ{4cm}
+    \vspace{6pt}
+  }}
+\end{minipage}
+
+\vspace{14pt}
+
+% ════════════════════════════════════════════════════════════════════════════
+%  DÉTAIL DES PRESTATIONS
+% ════════════════════════════════════════════════════════════════════════════
+\section{Détail des prestations}
+
+\begin{tabularx}{\textwidth}{>{\bfseries}p{5.5cm} X r r}
+  \toprule
+  \rowcolor{primary}
+  \color{white}Prestation & \color{white}Description & \color{white}Qté & \color{white}Montant HT \\
+  \midrule
+  Développement site web & Conception et développement complet de la plateforme OLAFlight (chatbot IA, CRM, gestion devis, génération PDF, authentification multi-rôles, intégration API) & 1 & \textbf{2 500,00 €} \\
+  \midrule
+  \rowcolor{lightgray}
+  & & \textbf{Sous-total} & \textbf{2 500,00 €} \\
+  \rowcolor{lightgray}
+  & & TVA (si applicable) & \textit{voir mentions} \\
+  \rowcolor{lightgray}
+  & & \textbf{TOTAL HT} & \textbf{2 500,00 €} \\
+  \bottomrule
+\end{tabularx}
+
+\vspace{6pt}
+{\small\color{midgray}\textit{TVA non applicable si auto-entrepreneur (art. 293B CGI) — à adapter selon statut du prestataire.}}
+
+\vspace{14pt}
+
+% ════════════════════════════════════════════════════════════════════════════
+%  ÉCHÉANCIER DE PAIEMENT
+% ════════════════════════════════════════════════════════════════════════════
+\section{Contrat de paiement — Échéancier}
+
+\begin{tabularx}{\textwidth}{c >{\bfseries}p{3.2cm} X r >{\centering\arraybackslash}p{2.8cm}}
+  \toprule
+  \rowcolor{primary}
+  \color{white}\# & \color{white}Échéance & \color{white}Motif & \color{white}Montant HT & \color{white}Statut \\
+  \midrule
+  \rowcolor{lightgray}
+  1 & Avant déploiement & Acompte de démarrage & 500,00 € & \textcolor{success}{\bfseries RÉGLÉ} \\
+  \midrule
+  2 & \textbf{27 mai 2026} & \textbf{Paiement au déploiement} (mise en ligne réalisée le samedi 24 mai 2026 à 21h00) — dû dans les 48h & 500,00 € & \textcolor{accent}{\bfseries À RÉGLER} \\
+  \midrule
+  \rowcolor{lightgray}
+  3 & \textbf{3 juin 2026} & 1\iere{} échéance post-déploiement (délai max 7 jours) & 500,00 € & En attente \\
+  \midrule
+  4 & \textbf{10 juin 2026} & 2\ieme{} échéance post-déploiement (délai max 7 jours) & 500,00 € & En attente \\
+  \midrule
+  \rowcolor{lightgray}
+  5 & \textbf{17 juin 2026} & 3\ieme{} et dernière échéance (délai max 7 jours) & 500,00 € & En attente \\
+  \midrule
+  \rowcolor{primary}
+  & & \color{white}\textbf{TOTAL} & \color{white}\textbf{2 500,00 €} & \\
+  \bottomrule
+\end{tabularx}
+
+\vspace{8pt}
+\colorbox{warning!30}{\parbox{\textwidth}{
+  \vspace{4pt}
+  \textbf{Conditions de paiement :} Tout retard de paiement au-delà de la date d'échéance entraîne l'application d'intérêts de retard au taux légal en vigueur. En cas de non-règlement d'une échéance sous 7 jours supplémentaires, le prestataire se réserve le droit de suspendre l'accès au service jusqu'à régularisation.
+  \vspace{4pt}
+}}
+
+\newpage
+
+% ════════════════════════════════════════════════════════════════════════════
+%  OPTIONS HORS FORFAIT — INDEXATION & SEO
+% ════════════════════════════════════════════════════════════════════════════
+\section{Options hors forfait — Indexation \& Référencement (SEO)}
+
+\textit{Ces prestations sont proposées en supplément du forfait de développement de 2 500 € HT.}
+
+\vspace{6pt}
+
+\begin{tabularx}{\textwidth}{>{\bfseries}p{4cm} X r}
+  \toprule
+  \rowcolor{primary}
+  \color{white}Prestation & \color{white}Détail & \color{white}Prix HT \\
+  \midrule
+  Indexation de base & Configuration Google Search Console, soumission sitemap XML, paramétrage \texttt{robots.txt}, vérification de la propriété, demande d'indexation manuelle des pages clés & \textbf{250,00 €} \\
+  \midrule
+  \rowcolor{lightgray}
+  Optimisation SEO on-page & Rédaction et intégration des balises meta (title, description), structuration des données JSON-LD, optimisation des balises Hn, attributs alt images, amélioration des performances Core Web Vitals & \textbf{450,00 €} \\
+  \midrule
+  \textbf{Pack complet} \newline (Indexation + SEO) & Combinaison des deux prestations ci-dessus avec rapport de suivi & \textbf{620,00 €} \\
+  \midrule
+  \rowcolor{lightgray}
+  \multicolumn{2}{r}{\textit{(économie de 80,00 € vs. achat séparé)}} & \textcolor{success}{\textit{−80,00 €}} \\
+  \bottomrule
+\end{tabularx}
+
+\vspace{6pt}
+{\small\color{midgray}\textit{Tarifs basés sur les prix du marché (freelance web, France, 2026). Résultats d'indexation soumis aux délais de traitement Google (1 à 14 jours selon maturité du domaine).}}
+
+\vspace{14pt}
+
+% ════════════════════════════════════════════════════════════════════════════
+%  ABONNEMENTS MAINTENANCE
+% ════════════════════════════════════════════════════════════════════════════
+\section{Abonnements maintenance — Offres mensuelles}
+
+\textit{Abonnements résiliables avec un préavis de 30 jours. Sans engagement minimum.}
+
+\vspace{8pt}
+
+% ── Option 1 ────────────────────────────────────────────────────────────────
+\colorbox{lightgray}{\parbox{\textwidth}{
+  \vspace{6pt}
+  \begin{minipage}{0.72\textwidth}
+    \textbf{\color{primary}\large Option 1 — Essentiel}\\[3pt]
+    \textbf{1 jour de maintenance par semaine} $\approx$ 4 jours/mois\\[4pt]
+    \begin{itemize}[leftmargin=*, noitemsep, topsep=2pt]
+      \item Correction de bugs et anomalies
+      \item Petits réglages visuels et fonctionnels
+      \item Mises à jour de dépendances mineures
+      \item Rapport mensuel des interventions
+    \end{itemize}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.24\textwidth}
+    \centering
+    \colorbox{primary}{\parbox{0.9\textwidth}{
+      \centering\color{white}\vspace{4pt}
+      {\large\bfseries 350 €}\\{\small HT / mois}
+      \vspace{4pt}
+    }}
+  \end{minipage}
+  \vspace{6pt}
+}}
+
+\vspace{6pt}
+
+% ── Option 2 ────────────────────────────────────────────────────────────────
+\colorbox{primary!8}{\parbox{\textwidth}{
+  \vspace{6pt}
+  \begin{minipage}{0.72\textwidth}
+    \textbf{\color{primary}\large Option 2 — Avancée} \quad{\small\color{accent}\bfseries ★ Recommandée}\\[3pt]
+    \textbf{2 jours de maintenance par semaine} $\approx$ 8 jours/mois\\[4pt]
+    \begin{itemize}[leftmargin=*, noitemsep, topsep=2pt]
+      \item Tout ce qui est inclus dans l'Option 1
+      \item Ajout ou modification de fonctionnalités
+      \item Évolutions de l'interface utilisateur
+      \item Intégrations tierces et nouvelles API
+      \item Support prioritaire (réponse sous 24h ouvrées)
+    \end{itemize}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.24\textwidth}
+    \centering
+    \colorbox{accent}{\parbox{0.9\textwidth}{
+      \centering\color{white}\vspace{4pt}
+      {\large\bfseries 650 €}\\{\small HT / mois}
+      \vspace{4pt}
+    }}
+  \end{minipage}
+  \vspace{6pt}
+}}
+
+\vspace{6pt}
+
+% ── Option 3 ────────────────────────────────────────────────────────────────
+\colorbox{lightgray}{\parbox{\textwidth}{
+  \vspace{6pt}
+  \begin{minipage}{0.72\textwidth}
+    \textbf{\color{primary}\large Option 3 — Plein temps / Retainer}\\[3pt]
+    \textbf{Disponibilité à plein temps} — réponse immédiate à toute demande\\[4pt]
+    \begin{itemize}[leftmargin=*, noitemsep, topsep=2pt]
+      \item Tout ce qui est inclus dans l'Option 2
+      \item Disponibilité dédiée, réponse sous 2h en heures ouvrées
+      \item Développements illimités dans le cadre du projet
+      \item Réunions hebdomadaires de suivi (visio ou présentiel)
+      \item Accès prioritaire absolu — le client passe avant tout
+    \end{itemize}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.24\textwidth}
+    \centering
+    \colorbox{primary}{\parbox{0.9\textwidth}{
+      \centering\color{white}\vspace{4pt}
+      {\large\bfseries 1 500 €}\\{\small HT / mois}
+      \vspace{4pt}
+    }}
+  \end{minipage}
+  \vspace{6pt}
+}}
+
+\vspace{14pt}
+
+% ════════════════════════════════════════════════════════════════════════════
+%  RÉCAPITULATIF TARIFAIRE
+% ════════════════════════════════════════════════════════════════════════════
+\section{Récapitulatif tarifaire}
+
+\begin{tabularx}{\textwidth}{X r}
+  \toprule
+  \rowcolor{primary}
+  \color{white}\textbf{Prestation} & \color{white}\textbf{Tarif HT} \\
+  \midrule
+  Développement OLAFlight (forfait) & 2 500,00 € \\
+  \midrule
+  \rowcolor{lightgray}
+  Option Indexation de base & 250,00 € \\
+  Option SEO on-page & 450,00 € \\
+  \rowcolor{lightgray}
+  \textit{Pack Indexation + SEO (remise incluse)} & \textit{620,00 €} \\
+  \midrule
+  Abonnement Maintenance Essentiel (Option 1) & 350,00 € / mois \\
+  \rowcolor{lightgray}
+  Abonnement Maintenance Avancée (Option 2) & 650,00 € / mois \\
+  Abonnement Maintenance Plein temps (Option 3) & 1 500,00 € / mois \\
+  \bottomrule
+\end{tabularx}
+
+\vspace{14pt}
+
+% ════════════════════════════════════════════════════════════════════════════
+%  SIGNATURES
+% ════════════════════════════════════════════════════════════════════════════
+\section{Accord et signatures}
+
+En signant ce document, les deux parties reconnaissent avoir pris connaissance des conditions ci-dessus et s'engagent à les respecter.
+
+\vspace{16pt}
+
+\begin{tabularx}{\textwidth}{X X}
+  \textbf{Le Prestataire} & \textbf{Le Client} \\[6pt]
+  Nom : \champ{5cm} & Nom : \champ{5cm} \\[6pt]
+  Date : \champ{4cm} & Date : \champ{4cm} \\[20pt]
+  Signature : & Signature : \\[24pt]
+  \hline & \hline
+\end{tabularx}
+
+\vspace{10pt}
+{\small\color{midgray}
+\textbf{Règlement :} Virement bancaire (coordonnées transmises séparément) ou tout autre moyen convenu entre les parties.\\
+\textbf{Litiges :} En cas de litige, les parties s'engagent à rechercher une solution amiable avant toute procédure judiciaire. À défaut, le tribunal compétent sera celui du lieu du siège social du prestataire.\\
+\textbf{Propriété intellectuelle :} Le code source et les actifs produits deviennent propriété du client à compter du règlement intégral du forfait de développement.
+}
+
+\end{document}
