@@ -19,6 +19,7 @@ function getTransport() {
     host: smtp.host,
     port: smtp.port,
     secure: smtp.secure,
+    requireTLS: !smtp.secure, // STARTTLS si port 587
     auth: { user: smtp.user, pass: smtp.pass },
     connectionTimeout: 10000,
     greetingTimeout: 8000,
