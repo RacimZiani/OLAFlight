@@ -827,7 +827,7 @@ html.no-gsap [data-hero-anim]{
   </svg>
 
   <div class="hero-logo-wrap" id="heroLogo" data-hero-anim>
-    <video id="heroLogoVideo" autoplay muted playsinline><source src="/videos/logo.webm" type="video/webm"><source src="/videos/logo.mp4" type="video/mp4"></video>
+    <video id="heroLogoVideo" autoplay muted playsinline loop><source src="/videos/logo.webm" type="video/webm"><source src="/videos/logo.mp4" type="video/mp4"></video>
   </div>
   <div class="hero-pill" id="heroPill" data-hero-anim>
     <span class="ola-pulse" aria-hidden="true"></span>
@@ -1253,11 +1253,7 @@ window.addEventListener('load', () => {
     });
   }
 
-  // Logo vidéo en boucle infinie
-  const heroVid = document.getElementById('heroLogoVideo');
-  if (heroVid) {
-    heroVid.loop = true;
-  }
+  // loop déjà mis sur l'élément video via l'attribut HTML
 });
 </script>
 
