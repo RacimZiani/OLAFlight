@@ -36,14 +36,14 @@ function buildOptionsHtml(devis, lead) {
       const first = Number(o.prix_vente_first) || 0;
       return `
       <tr>
-        <td style="padding:12px 0;border-bottom:1px solid #222;font-family:Georgia,serif;color:#f8f5f0">
-          <strong>${escapeHtml(o.label || `Option ${i + 1}`)}</strong><br>
-          <span style="font-size:13px;color:#aaa">${escapeHtml(o.compagnie || "—")}</span>
+        <td style="padding:14px 0;border-bottom:1px solid #2a2a2a;font-family:Georgia,serif;color:#f8f5f0 !important;background:#111111">
+          <strong style="color:#f8f5f0 !important">${escapeHtml(o.label || `Option ${i + 1}`)}</strong><br>
+          <span style="font-size:13px;color:#888888 !important;font-family:Arial,sans-serif">${escapeHtml(o.compagnie || "—")}</span>
         </td>
-        <td style="padding:12px 0;border-bottom:1px solid #222;text-align:right;color:#f8f5f0;font-size:14px">
-          ${biz > 0 ? `Business : ${formatMoney(biz)}<br>` : ""}
-          ${first > 0 ? `First : ${formatMoney(first)}<br>` : ""}
-          <strong style="color:#c9a96e">${formatMoney(pv)}</strong>
+        <td style="padding:14px 0;border-bottom:1px solid #2a2a2a;text-align:right;color:#f8f5f0 !important;font-size:14px;font-family:Arial,sans-serif;background:#111111">
+          ${biz > 0 ? `<span style="color:#cccccc !important">Business : ${formatMoney(biz)}</span><br>` : ""}
+          ${first > 0 ? `<span style="color:#cccccc !important">First : ${formatMoney(first)}</span><br>` : ""}
+          <strong style="color:#c9a96e !important;font-size:16px">${formatMoney(pv)}</strong>
         </td>
       </tr>`;
     })
@@ -77,29 +77,57 @@ function buildDevisEmailHtml({ devis, lead, baseUrl, lang = "fr" }) {
   const btn = (href, label, bg) =>
     `<a href="${href}" style="display:inline-block;margin:6px 8px;padding:14px 28px;background:${bg};color:#000;text-decoration:none;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-family:Arial,sans-serif">${label}</a>`;
 
-  return `<!DOCTYPE html><html><body style="margin:0;background:#0a0a0a;padding:32px 16px">
-  <div style="max-width:560px;margin:0 auto;background:#111;border:1px solid #333;padding:40px 32px">
-    <div style="margin:0 0 28px"><img src="${baseUrl}/images/logo-texte.png" alt="Ola Flight" style="height:120px;width:auto;display:block"></div>
-    <h1 style="font-family:Georgia,serif;font-weight:300;font-size:28px;color:#f8f5f0;margin:0 0 16px">
-      ${fr ? `Votre proposition, ${name}` : `Your proposal, ${name}`}
-    </h1>
-    <p style="color:#aaa;font-size:14px;line-height:1.7;margin:0 0 24px">
-      ${fr ? `Voici votre comparatif pour <strong style="color:#fff">${dest}</strong>. Tarif valable 24 h.` : `Here is your comparison for <strong style="color:#fff">${dest}</strong>. Valid 24 hours.`}
-    </p>
-    <table width="100%" cellpadding="0" cellspacing="0">${buildOptionsHtml(devis, lead)}</table>
-    ${buildExtrasHtml(devis, lead)}
-    <p style="margin:28px 0 12px">
-      <a href="${pdfUrl}" style="color:#c9a96e;font-size:13px">${fr ? "Télécharger le PDF" : "Download PDF"}</a>
-    </p>
-    <div style="text-align:center;margin:32px 0 8px">
-      ${btn(acceptUrl, fr ? "Accepter" : "Accept", "#f8f5f0")}
-      ${btn(negotiateUrl, fr ? "Négocier" : "Discuss", "#333")}
-      ${btn(refuseUrl, fr ? "Refuser" : "Decline", "transparent")}
-    </div>
-    <p style="font-size:11px;color:#555;line-height:1.6;margin-top:24px">
-      ${fr ? "Un conseiller Ola Flight vous recontacte après votre choix." : "An Ola Flight advisor will follow up after your choice."}
-    </p>
-  </div></body></html>`;
+  return `<!DOCTYPE html>
+<html lang="${fr ? 'fr' : 'en'}">
+<head>
+<meta charset="UTF-8">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0 !important; padding:0 !important; background:#0a0a0a !important; }
+  * { -webkit-text-size-adjust:none; }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#0a0a0a !important;background-color:#0a0a0a !important;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;background-color:#0a0a0a;min-height:100vh">
+  <tr><td align="center" style="padding:32px 16px;background:#0a0a0a;background-color:#0a0a0a">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#111111;background-color:#111111;border:1px solid #2a2a2a">
+      <tr><td style="padding:40px 32px;background:#111111;background-color:#111111">
+
+        <div style="margin:0 0 32px"><img src="${baseUrl}/images/logo-texte.png" alt="Ola Flight" style="height:100px;width:auto;display:block"></div>
+
+        <h1 style="font-family:Georgia,serif;font-weight:300;font-size:26px;color:#f8f5f0 !important;margin:0 0 14px;line-height:1.3">
+          ${fr ? `Votre proposition, ${name}` : `Your proposal, ${name}`}
+        </h1>
+        <p style="color:#999999 !important;font-size:14px;line-height:1.7;margin:0 0 28px;font-family:Arial,sans-serif">
+          ${fr
+            ? `Voici votre comparatif pour <strong style="color:#f8f5f0 !important">${dest}</strong>. Tarif valable 24 h.`
+            : `Here is your comparison for <strong style="color:#f8f5f0 !important">${dest}</strong>. Valid 24 hours.`}
+        </p>
+
+        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${buildOptionsHtml(devis, lead)}</table>
+        ${buildExtrasHtml(devis, lead)}
+
+        <p style="margin:28px 0 12px">
+          <a href="${pdfUrl}" style="color:#c9a96e !important;font-size:13px;font-family:Arial,sans-serif">${fr ? "Télécharger le PDF" : "Download PDF"}</a>
+        </p>
+
+        <div style="text-align:center;margin:32px 0 8px">
+          ${btn(acceptUrl, fr ? "ACCEPTER" : "ACCEPT", "#f8f5f0")}
+          ${btn(negotiateUrl, fr ? "NÉGOCIER" : "DISCUSS", "#2a2a2a")}
+          ${btn(refuseUrl, fr ? "REFUSER" : "DECLINE", "transparent")}
+        </div>
+
+        <p style="font-size:11px;color:#444444 !important;line-height:1.6;margin-top:28px;font-family:Arial,sans-serif">
+          ${fr ? "Un conseiller Ola Flight vous recontacte après votre choix." : "An Ola Flight advisor will follow up after your choice."}
+        </p>
+
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
 }
 
 export function isEmailConfigured() {
