@@ -82,7 +82,6 @@ router.post("/", requireDevis, validate({ body: devisCreateSchema }), async (req
       prix_revient: body.prix_revient || 0,
       prix_vente: body.prix_vente || 0,
       prix_marche: body.prix_marche || 0,
-      marge,
       closer_commission,
       apporteur_commission,
       apporteur_name: body.apporteur_name || null,
@@ -102,7 +101,7 @@ router.post("/", requireDevis, validate({ body: devisCreateSchema }), async (req
       await store.leads.update(devis.lead_id, {
         status: "devis_sent",
         value: devis.prix_vente,
-        margin: devis.marge,
+        margin: marge,
       });
     }
 
