@@ -141,6 +141,10 @@ export const config = {
     token: process.env.NTFY_TOKEN || "",
   },
 
+  resend: {
+    apiKey: process.env.RESEND_API_KEY || "",
+  },
+
   /** Email transactionnel (Hostinger SMTP — noreply@olaflight.fr) */
   smtp: {
     host: process.env.SMTP_HOST || "",

@@ -34,6 +34,7 @@
     "playwright": "^1.59.1",
     "playwright-extra": "^4.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "resend": "^6.12.3",
     "serverless-http": "^3.2.0",
     "zod": "^3.25.76"
   }

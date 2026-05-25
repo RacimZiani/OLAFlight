@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { config } from "../config.js";
 import { createLogger } from "../logger.js";
 import { buildPublicDevisPdfUrl } from "./publicUrl.js";
@@ -7,25 +7,9 @@ import { pickDisplayPriceFromOption } from "./draftDevis.js";
 
 const log = createLogger("email");
 
-let _transport = null;
-
-function getTransport() {
-  if (_transport) return _transport;
-  const smtp = config.smtp;
-  if (!smtp.host || !smtp.user || !smtp.pass) {
-    return null;
-  }
-  _transport = nodemailer.createTransport({
-    host: smtp.host,
-    port: smtp.port,
-    secure: smtp.secure,
-    requireTLS: !smtp.secure, // STARTTLS si port 587
-    auth: { user: smtp.user, pass: smtp.pass },
-    connectionTimeout: 10000,
-    greetingTimeout: 8000,
-    socketTimeout: 15000,
-  });
-  return _transport;
+function getResend() {
+  if (!config.resend.apiKey) return null;
+  return new Resend(config.resend.apiKey);
 }
 
 function escapeHtml(s) {
@@ -119,14 +103,14 @@ function buildDevisEmailHtml({ devis, lead, baseUrl, lang = "fr" }) {
 }
 
 export function isEmailConfigured() {
-  return Boolean(config.smtp.host && config.smtp.user && config.smtp.pass);
+  return Boolean(config.resend.apiKey);
 }
 
 /**
  * @returns {Promise<{ ok: boolean, messageId?: string, error?: string }>}
  */
 export async function sendDevisEmailToClient({ devis, lead, baseUrl, lang = "fr" }) {
-  const transport = getTransport();
+  const resend = getResend();
   const emailRegex = /[^\s@]+@[^\s@]+\.[^\s@]+/;
   const recipient = [lead?.client_contact, lead?.notes]
     .map(s => String(s || "").match(emailRegex)?.[0])
@@ -135,9 +119,8 @@ export async function sendDevisEmailToClient({ devis, lead, baseUrl, lang = "fr"
   if (!recipient) {
     return { ok: false, error: "Aucune adresse email client sur le lead (renseigner dans contact ou notes)" };
   }
-  if (!transport) {
-    log.warn("SMTP non configuré — email non envoyé");
-    return { ok: false, error: "SMTP non configuré (SMTP_HOST, SMTP_USER, SMTP_PASS)" };
+  if (!resend) {
+    return { ok: false, error: "RESEND_API_KEY manquante — configurer dans Railway" };
   }
 
   const html = buildDevisEmailHtml({ devis, lead, baseUrl, lang });
@@ -146,25 +129,19 @@ export async function sendDevisEmailToClient({ devis, lead, baseUrl, lang = "fr"
       ? `Ola Flight — Your quote ${devis.id}`
       : `Ola Flight — Votre devis ${devis.id}`;
 
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("SMTP timeout — vérifier SMTP_HOST et les credentials")), 20000)
-  );
   try {
-    const info = await Promise.race([
-      transport.sendMail({
-        from: config.smtp.from,
-        to: recipient,
-        subject,
-        html,
-        text:
-          lang === "en"
-            ? `Your Ola Flight quote ${devis.id} is ready. Open the email in HTML to respond.`
-            : `Votre devis Ola Flight ${devis.id} est prêt. Ouvrez l'email en HTML pour répondre.`,
-      }),
-      timeout,
-    ]);
-    log.info(`devis email sent → ${recipient} (${devis.id})`);
-    return { ok: true, messageId: info.messageId };
+    const { data, error } = await resend.emails.send({
+      from: config.smtp.from || "Ola Flight <noreply@olaflight.fr>",
+      to: recipient,
+      subject,
+      html,
+    });
+    if (error) {
+      log.error(`resend error: ${JSON.stringify(error)}`);
+      return { ok: false, error: error.message || JSON.stringify(error) };
+    }
+    log.info(`devis email sent via Resend → ${recipient} (${devis.id}) id=${data?.id}`);
+    return { ok: true, messageId: data?.id };
   } catch (e) {
     log.error(`send devis email failed: ${e?.message || e}`);
     return { ok: false, error: e?.message || String(e) };
