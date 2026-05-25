@@ -82,8 +82,8 @@ router.post("/", requireDevis, validate({ body: devisCreateSchema }), async (req
       prix_revient: body.prix_revient || 0,
       prix_vente: body.prix_vente || 0,
       prix_marche: body.prix_marche || 0,
-      closer_commission,
-      apporteur_commission,
+      // marge, closer_commission, apporteur_commission sont des colonnes GENERATED
+      // calculées automatiquement par Supabase — ne pas les insérer.
       apporteur_name: body.apporteur_name || null,
       services_inclus: parseServices(body.services_inclus),
       pdf_url: body.pdf_url || null,
@@ -229,9 +229,6 @@ router.patch(
             ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
             : Date.now() + 24 * 60 * 60 * 1000,
         } : {}),
-        ...(recomputed
-          ? { marge: recomputed.marge, closer_commission: recomputed.closer_commission, apporteur_commission: recomputed.apporteur_commission }
-          : {}),
       };
 
       // Update tolérant aux migrations manquantes (options/hotels/driver).
@@ -336,13 +333,6 @@ router.post(
         pricing_status: "ready",
         ...(body.hotels !== undefined ? { hotels: body.hotels } : {}),
         ...(body.driver !== undefined ? { driver: body.driver } : {}),
-        ...(recomputed
-          ? {
-              marge: recomputed.marge,
-              closer_commission: recomputed.closer_commission,
-              apporteur_commission: recomputed.apporteur_commission,
-            }
-          : {}),
         valide_jusqu_au: isSupabase
           ? new Date(Date.now() + DAY).toISOString()
           : Date.now() + DAY,
