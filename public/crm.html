@@ -781,12 +781,6 @@ async function openLeadModal(id) {
       <button class="summary-refresh" onclick="loadLeadSummary('${safeId}', true)">Régénérer</button>
     </div>
     <div class="modal-section">
-      <div class="ms-title">Devis envoyés</div>
-      <div id="lead-devis-list" style="font-family:Montserrat,sans-serif;font-size:11px;color:var(--g);line-height:1.7">
-        Chargement…
-      </div>
-    </div>
-    <div class="modal-section">
       <div class="ms-title">Historique agent IA</div>
       <div id="agent-actions" style="font-family:Montserrat,sans-serif;font-size:10px;color:var(--g);line-height:1.8">
         Chargement…
@@ -794,10 +788,9 @@ async function openLeadModal(id) {
     </div>
     ${l.notes?`<div class="modal-section"><div class="ms-title">Notes</div><div style="font-size:15px;color:var(--g);line-height:1.8">${l.notes}</div></div>`:''}
     ${l.followup?`<div class="modal-section"><div class="ms-title">Prochain suivi</div><div style="font-family:Montserrat,sans-serif;font-size:9px;font-weight:300;color:var(--yellow-t)">${fmtFollowup(l.followup)}</div></div>`:''}
-    <div class="modal-actions">
+    <div class="modal-actions" id="modal-actions-bar">
       <button class="ma-btn ma-primary" onclick="alert('Lien WhatsApp : wa.me/${l.contact.replace('@','')}')">Contacter sur WhatsApp</button>
-      <button class="ma-btn ma-primary" style="background:var(--yellow-t);color:var(--b)" onclick="createAndOpenDevis('${safeId}')">+ Préparer un devis</button>
-      ${isAdmin() ? `<button class="ma-btn ma-ghost" onclick="openLatestPendingDevisForLead('${safeId}')">Saisir les tarifs (existant)</button>` : ''}
+      <button class="ma-btn ma-primary" id="devis-action-btn" style="background:var(--yellow-t);color:var(--b)" onclick="createAndOpenDevis('${safeId}')">+ Préparer un devis</button>
       <button class="ma-btn ma-ghost">Programmer relance</button>
       <button class="ma-btn ma-danger" onclick="updateStatus('${safeId}','lost');closeModal();">Marquer perdu</button>
     </div>
@@ -808,45 +801,25 @@ async function openLeadModal(id) {
   loadLeadDevis(l.id);
 }
 
-// ─── Devis liés au lead ───
+// ─── Devis du lead — met à jour le bouton d'action dynamiquement ───
 async function loadLeadDevis(leadId) {
-  const box = document.getElementById('lead-devis-list');
-  if (!box) return;
+  const btn = document.getElementById('devis-action-btn');
+  if (!btn) return;
   try {
     const r = await fetch('/api/leads/' + encodeURIComponent(leadId) + '/devis', { credentials: 'include' });
     if (!r.ok) throw new Error('http ' + r.status);
     const d = await r.json();
     const items = d.items || [];
-    if (items.length === 0) {
-      box.innerHTML = '<div style="color:var(--g)">Aucun devis pour ce lead.</div>';
-      return;
-    }
-    box.innerHTML = items.map((dv) => {
-      const opts = Array.isArray(dv.options) ? dv.options.length : 0;
-      const has_extras = (Array.isArray(dv.hotels) && dv.hotels.length) || dv.driver;
-      const tags = [
-        opts > 1 ? `${opts} options` : 'Mono-option',
-        has_extras ? 'Extras' : null,
-        dv.paiement_recu ? 'Payé' : null,
-      ].filter(Boolean).join(' · ');
-      const pdf = dv.pdf_url ? `<a href="${escapeHtmlCrm(dv.pdf_url)}" target="_blank" style="color:var(--gold);text-decoration:underline">PDF</a>` : '<span style="color:var(--g)">PDF non généré</span>';
-      const safe = String(dv.id).replace(/'/g, "\\'");
-      return `
-        <div style="border:1px solid var(--l);padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px">
-          <div>
-            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--w)">${escapeHtmlCrm(dv.id)}</div>
-            <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-top:3px;color:var(--g)">
-              ${escapeHtmlCrm(dv.compagnie || '—')} · ${Number(dv.prix_vente || 0).toLocaleString('fr-FR')} € · ${tags}
-            </div>
-            <div style="font-size:9px;margin-top:3px">${pdf}</div>
-          </div>
-          ${isAdmin() && (dv.pricing_status === 'pending_admin' || !Number(dv.prix_vente)) ? `<button class="ma-btn ma-primary" style="font-size:8px" onclick="openAdminPricingEditor('${safe}')">Saisir tarifs</button>` : ''}
-          <button class="ma-btn ma-ghost" style="font-size:8px" onclick="openDevisEditor('${safe}')">Modifier</button>
-        </div>`;
-    }).join('');
-  } catch (e) {
-    box.innerHTML = '<span style="color:var(--red-t)">Erreur de chargement des devis.</span>';
-  }
+    if (items.length === 0) return; // garde le bouton "+ Préparer un devis"
+    const dv = items[0]; // un seul devis par lead
+    const safe = String(dv.id).replace(/'/g, "\\'");
+    // Remplace le bouton par "Modifier / voir le devis"
+    btn.textContent = 'Modifier / voir le devis';
+    btn.style.background = 'none';
+    btn.style.color = 'var(--w)';
+    btn.style.border = '1px solid var(--l2)';
+    btn.onclick = () => openDevisEditor(safe, leadId);
+  } catch (e) { /* silence — le bouton reste "+ Préparer un devis" */ }
 }
 
 // ─── Saisie tarifs admin (2 compagnies — flux Agent Ola web) ───
@@ -1048,7 +1021,7 @@ async function createAndOpenDevis(leadId) {
 }
 
 // ─── Édition d'un devis (admin/closer) ───
-async function openDevisEditor(devisId) {
+async function openDevisEditor(devisId, leadId) {
   const r = await fetch('/api/devis/' + encodeURIComponent(devisId), { credentials: 'include' });
   if (!r.ok) return alert('Devis introuvable ou hors périmètre');
   const data = await r.json();
@@ -1144,7 +1117,8 @@ async function openDevisEditor(devisId) {
       </div>
 
       <div class="modal-actions">
-        <button class="ma-btn ma-primary" onclick="submitDevisEdit('${escapeHtmlCrm(d.id)}', '${escapeHtmlCrm(d.lead_id || '')}')">Enregistrer + régénérer PDF</button>
+        <button class="ma-btn ma-primary" onclick="submitDevisEdit('${escapeHtmlCrm(d.id)}', '${escapeHtmlCrm(d.lead_id || '')}')">Enregistrer</button>
+        ${isAdmin() ? `<button class="ma-btn ma-primary" style="background:var(--green-t);color:var(--b)" onclick="renvoyerDevis('${escapeHtmlCrm(d.id)}', '${escapeHtmlCrm(d.lead_id || '')}')">Renvoyer au client</button>` : ''}
         <button class="ma-btn ma-ghost" onclick="closeModal()">Annuler</button>
       </div>
     </div>`;
@@ -1233,9 +1207,32 @@ async function submitDevisEdit(devisId, leadId) {
     return alert('Échec mise à jour: ' + (t || r.status));
   }
   const d = await r.json();
-  alert('Devis mis à jour. PDF régénéré : ' + (d.pdf_url || '(non disponible)'));
+  alert('Devis enregistré.');
   closeModal();
   if (leadId) openLeadModal(leadId);
+}
+
+async function renvoyerDevis(devisId, leadId) {
+  if (!confirm('Renvoyer ce devis par email au client ?')) return;
+  const btn = event && event.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Envoi…'; }
+  try {
+    const r = await fetch('/api/devis/' + encodeURIComponent(devisId) + '/send-email', {
+      method: 'POST', credentials: 'include',
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      alert('Envoi échoué : ' + (data.message || data.error || r.status));
+      if (btn) { btn.disabled = false; btn.textContent = 'Renvoyer au client'; }
+      return;
+    }
+    alert('Devis envoyé au client.');
+    closeModal();
+    if (leadId) openLeadModal(leadId);
+  } catch (e) {
+    alert('Erreur : ' + (e.message || e));
+    if (btn) { btn.disabled = false; btn.textContent = 'Renvoyer au client'; }
+  }
 }
 
 // ─── Conversation summary (IA) ───
