@@ -1253,14 +1253,10 @@ window.addEventListener('load', () => {
     });
   }
 
-  // Freeze logo vidéo sur la dernière image (joue une fois puis pause)
+  // Logo vidéo en boucle infinie
   const heroVid = document.getElementById('heroLogoVideo');
   if (heroVid) {
-    heroVid.addEventListener('timeupdate', () => {
-      if (heroVid.duration && heroVid.currentTime >= heroVid.duration - 0.08) {
-        heroVid.pause();
-      }
-    });
+    heroVid.loop = true;
   }
 });
 </script>
