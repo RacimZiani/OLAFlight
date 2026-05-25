@@ -20,6 +20,9 @@ function getTransport() {
     port: smtp.port,
     secure: smtp.secure,
     auth: { user: smtp.user, pass: smtp.pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 8000,
+    socketTimeout: 15000,
   });
   return _transport;
 }
@@ -142,17 +145,23 @@ export async function sendDevisEmailToClient({ devis, lead, baseUrl, lang = "fr"
       ? `Ola Flight — Your quote ${devis.id}`
       : `Ola Flight — Votre devis ${devis.id}`;
 
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("SMTP timeout — vérifier SMTP_HOST et les credentials")), 20000)
+  );
   try {
-    const info = await transport.sendMail({
-      from: config.smtp.from,
-      to: recipient,
-      subject,
-      html,
-      text:
-        lang === "en"
-          ? `Your Ola Flight quote ${devis.id} is ready. Open the email in HTML to respond.`
-          : `Votre devis Ola Flight ${devis.id} est prêt. Ouvrez l'email en HTML pour répondre.`,
-    });
+    const info = await Promise.race([
+      transport.sendMail({
+        from: config.smtp.from,
+        to: recipient,
+        subject,
+        html,
+        text:
+          lang === "en"
+            ? `Your Ola Flight quote ${devis.id} is ready. Open the email in HTML to respond.`
+            : `Votre devis Ola Flight ${devis.id} est prêt. Ouvrez l'email en HTML pour répondre.`,
+      }),
+      timeout,
+    ]);
     log.info(`devis email sent → ${recipient} (${devis.id})`);
     return { ok: true, messageId: info.messageId };
   } catch (e) {
