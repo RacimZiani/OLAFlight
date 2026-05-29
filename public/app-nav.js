@@ -14,7 +14,6 @@
     devis: { href: "/dalsim.html", label: "Créer un devis", roles: ["admin", "prospecteur", "closer", "dalsim", "closeuse"] },
     team: { href: "/team.html", label: "Équipe", roles: ["admin"] },
     users: { href: "/users.html", label: "Comptes", roles: ["admin"] },
-    admin: { href: "/admin.html", label: "Admin vols", roles: ["admin"] },
   };
 
   function norm(role) {

@@ -113,7 +113,7 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 /* ─── LEAD DETAIL MODAL ─── */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;display:none;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
-.modal{background:var(--b2);border:1px solid var(--l2);width:640px;max-height:85vh;overflow-y:auto;}
+.modal{background:var(--b2);border:1px solid var(--l2);width:min(640px,100vw);max-height:85vh;overflow-y:auto;}
 .modal-head{padding:24px;border-bottom:1px solid var(--l);display:flex;justify-content:space-between;align-items:start;}
 .modal-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w);}
 .modal-close{background:none;border:none;color:var(--g);cursor:pointer;font-size:20px;padding:4px;transition:color .2s;}
@@ -134,7 +134,7 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 .status-select{background:var(--b3);border:1px solid var(--l2);color:var(--w);padding:10px 14px;font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;outline:none;cursor:pointer;}
 
 /* ─── NOUVEAU LEAD FORM ─── */
-.new-lead-panel{position:fixed;right:0;top:0;bottom:0;width:480px;background:var(--b2);border-left:1px solid var(--l2);z-index:200;transform:translateX(100%);transition:transform .3s ease;overflow-y:auto;}
+.new-lead-panel{position:fixed;right:0;top:0;bottom:0;width:min(480px,100vw);background:var(--b2);border-left:1px solid var(--l2);z-index:200;transform:translateX(100%);transition:transform .3s ease;overflow-y:auto;}
 .new-lead-panel.open{transform:translateX(0);}
 .nlp-head{padding:24px;border-bottom:1px solid var(--l);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--b2);z-index:10;}
 .nlp-title{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:var(--w);}
@@ -251,6 +251,16 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 .summary-meta{font-family:'Montserrat',sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g2);margin-top:8px;}
 .summary-refresh{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);background:none;border:1px solid var(--l);padding:6px 12px;cursor:pointer;margin-top:10px;}
 .summary-refresh:hover{color:var(--w);border-color:var(--l2);}
+@media(max-width:640px){
+  .modal{width:100vw;max-height:100dvh;height:100%;border-left:none;border-right:none;border-bottom:none;}
+  .modal-bg{align-items:flex-end;}
+  .dev-grid{grid-template-columns:1fr !important;}
+  .modal-grid{grid-template-columns:1fr;}
+  .modal-actions{flex-direction:column;}
+  .modal-actions .ma-btn{width:100%;text-align:center;}
+  .modal-head{padding:18px 16px;}
+  .modal-body{padding:16px;}
+}
 </style>
 <meta name="ola-required-roles" content="admin,prospecteur,closer,dalsim,closeuse">
 <script src="/auth-gate.js"></script>
@@ -359,7 +369,7 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
       <input class="form-input" id="nl-name" placeholder="Prénom Nom ou alias">
     </div>
     <div class="form-group">
-      <label class="form-label">Instagram / WhatsApp <span>*</span></label>
+      <label class="form-label">Instagram / WhatsApp</label>
       <input class="form-input" id="nl-contact" placeholder="@handle ou +33…">
     </div>
     <div class="form-group">
@@ -370,7 +380,7 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
         <option>Instagram DM</option>
         <option>Site web</option>
         <option>Recommandation</option>
-        <option>Apporteuse</option>
+        <option>Apporteur</option>
         <option>Raya</option>
       </select>
     </div>
@@ -388,7 +398,7 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Destination <span>*</span></label>
+        <label class="form-label">Destination</label>
         <input class="form-input" id="nl-dest" placeholder="Dubai, NYC…">
       </div>
       <div class="form-group">
@@ -756,7 +766,7 @@ async function openLeadModal(id) {
         <div class="mf"><div class="mf-label">Nom</div><div class="mf-val">${l.name}</div></div>
         <div class="mf"><div class="mf-label">Contact</div><div class="mf-val">${l.contact}</div></div>
         <div class="mf"><div class="mf-label">Source</div><div class="mf-val">${l.source}</div></div>
-        <div class="mf"><div class="mf-label">Apporteuse</div><div class="mf-val">${l.apporteuse||'—'}</div></div>
+        <div class="mf"><div class="mf-label">Apporteur</div><div class="mf-val">${l.apporteuse||'—'}</div></div>
       </div>
     </div>
     <div class="modal-section">
@@ -1055,9 +1065,9 @@ async function openDevisEditor(devisId, leadId) {
           <label>Horaire arr.<input data-k="horaire_arr" value="${escapeHtmlCrm(o.horaire_arr || '')}"></label>
           <label>Durée<input data-k="duration" value="${escapeHtmlCrm(o.duration || '')}"></label>
           <label>Escales<input type="number" min="0" max="5" data-k="stops" value="${Number(o.stops || 0)}"></label>
-          <label>Prix de revient (€)<input type="number" min="0" data-k="prix_revient" value="${Number(o.prix_revient || 0)}"></label>
+          ${isAdmin() ? `<label>Prix de revient (€)<input type="number" min="0" data-k="prix_revient" value="${Number(o.prix_revient || 0)}"></label>` : ''}
           <label>Prix de vente (€)<input type="number" min="0" data-k="prix_vente" value="${Number(o.prix_vente || 0)}"></label>
-          <label>Prix marché (€)<input type="number" min="0" data-k="prix_marche" value="${Number(o.prix_marche || 0)}"></label>
+          ${isAdmin() ? `<label>Prix marché (€)<input type="number" min="0" data-k="prix_marche" value="${Number(o.prix_marche || 0)}"></label>` : ''}
         </div>
       </div>`;
   }
@@ -1093,9 +1103,9 @@ async function openDevisEditor(devisId, leadId) {
           <label>Compagnie<input id="ed-compagnie" value="${escapeHtmlCrm(d.compagnie || '')}"></label>
           <label>Horaire dép.<input id="ed-horaire_dep" value="${escapeHtmlCrm(d.horaire_dep || '')}"></label>
           <label>Horaire arr.<input id="ed-horaire_arr" value="${escapeHtmlCrm(d.horaire_arr || '')}"></label>
-          <label>Prix de revient (€)<input id="ed-prix_revient" type="number" min="0" value="${Number(d.prix_revient || 0)}"></label>
+          ${isAdmin() ? `<label>Prix de revient (€)<input id="ed-prix_revient" type="number" min="0" value="${Number(d.prix_revient || 0)}"></label>` : ''}
           <label>Prix de vente (€)<input id="ed-prix_vente" type="number" min="0" value="${Number(d.prix_vente || 0)}"></label>
-          <label>Prix marché (€) — masqué si particulier<input id="ed-prix_marche" type="number" min="0" value="${Number(d.prix_marche || 0)}"></label>
+          ${isAdmin() ? `<label>Prix marché (€) — masqué si particulier<input id="ed-prix_marche" type="number" min="0" value="${Number(d.prix_marche || 0)}"></label>` : ''}
         </div>
         <label>Services inclus (1 par ligne)<textarea id="ed-services" rows="4" style="width:100%">${escapeHtmlCrm(services)}</textarea></label>
       </div>
@@ -1198,9 +1208,9 @@ async function submitDevisEdit(devisId, leadId) {
     compagnie: document.getElementById('ed-compagnie').value,
     horaire_dep: document.getElementById('ed-horaire_dep').value,
     horaire_arr: document.getElementById('ed-horaire_arr').value,
-    prix_revient: Number(document.getElementById('ed-prix_revient').value) || 0,
+    ...(document.getElementById('ed-prix_revient') ? { prix_revient: Number(document.getElementById('ed-prix_revient').value) || 0 } : {}),
     prix_vente: Number(document.getElementById('ed-prix_vente').value) || 0,
-    prix_marche: Number(document.getElementById('ed-prix_marche').value) || 0,
+    ...(document.getElementById('ed-prix_marche') ? { prix_marche: Number(document.getElementById('ed-prix_marche').value) || 0 } : {}),
     services_inclus: services,
     options: options.length ? options : [],
     hotels,
@@ -1463,13 +1473,13 @@ function renderApporteuses() {
   document.getElementById('v-apporteuses-inner').innerHTML = `
   <div style="padding:40px 32px;">
     <div class="ap-header">
-      <div class="ap-title">Réseau Apporteuses</div>
-      <div class="ap-sub">Enregistrer une nouvelle apporteuse · Suivre les deals attribués</div>
+      <div class="ap-title">Réseau Apporteurs</div>
+      <div class="ap-sub">Enregistrer un nouvel apporteur · Suivre les deals attribués</div>
     </div>
     <div class="ap-layout">
       <div class="ap-form-card">
-        <div class="ap-form-title">Enregistrer une apporteuse</div>
-        <div id="ap-success" class="success-msg">✓ Apporteuse enregistrée avec succès</div>
+        <div class="ap-form-title">Enregistrer un apporteur</div>
+        <div id="ap-success" class="success-msg">✓ Apporteur enregistré avec succès</div>
         <div class="form-group">
           <label class="form-label">Nom complet <span>*</span></label>
           <input class="form-input" id="ap-name" placeholder="Prénom Nom">
@@ -1521,18 +1531,18 @@ function renderApporteuses() {
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Comment a-t-elle entendu parler d'Ola Flight ?</label>
+          <label class="form-label">Comment a-t-il entendu parler d'Ola Flight ?</label>
           <input class="form-input" id="ap-ref" placeholder="Recommandation, Instagram, réseau perso…">
         </div>
         <div class="form-group">
           <label class="form-label">Notes</label>
           <textarea class="form-textarea" id="ap-notes" placeholder="Contexte, spécificités, accords particuliers…"></textarea>
         </div>
-        <button class="form-btn" onclick="saveApporteuse()">Enregistrer l'apporteuse</button>
+        <button class="form-btn" onclick="saveApporteuse()">Enregistrer l'apporteur</button>
       </div>
       <div class="ap-list-card">
         <div class="ap-list-head">
-          <div class="ap-list-title">Apporteuses actives (${apporteuses.length})</div>
+          <div class="ap-list-title">Apporteurs actifs (${apporteuses.length})</div>
         </div>
         ${apporteuses.map(a=>`
         <div class="ap-row">
@@ -1549,7 +1559,7 @@ function renderApporteuses() {
         </div>`).join('')}
         <div style="padding:20px 24px;border-top:1px solid var(--l)">
           <div style="font-family:Montserrat,sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:12px">Attribution des ventes</div>
-          <p style="font-size:14px;color:var(--g);line-height:1.8">Pour attribuer une vente à une apporteuse, indiquer son nom dans le champ <strong style="color:var(--w)">Apporteuse</strong> lors de la création du lead. La commission est calculée automatiquement sur la marge nette du deal.</p>
+          <p style="font-size:14px;color:var(--g);line-height:1.8">Pour attribuer une vente à un apporteur, indiquer son nom dans le champ <strong style="color:var(--w)">Apporteur</strong> lors de la création du lead. La commission est calculée automatiquement sur la marge nette du deal.</p>
         </div>
       </div>
     </div>

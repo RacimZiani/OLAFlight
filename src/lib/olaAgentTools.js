@@ -543,16 +543,7 @@ async function doUpsertLead(input, { context }) {
     : contextLeadId
       ? await store.leads.findById(contextLeadId)
       : null;
-  // Auto-dispatch : si on n'a pas de closer (ni dans args, ni sur le lead existant),
-  // on assigne automatiquement le closer le moins chargé.
   let resolvedCloser = args.closer_name ?? existing?.closer_name ?? null;
-  if (!resolvedCloser) {
-    try {
-      resolvedCloser = await pickCloserForLead();
-    } catch (e) {
-      log.warn(`auto-dispatch closer failed: ${e?.message || e}`);
-    }
-  }
   let resolvedProspecteur = args.apporteur_name ?? existing?.apporteur_name ?? null;
   if (!resolvedProspecteur) {
     try {

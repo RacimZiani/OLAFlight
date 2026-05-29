@@ -141,6 +141,15 @@ router.post("/", validate({ body: leadCreateSchema }), async (req, res, next) =>
     const role = normalizeRole(req.user.role);
     if (role === ROLES.CLOSER) lead.closer_name = req.user.email;
     if (role === ROLES.PROSPECTEUR) lead.apporteur_name = req.user.email;
+<<<<<<< HEAD
+=======
+
+    if (!lead.apporteur_name && role !== ROLES.PROSPECTEUR) {
+      try { lead.apporteur_name = await pickProspecteurForLead(); } catch (e) {
+        log.warn(`auto-dispatch prospecteur failed: ${e?.message || e}`);
+      }
+    }
+>>>>>>> 6741170 (feat(crm): controle assignation leads, masquage prix fournisseur sales, fixes mobile devis)
     const store = await getStore();
     const inserted = await store.leads.insert(lead);
     if (DALSIM_TRIGGER_STATUSES.has(lead.status)) {

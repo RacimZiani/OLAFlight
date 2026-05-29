@@ -12,7 +12,7 @@ Exemples :
 | Événement | Destinataires CRM | Push ntfy |
 |-----------|-------------------|-----------|
 | Nouveau lead assigné à Chloé | `chloe@…` | Chloé uniquement |
-| Nouveau client chatbot → Lauren (apporteuse) | `lauren@…` | Lauren uniquement |
+| Nouveau client chatbot → Lauren (apporteur) | `lauren@…` | Lauren uniquement |
 | Broadcast `{ role: "admin" }` | Tous les admins (cloche) | Chaque admin inscrit, sur son topic |
 
 ## Configuration serveur (Railway / `.env`)

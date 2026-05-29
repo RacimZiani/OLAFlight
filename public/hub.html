@@ -29,7 +29,6 @@
     { href:'/dalsim.html', title:'Création de devis', desc:'Générer et envoyer des propositions tarifaires.', roles:['admin','prospecteur','closer','dalsim','closeuse'] },
     { href:'/team.html', title:'Vue équipe', desc:'Performance closers et prospecteurs.', roles:['admin'] },
     { href:'/users.html', title:'Comptes équipe', desc:'Créer et gérer les accès admin, prospecteurs, closers.', roles:['admin'] },
-    { href:'/admin.html', title:'Administration vols', desc:'Scraping et cache tarifs.', roles:['admin'] },
   ];
   function norm(r){ if(r==='closeuse')return'closer'; if(r==='dalsim'||r==='agent')return'prospecteur'; return r; }
   document.addEventListener('ola:auth', e => {

@@ -1,0 +1,310 @@
+% ─────────────────────────────────────────────────────────────────────────────
+% OLA FLIGHT — Guide Notifications Push Mobile (ntfy)
+% Usage interne — à distribuer aux membres de l'équipe
+% Compiler : pdflatex ntfy-guide-equipe.tex  (ou overleaf.com)
+% ─────────────────────────────────────────────────────────────────────────────
+
+\documentclass[a4paper, 11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage[dvipsnames,svgnames,table]{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{mdframed}
+% \usepackage{fontspec}   % XeLaTeX/LuaLaTeX uniquement — désactivé pour pdflatex
+
+% ── Couleurs ──────────────────────────────────────────────────────────────────
+\definecolor{olaBlack}{RGB}{8,8,8}
+\definecolor{olaCream}{RGB}{248,245,240}
+\definecolor{olaGold}{RGB}{180,155,100}
+\definecolor{olaGrey}{RGB}{140,135,128}
+\definecolor{olaLight}{RGB}{220,215,208}
+\definecolor{olaBg}{RGB}{245,242,238}
+
+% ── Mise en page ──────────────────────────────────────────────────────────────
+\geometry{
+  a4paper,
+  top=2.8cm, bottom=2.8cm,
+  left=3cm, right=3cm
+}
+
+% ── En-tête / Pied de page ────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{olaLight}\leaders\hrule height \headrulewidth\hfill}}
+\fancyhead[L]{\small\color{olaGrey}\textsc{Ola Flight} · Notifications Push Mobile}
+\fancyhead[R]{\small\color{olaGrey}Usage interne — confidentiel}
+\fancyfoot[C]{\small\color{olaGrey}\thepage}
+
+% ── Titres ────────────────────────────────────────────────────────────────────
+\titleformat{\section}
+  {\large\bfseries\color{olaBlack}}
+  {\thesection.}{0.6em}{}[\vspace{-0.3em}\textcolor{olaGold}{\titlerule[0.5pt]}]
+
+\titleformat{\subsection}
+  {\normalsize\bfseries\color{olaBlack}}
+  {\thesubsection.}{0.5em}{}
+
+\titlespacing{\section}{0pt}{1.6em}{0.7em}
+\titlespacing{\subsection}{0pt}{1em}{0.4em}
+
+% ── Boîtes ────────────────────────────────────────────────────────────────────
+\newmdenv[
+  backgroundcolor=olaBg,
+  linecolor=olaGold,
+  linewidth=1pt,
+  leftline=true, topline=false, rightline=false, bottomline=false,
+  innerleftmargin=12pt, innerrightmargin=12pt,
+  innertopmargin=8pt, innerbottommargin=8pt,
+  skipabove=10pt, skipbelow=10pt
+]{infobox}
+
+\newmdenv[
+  backgroundcolor=white,
+  linecolor=olaLight,
+  linewidth=0.5pt,
+  innerleftmargin=12pt, innerrightmargin=12pt,
+  innertopmargin=10pt, innerbottommargin=10pt,
+  skipabove=8pt, skipbelow=8pt
+]{stepbox}
+
+% ── Hyperliens ────────────────────────────────────────────────────────────────
+\hypersetup{
+  colorlinks=true,
+  linkcolor=olaBlack,
+  urlcolor=olaGold,
+  pdfauthor={Ola Flight},
+  pdftitle={Guide Notifications Push Mobile},
+}
+
+% ═════════════════════════════════════════════════════════════════════════════
+\begin{document}
+% ═════════════════════════════════════════════════════════════════════════════
+
+% ── Page de titre ─────────────────────────────────────────────────────────────
+\thispagestyle{empty}
+\vspace*{3cm}
+
+\begin{center}
+  {\fontsize{9}{11}\selectfont\color{olaGold}\textsc{Ola Flight — Document Interne}}\\[1.2em]
+  {\fontsize{28}{33}\selectfont\color{olaBlack} Notifications Push Mobile}\\[0.6em]
+  {\fontsize{14}{18}\selectfont\color{olaGrey} Recevoir les alertes CRM sur son téléphone}\\[3em]
+  \textcolor{olaLight}{\rule{8cm}{0.5pt}}\\[2.5em]
+  {\small\color{olaGrey}
+    Application utilisée : \textbf{ntfy} (gratuit, open-source)\\[0.3em]
+    Compatible : iOS 14+ · Android 9+ · macOS · Windows · navigateur web
+  }
+\end{center}
+
+\vfill
+{\small\color{olaGrey}\centering
+  Ce document est réservé aux membres de l'équipe Ola Flight.\\
+  Ne pas diffuser en dehors de l'organisation.
+\par}
+
+\newpage
+\setcounter{page}{1}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Présentation}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Le système de notifications Ola Flight vous permet de recevoir en temps réel
+sur votre téléphone les alertes qui vous concernent : nouveau lead, devis envoyé,
+deal gagné, lead assigné.
+
+\medskip
+Chaque membre de l'équipe dispose d'un \textbf{canal personnel et privé}.
+Vous ne recevez que vos propres alertes — les autres membres ne voient pas vos notifications.
+
+\begin{infobox}
+\textbf{Application requise : ntfy}\\[0.4em]
+ntfy est une application gratuite et open-source de notifications push.
+Elle ne nécessite pas de compte pour les fonctionnalités de base.\\[0.5em]
+\textbf{iOS :} \href{https://apps.apple.com/app/ntfy/id1625396347}{App Store → rechercher « ntfy »}\\
+\textbf{Android :} \href{https://play.google.com/store/apps/details?id=io.heckel.ntfy}{Play Store → rechercher « ntfy »}\\
+\textbf{Navigateur :} aucune installation requise (voir section~\ref{sec:web})
+\end{infobox}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Récupérer votre lien d'abonnement personnel}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Votre lien est unique et secret. \textbf{Ne le partagez pas.}
+
+\begin{enumerate}[leftmargin=*, label=\textbf{\arabic*.}]
+
+  \item Connectez-vous au CRM Ola Flight :\\
+  \href{https://olaflight.fr/crm}{https://olaflight.fr/crm}
+
+  \item Cliquez sur l'icône \textbf{cloche} (symbole de notification) en haut à droite de l'interface.
+
+  \item Dans le menu qui s'ouvre, cliquez sur \textbf{« Push mobile »} ou
+  \textbf{« Notifications téléphone »}.
+
+  \item Vous obtenez :
+  \begin{itemize}[leftmargin=2em]
+    \item un \textbf{lien d'abonnement} (URL commençant par \texttt{https://ntfy.sh/olaflight-u-...})
+    \item un \textbf{QR code} que vous pouvez scanner directement depuis l'app ntfy
+  \end{itemize}
+
+\end{enumerate}
+
+\begin{infobox}
+\textbf{Alternativement — via l'API :}\\
+Si vous avez accès direct à l'API, votre lien est disponible à :\\
+\texttt{GET https://olaflight.fr/api/notifications/push/setup}\\
+(nécessite d'être connecté avec votre compte)
+\end{infobox}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Installation et abonnement sur iPhone (iOS)}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{enumerate}[leftmargin=*, label=\textbf{\arabic*.}]
+
+  \item \textbf{Téléchargez ntfy} depuis l'App Store :\\
+  Recherchez \textbf{« ntfy »} — l'application est gratuite, développeur : Philipp Heckel.
+
+  \item \textbf{Ouvrez ntfy} — à la première ouverture, autorisez les notifications
+  lorsque le système vous le demande.
+
+  \item \textbf{Abonnez-vous à votre topic} — deux méthodes :
+
+  \begin{stepbox}
+  \textbf{Méthode A — QR code (recommandée)} :\\[0.5em]
+  \quad 1. Dans ntfy, appuyez sur le \textbf{bouton « + »} (en bas à droite).\\
+  \quad 2. Appuyez sur \textbf{« Scan QR code »}.\\
+  \quad 3. Scannez le QR code affiché dans le CRM.\\
+  \quad 4. L'abonnement est automatiquement configuré.
+  \end{stepbox}
+
+  \begin{stepbox}
+  \textbf{Méthode B — lien manuel} :\\[0.5em]
+  \quad 1. Dans ntfy, appuyez sur le \textbf{bouton « + »}.\\
+  \quad 2. Dans le champ \textbf{« Topic URL »}, collez votre lien complet :\\
+  \quad\quad \texttt{https://ntfy.sh/olaflight-u-votre-topic-secret}\\
+  \quad 3. Laissez \textbf{« Server »} sur \texttt{https://ntfy.sh}.\\
+  \quad 4. Appuyez sur \textbf{« Subscribe »}.
+  \end{stepbox}
+
+  \item \textbf{Vérifiez la configuration} — dans les réglages iOS :
+  \begin{itemize}[leftmargin=2em]
+    \item Réglages → Notifications → ntfy → activez \textbf{Autoriser les notifications}
+    \item Activez \textbf{Sons} et \textbf{Badges} selon votre préférence
+  \end{itemize}
+
+\end{enumerate}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Installation et abonnement sur Android}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{enumerate}[leftmargin=*, label=\textbf{\arabic*.}]
+
+  \item \textbf{Téléchargez ntfy} depuis le Google Play Store :\\
+  Recherchez \textbf{« ntfy »} — gratuit, développeur : binwiederhier.\\[0.3em]
+  \textit{Alternative sans Google Services :} téléchargez le fichier \texttt{.apk}
+  directement sur \href{https://github.com/binwiederhier/ntfy/releases}{github.com/binwiederhier/ntfy}.
+
+  \item \textbf{Ouvrez ntfy} et autorisez les notifications si demandé.
+
+  \item \textbf{Abonnez-vous} — deux méthodes :
+
+  \begin{stepbox}
+  \textbf{Méthode A — QR code} :\\[0.5em]
+  \quad 1. Appuyez sur le \textbf{bouton « + »} (en bas à droite).\\
+  \quad 2. Appuyez sur l'icône \textbf{QR code} dans le champ de saisie.\\
+  \quad 3. Scannez le QR code affiché dans le CRM Ola Flight.
+  \end{stepbox}
+
+  \begin{stepbox}
+  \textbf{Méthode B — lien manuel} :\\[0.5em]
+  \quad 1. Appuyez sur le \textbf{bouton « + »}.\\
+  \quad 2. Collez votre lien dans \textbf{« Topic URL »}.\\
+  \quad 3. Appuyez sur \textbf{« Subscribe »}.
+  \end{stepbox}
+
+  \item \textbf{Vérifiez les permissions} — Android peut bloquer les notifications
+  en arrière-plan :
+  \begin{itemize}[leftmargin=2em]
+    \item Paramètres → Applications → ntfy → Notifications → \textbf{Activé}
+    \item Paramètres → Batterie → ntfy → désactivez \textbf{« Optimisation de la batterie »}
+    (important pour recevoir les notifs même si l'app est fermée)
+  \end{itemize}
+
+\end{enumerate}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Abonnement via navigateur web (sans application)}
+\label{sec:web}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Si vous préférez recevoir les alertes sur votre ordinateur sans installer d'application :
+
+\begin{enumerate}[leftmargin=*, label=\textbf{\arabic*.}]
+  \item Ouvrez votre lien d'abonnement dans un onglet de navigateur.
+  \item Autorisez les notifications du navigateur lorsque demandé.
+  \item Gardez l'onglet ouvert (ou épinglez-le) pour recevoir les alertes en temps réel.
+\end{enumerate}
+
+\begin{infobox}
+Les notifications web nécessitent que l'onglet soit ouvert.
+Pour une réception fiable et en arrière-plan, l'application mobile est recommandée.
+\end{infobox}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Types d'alertes reçues}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{center}
+\begin{tabular}{p{4.5cm} p{3cm} p{5.5cm}}
+\hline\noalign{\smallskip}
+\textbf{Événement} & \textbf{Priorité} & \textbf{Destinataires} \\
+\noalign{\smallskip}\hline\noalign{\smallskip}
+Deal gagné & \textcolor{red}{\textbf{Urgente}} & Admins + Closer + Agent \\
+Nouveau lead assigné & \textcolor{orange}{\textbf{Haute}} & Closer concerné \\
+Lead chatbot créé & \textcolor{orange}{\textbf{Haute}} & Agent (prospecteur) \\
+Devis chatbot envoyé & \textcolor{orange}{\textbf{Haute}} & Agent (prospecteur) \\
+Nouveau devis créé & Normale & Admins + Closer \\
+Négociation en cours & Normale & Admins + Closer \\
+\noalign{\smallskip}\hline
+\end{tabular}
+\end{center}
+
+\medskip
+Un appui sur la notification ouvre directement le CRM Ola Flight.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Dépannage}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection*{Je ne reçois pas les notifications}
+\begin{itemize}[leftmargin=*, itemsep=0.2em]
+  \item Vérifiez que l'optimisation de batterie est désactivée pour ntfy (Android).
+  \item Sur iOS, vérifiez Réglages → Notifications → ntfy → Autoriser.
+  \item Confirmez que vous êtes abonné au bon topic (vérifiez l'URL dans l'app ntfy).
+  \item Reconnectez-vous au CRM et consultez à nouveau le lien — il peut avoir changé si l'équipe IT a régénéré les secrets.
+\end{itemize}
+
+\subsection*{Mon lien a changé / ne fonctionne plus}
+Contactez l'administrateur du système pour obtenir votre nouveau lien d'abonnement.
+Le lien change uniquement si la variable \texttt{NTFY\_TOPIC\_SECRET} du serveur est modifiée.
+
+\subsection*{Je reçois des doublons}
+Si vous vous êtes abonné deux fois au même topic, supprimez l'un des abonnements dans ntfy
+(balayez vers la gauche sur l'abonnement → Supprimer).
+
+\vfill
+\begin{center}
+  \textcolor{olaLight}{\rule{6cm}{0.3pt}}\\[0.8em]
+  {\small\color{olaGrey} Ola Flight — Document interne · Ne pas diffuser}
+\end{center}
+
+\end{document}

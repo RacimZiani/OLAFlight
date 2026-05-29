@@ -72,6 +72,8 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 .form-header{background:var(--b2);border:1px solid var(--l);padding:16px;margin-bottom:20px;}
 .fh-label{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:4px;}
 .fh-val{font-size:16px;color:var(--w);}
+.fh-val-input{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:300;color:var(--w);background:transparent;border:none;border-bottom:1px solid var(--l);outline:none;width:100%;padding:2px 0;transition:border-color .2s;}
+.fh-val-input:focus{border-bottom-color:var(--l2);}
 .fh-sub{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;color:var(--g);margin-top:2px;}
 
 .form-group{margin-bottom:16px;}
@@ -179,14 +181,14 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 <!-- ═══ PAGE DEVIS FORM ═══ -->
 <div class="page" id="page-devis">
   <div class="form-header" id="devis-client-info">
-    <div class="fh-label">Client</div>
-    <div class="fh-val" id="dfi-name">—</div>
+    <div class="fh-label">Client — nom complet</div>
+    <input class="fh-val-input" id="dfi-name" value="—" placeholder="Prénom Nom">
     <div class="fh-sub" id="dfi-details">—</div>
   </div>
 
   <div class="form-group">
     <label class="form-label">Compagnie aérienne <span class="req">*</span></label>
-    <select class="form-select" id="f-compagnie">
+    <select class="form-select" id="f-compagnie" onchange="toggleAutreCompagnie()">
       <option value="">Sélectionner</option>
       <option>Emirates</option>
       <option>Etihad Airways</option>
@@ -198,6 +200,7 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
       <option>Turkish Airlines</option>
       <option>Autre</option>
     </select>
+    <input class="form-input" id="f-compagnie-custom" placeholder="Nom de la compagnie" style="display:none;margin-top:8px">
   </div>
 
   <div class="form-row">
@@ -391,11 +394,12 @@ function openDevisFromLead(l) {
     apporteur_name: l.apporteur_name || null,
     raw: l,
   };
-  document.getElementById('dfi-name').textContent = name;
+  document.getElementById('dfi-name').value = name;
   document.getElementById('dfi-details').textContent = `${trajet} · ${dates} · ${classe} · ${pax} pax`;
-  ['f-compagnie', 'f-dep', 'f-arr', 'f-prix-four', 'f-prix-vente', 'f-prix-marche', 'f-notes'].forEach(id => {
+  ['f-compagnie', 'f-dep', 'f-arr', 'f-prix-four', 'f-prix-vente', 'f-prix-marche', 'f-notes', 'f-compagnie-custom'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  document.getElementById('f-compagnie-custom').style.display = 'none';
   document.querySelectorAll('#page-devis .service-check').forEach(s => {
     s.classList.remove('selected');
     const box = s.querySelector('.sc-box');
@@ -564,8 +568,21 @@ function selectedServices() {
     .filter(Boolean);
 }
 
+function toggleAutreCompagnie() {
+  const sel = document.getElementById('f-compagnie');
+  const custom = document.getElementById('f-compagnie-custom');
+  custom.style.display = sel.value === 'Autre' ? 'block' : 'none';
+  if (sel.value !== 'Autre') custom.value = '';
+}
+
+function getCompagnieName() {
+  const sel = document.getElementById('f-compagnie').value;
+  if (sel === 'Autre') return document.getElementById('f-compagnie-custom').value.trim();
+  return sel.trim();
+}
+
 function sendDevis() {
-  const comp = document.getElementById('f-compagnie').value.trim();
+  const comp = getCompagnieName();
   const dep = document.getElementById('f-dep').value;
   const arr = document.getElementById('f-arr').value;
   const prixFour = document.getElementById('f-prix-four').value;
@@ -583,7 +600,7 @@ function sendDevis() {
   const recap = `
     <div style="background:var(--b3);border:1px solid var(--l);padding:16px;font-size:14px;line-height:2;">
       <div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:10px">Récapitulatif</div>
-      <div style="color:var(--w)"><strong style="color:var(--g)">Client :</strong> ${escapeHtml(currentLead.name)}</div>
+      <div style="color:var(--w)"><strong style="color:var(--g)">Client :</strong> ${escapeHtml(document.getElementById('dfi-name').value.trim() || currentLead.name)}</div>
       <div style="color:var(--w)"><strong style="color:var(--g)">Destination :</strong> ${escapeHtml(currentLead.trajet)}</div>
       <div style="color:var(--w)"><strong style="color:var(--g)">Compagnie :</strong> ${escapeHtml(comp)}</div>
       <div style="color:var(--w)"><strong style="color:var(--g)">Horaires :</strong> ${dep} → ${arr}</div>
@@ -599,7 +616,15 @@ async function confirmSend() {
   const btn = document.getElementById('btn-confirm-devis');
   if (btn) btn.disabled = true;
   try {
-    const comp = document.getElementById('f-compagnie').value.trim();
+    const editedName = document.getElementById('dfi-name').value.trim();
+    if (editedName && editedName !== currentLead.name && currentLead.leadId) {
+      await API('/api/leads/' + encodeURIComponent(currentLead.leadId), {
+        method: 'PATCH',
+        body: JSON.stringify({ client_name: editedName }),
+      }).catch(() => {});
+      currentLead.name = editedName;
+    }
+    const comp = getCompagnieName();
     const dep = document.getElementById('f-dep').value;
     const arr = document.getElementById('f-arr').value;
     const body = {
