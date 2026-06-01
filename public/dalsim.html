@@ -166,7 +166,10 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 
 <!-- ═══ PAGE NOTIFS ═══ -->
 <div class="page active" id="page-notifs">
-  <div class="page-title">Devis à préparer</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <div class="page-title" style="margin-bottom:0">Devis à préparer</div>
+    <button class="btn-prepare" style="width:auto;padding:10px 18px;font-size:8px" onclick="openFreeDevis()">+ Nouveau devis</button>
+  </div>
 
   <!-- Notifs dynamiques poussées par l'Agent IA via /api/leads -->
   <div id="dynamic-notifs"></div>
@@ -568,6 +571,25 @@ function selectedServices() {
     .filter(Boolean);
 }
 
+function openFreeDevis() {
+  currentLead = { leadId: null, name: '', trajet: '', dates: '', classe: '', pax: 1, apporteur_name: null, raw: null };
+  document.getElementById('dfi-name').value = '';
+  document.getElementById('dfi-details').textContent = 'Devis libre — sans lead';
+  ['f-compagnie', 'f-dep', 'f-arr', 'f-prix-four', 'f-prix-vente', 'f-prix-marche', 'f-notes', 'f-compagnie-custom'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-compagnie-custom').style.display = 'none';
+  document.querySelectorAll('#page-devis .service-check').forEach(s => {
+    s.classList.remove('selected');
+    const box = s.querySelector('.sc-box');
+    if (box) box.textContent = '';
+  });
+  document.getElementById('margin-preview').style.display = 'none';
+  document.getElementById('opt-pdf').checked = true;
+  document.getElementById('opt-send').checked = false;
+  showPage('devis');
+}
+
 function toggleAutreCompagnie() {
   const sel = document.getElementById('f-compagnie');
   const custom = document.getElementById('f-compagnie-custom');
@@ -587,10 +609,6 @@ function sendDevis() {
   const arr = document.getElementById('f-arr').value;
   const prixFour = document.getElementById('f-prix-four').value;
   const prixVente = document.getElementById('f-prix-vente').value;
-  if (!currentLead.leadId) {
-    alert('Ouvrez un lead depuis les notifications ou le pipeline (statut « Devis à préparer »).');
-    return;
-  }
   if (!comp || !dep || !arr || !prixFour || !prixVente) {
     alert('Merci de remplir tous les champs obligatoires (*)');
     return;
@@ -628,7 +646,8 @@ async function confirmSend() {
     const dep = document.getElementById('f-dep').value;
     const arr = document.getElementById('f-arr').value;
     const body = {
-      lead_id: currentLead.leadId,
+      ...(currentLead.leadId ? { lead_id: currentLead.leadId } : {}),
+      ...(editedName ? { client_name: editedName } : {}),
       compagnie: comp,
       horaire_dep: dep,
       horaire_arr: arr,

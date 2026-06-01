@@ -85,7 +85,8 @@ export const idParamSchema = z.object({
 // ─── /api/devis ──────────────────────────────────────────
 export const devisCreateSchema = z.object({
   id: z.string().optional(),
-  lead_id: z.string().min(1),
+  lead_id: z.string().min(1).optional(),
+  client_name: z.string().optional(),
   compagnie: z.string().optional().default(""),
   horaire_dep: z.string().optional().default(""),
   horaire_arr: z.string().optional().default(""),

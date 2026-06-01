@@ -78,7 +78,8 @@ router.post("/", requireDevis, validate({ body: devisCreateSchema }), async (req
     const tsValide = isSupabase ? new Date(now + DAY).toISOString() : now + DAY;
     const devis = {
       id: body.id || `OLA-${uid().slice(0, 6)}`,
-      lead_id: body.lead_id,
+      lead_id: body.lead_id || null,
+      client_name: body.client_name || null,
       compagnie: body.compagnie || "",
       horaire_dep: body.horaire_dep || "",
       horaire_arr: body.horaire_arr || "",
@@ -268,7 +269,8 @@ router.patch(
           ...(patch.driver !== undefined ? { driver: patch.driver } : {}),
         };
         const lead = merged.lead_id ? await store.leads.findById(merged.lead_id) : null;
-        await generateDevisPdf({ devis: merged, lead });
+        const leadForEdit = lead ?? (merged.client_name ? { client_name: merged.client_name } : null);
+        await generateDevisPdf({ devis: merged, lead: leadForEdit });
         pdf_url = publicDevisPdfPath(merged.id);
         await store.devis.update(req.params.id, { pdf_url });
         if (updated) updated.pdf_url = pdf_url;
@@ -448,8 +450,9 @@ router.post(
       const devis = await store.devis.findById(req.params.id);
       if (!devis) throw new HttpError(404, "Devis introuvable");
       const lead = devis.lead_id ? await store.leads.findById(devis.lead_id) : null;
+      const leadForPdf = lead ?? (devis.client_name ? { client_name: devis.client_name } : null);
 
-      const { filename } = await generateDevisPdf({ devis, lead });
+      const { filename } = await generateDevisPdf({ devis, lead: leadForPdf });
       const pdfPath = `/api/public/devis/${encodeURIComponent(devis.id)}/pdf`;
       await store.devis.update(devis.id, { pdf_url: pdfPath });
       const publicUrl = buildPublicDevisPdfUrl(devis.id, { req });
