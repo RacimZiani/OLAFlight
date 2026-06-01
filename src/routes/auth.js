@@ -159,6 +159,33 @@ router.patch("/users/:id", validate({ body: userPatchSchema }), async (req, res,
   } catch (e) { next(e); }
 });
 
+const mePasswordSchema = z.object({
+  current_password: z.string().min(1),
+  new_password: z.string().min(8, "8 caractères minimum"),
+});
+
+router.post("/me/password", validate({ body: mePasswordSchema }), async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role === "guest") throw new HttpError(401, "Authentification requise");
+    if (!req.user.id) throw new HttpError(400, "Session sans identifiant utilisateur");
+    const store = await getStore();
+    const user = await store.users.findById(req.user.id);
+    if (!user || !user.active) throw new HttpError(401, "Compte introuvable ou inactif");
+    const ok = await verifyPassword(req.body.current_password, user.password_hash);
+    if (!ok) {
+      await new Promise((r) => setTimeout(r, 250));
+      throw new HttpError(403, "Mot de passe actuel incorrect");
+    }
+    if (!isReasonablePassword(req.body.new_password)) {
+      throw new HttpError(400, "Nouveau mot de passe trop faible (8 caractères minimum)");
+    }
+    const password_hash = await hashPassword(req.body.new_password);
+    await store.users.update(user.id, { password_hash });
+    log.info(`password changed · ${user.email}`);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 router.delete("/users/:id", async (req, res, next) => {
   try {
     if (!isAdmin(req.user)) throw new HttpError(403, "Admin requis");

@@ -36,7 +36,20 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 .tb-tab:hover{color:var(--w);}
 .tb-tab.active{color:var(--w);border-bottom-color:var(--w);}
 .tb-right{display:flex;align-items:center;gap:16px;}
-.tb-user{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);}
+.tb-user{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);background:none;border:none;cursor:pointer;padding:4px 8px;transition:color .2s;}
+.tb-user:hover{color:var(--w);}
+.pw-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:400;display:none;align-items:center;justify-content:center;}
+.pw-modal-bg.open{display:flex;}
+.pw-modal{background:var(--b2);border:1px solid var(--l2);width:min(400px,100vw);padding:28px;}
+.pw-modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:200;color:var(--w);margin-bottom:4px;}
+.pw-modal-sub{font-family:'Montserrat',sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:24px;}
+.pw-field{margin-bottom:16px;}
+.pw-field label{display:block;font-family:'Montserrat',sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:6px;}
+.pw-field input{width:100%;background:var(--b3);border:1px solid var(--l);color:var(--w);padding:12px 14px;font-family:'Cormorant Garamond',serif;font-size:15px;outline:none;transition:border-color .2s;}
+.pw-field input:focus{border-color:var(--l2);}
+.pw-msg{font-family:'Montserrat',sans-serif;font-size:8px;min-height:14px;margin-bottom:12px;}
+.pw-msg.err{color:var(--red-t);}
+.pw-msg.ok{color:var(--green-t);}
 .tb-add{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--b);background:var(--w);padding:8px 18px;cursor:pointer;border:none;transition:opacity .2s;}
 .tb-add:hover{opacity:.8;}
 
@@ -286,7 +299,7 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
       <span class="tb-bell-badge zero" id="tb-bell-badge">0</span>
     </button>
-    <div class="tb-user" id="tb-user">—</div>
+    <button class="tb-user" id="tb-user" onclick="openPasswordModal()" title="Changer mon mot de passe">—</button>
     <button class="tb-add" onclick="openNewLead()">+ Nouveau lead</button>
   </div>
 </div>
@@ -355,6 +368,31 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 <!-- MODAL LEAD DETAIL -->
 <div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
   <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- PASSWORD MODAL -->
+<div class="pw-modal-bg" id="pw-modal-bg" onclick="if(event.target===this)closePasswordModal()">
+  <div class="pw-modal">
+    <div class="pw-modal-title">Mon compte</div>
+    <div class="pw-modal-sub" id="pw-modal-email">—</div>
+    <div class="pw-field">
+      <label>Mot de passe actuel</label>
+      <input type="password" id="pw-current" autocomplete="current-password" placeholder="••••••••">
+    </div>
+    <div class="pw-field">
+      <label>Nouveau mot de passe</label>
+      <input type="password" id="pw-new" autocomplete="new-password" placeholder="8 caractères minimum">
+    </div>
+    <div class="pw-field">
+      <label>Confirmer le nouveau mot de passe</label>
+      <input type="password" id="pw-confirm" autocomplete="new-password" placeholder="••••••••">
+    </div>
+    <div class="pw-msg" id="pw-msg"></div>
+    <div class="modal-actions">
+      <button class="ma-btn ma-primary" onclick="submitPasswordChange()">Enregistrer</button>
+      <button class="ma-btn ma-ghost" onclick="closePasswordModal()">Annuler</button>
+    </div>
+  </div>
 </div>
 
 <!-- NEW LEAD PANEL -->
@@ -1338,6 +1376,48 @@ function updateStatus(id, status) {
 function closeModal(e) {
   if(!e || e.target===document.getElementById('modal-bg')) {
     document.getElementById('modal-bg').classList.remove('open');
+  }
+}
+
+function openPasswordModal() {
+  const u = window.OlaAuth && window.OlaAuth.user;
+  document.getElementById('pw-modal-email').textContent = u ? (u.email || '—') : '—';
+  ['pw-current','pw-new','pw-confirm'].forEach(id => document.getElementById(id).value = '');
+  const msg = document.getElementById('pw-msg');
+  msg.textContent = '';
+  msg.className = 'pw-msg';
+  document.getElementById('pw-modal-bg').classList.add('open');
+  document.getElementById('pw-current').focus();
+}
+
+function closePasswordModal() {
+  document.getElementById('pw-modal-bg').classList.remove('open');
+}
+
+async function submitPasswordChange() {
+  const current = document.getElementById('pw-current').value;
+  const newPw = document.getElementById('pw-new').value;
+  const confirm = document.getElementById('pw-confirm').value;
+  const msg = document.getElementById('pw-msg');
+  msg.className = 'pw-msg';
+  if (!current || !newPw || !confirm) { msg.className = 'pw-msg err'; msg.textContent = 'Tous les champs sont obligatoires.'; return; }
+  if (newPw.length < 8) { msg.className = 'pw-msg err'; msg.textContent = 'Le nouveau mot de passe doit faire au moins 8 caractères.'; return; }
+  if (newPw !== confirm) { msg.className = 'pw-msg err'; msg.textContent = 'Les deux nouveaux mots de passe ne correspondent pas.'; return; }
+  try {
+    const r = await fetch('/api/auth/me/password', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_password: current, new_password: newPw }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { msg.className = 'pw-msg err'; msg.textContent = j.error || 'Erreur lors du changement.'; return; }
+    msg.className = 'pw-msg ok';
+    msg.textContent = 'Mot de passe modifié.';
+    setTimeout(closePasswordModal, 1200);
+  } catch (e) {
+    msg.className = 'pw-msg err';
+    msg.textContent = 'Réseau indisponible.';
   }
 }
 
