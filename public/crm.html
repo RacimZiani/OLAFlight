@@ -851,6 +851,7 @@ async function openLeadModal(id) {
     <div class="modal-actions" id="modal-actions-bar">
       <button class="ma-btn ma-primary" onclick="alert('Lien WhatsApp : wa.me/${l.contact.replace('@','')}')">Contacter sur WhatsApp</button>
       <button class="ma-btn ma-primary" id="devis-action-btn" style="background:var(--yellow-t);color:var(--b)" onclick="createAndOpenDevis('${safeId}')">+ Préparer un devis</button>
+      <button class="ma-btn ma-ghost" onclick="openLeadEditModal('${safeId}')">Modifier le lead</button>
       <button class="ma-btn ma-ghost">Programmer relance</button>
       <button class="ma-btn ma-danger" onclick="updateStatus('${safeId}','lost');closeModal();">Marquer perdu</button>
       ${isAdmin() ? `<button class="ma-btn ma-danger" style="margin-top:8px;opacity:.7" onclick="deleteLead('${safeId}')">Supprimer le lead</button>` : ''}
@@ -1377,6 +1378,76 @@ function closeModal(e) {
   if(!e || e.target===document.getElementById('modal-bg')) {
     document.getElementById('modal-bg').classList.remove('open');
   }
+}
+
+async function openLeadEditModal(leadId) {
+  const r = await fetch('/api/leads/' + encodeURIComponent(leadId), { credentials: 'include' });
+  if (!r.ok) return alert('Lead introuvable');
+  const l = (await r.json()).item || {};
+  const safe = escapeHtmlCrm(leadId);
+  const content = document.getElementById('modal-content');
+  content.innerHTML = `
+    <div class="modal-head">
+      <div class="modal-title">Modifier le lead</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="form-group"><label class="form-label">Nom du client <span style="color:var(--red-t)">*</span></label>
+          <input class="form-input" id="le-name" value="${escapeHtmlCrm(l.client_name||'')}"></div>
+        <div class="form-group"><label class="form-label">Contact (Instagram / WhatsApp)</label>
+          <input class="form-input" id="le-contact" value="${escapeHtmlCrm(l.client_contact||'')}"></div>
+        <div class="form-group"><label class="form-label">Destination</label>
+          <input class="form-input" id="le-dest" value="${escapeHtmlCrm(l.destination||'')}"></div>
+        <div class="form-group"><label class="form-label">Dates</label>
+          <input class="form-input" id="le-dates" value="${escapeHtmlCrm(l.dates||'')}"></div>
+        <div class="form-group"><label class="form-label">Type de service</label>
+          <select class="form-select" id="le-classe">
+            <option value="">Sélectionner</option>
+            ${['Business / First Class','Jet privé','Hôtel & Séjour','Expérience complète'].map(o=>`<option${l.classe===o?' selected':''}>${o}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label class="form-label">Passagers</label>
+          <input class="form-input" id="le-pax" type="number" min="1" value="${Number(l.passagers)||1}"></div>
+        <div class="form-group"><label class="form-label">Source</label>
+          <select class="form-select" id="le-source">
+            <option value="">Sélectionner</option>
+            ${['WhatsApp','Instagram DM','Site web','Recommandation','Apporteur','Raya'].map(o=>`<option${l.canal===o?' selected':''}>${o}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label class="form-label">Valeur du deal (€)</label>
+          <input class="form-input" id="le-value" type="number" min="0" value="${Number(l.value)||0}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="le-notes" rows="3">${escapeHtmlCrm(l.notes||'')}</textarea></div>
+      <div class="modal-actions">
+        <button class="ma-btn ma-primary" onclick="submitLeadEdit('${safe}')">Enregistrer</button>
+        <button class="ma-btn ma-ghost" onclick="openLeadModal('${safe}')">Annuler</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+async function submitLeadEdit(leadId) {
+  const name = document.getElementById('le-name').value.trim();
+  if (!name) { alert('Le nom du client est obligatoire.'); return; }
+  const payload = {
+    client_name: name,
+    client_contact: document.getElementById('le-contact').value.trim() || null,
+    destination: document.getElementById('le-dest').value.trim() || null,
+    dates: document.getElementById('le-dates').value.trim() || null,
+    classe: document.getElementById('le-classe').value || null,
+    passagers: parseInt(document.getElementById('le-pax').value, 10) || 1,
+    notes: document.getElementById('le-notes').value.trim() || null,
+    value: parseInt(document.getElementById('le-value').value, 10) || 0,
+  };
+  const r = await fetch('/api/leads/' + encodeURIComponent(leadId), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!r.ok) { const j = await r.json().catch(()=>({})); alert(j.error || 'Erreur lors de la mise à jour'); return; }
+  await fetchLeadsFromApi();
+  openLeadModal(leadId);
 }
 
 function openPasswordModal() {

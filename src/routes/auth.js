@@ -5,7 +5,7 @@ import { getStore } from "../db/index.js";
 import { verifyPassword, hashPassword, isReasonablePassword } from "../lib/passwords.js";
 import { signSession, verifySession } from "../lib/jwt.js";
 import { config } from "../config.js";
-import { uid } from "../lib/ids.js";
+import { uid, uuidv4 } from "../lib/ids.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { createLogger } from "../logger.js";
 import { isAdmin } from "../lib/roles.js";
@@ -112,7 +112,7 @@ router.post("/users", validate({ body: userCreateSchema }), async (req, res, nex
     if (existing) throw new HttpError(409, "Email déjà utilisé");
     const password_hash = await hashPassword(req.body.password);
     const created = await store.users.insert({
-      id: uid(),
+      id: config.storage.driver === "supabase" ? uuidv4() : uid(),
       email,
       password_hash,
       role: req.body.role,

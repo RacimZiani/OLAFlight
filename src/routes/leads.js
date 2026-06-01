@@ -2,7 +2,7 @@ import { Router } from "express";
 import { validate } from "../middleware/validate.js";
 import { leadCreateSchema, leadPatchSchema, idParamSchema, LEAD_STATUSES } from "../schemas/index.js";
 import { getStore } from "../db/index.js";
-import { uid } from "../lib/ids.js";
+import { uid, uuidv4 } from "../lib/ids.js";
 import { HttpError } from "../middleware/errorHandler.js";
 import { notifyDalsimOfNewLead } from "../lib/notifications.js";
 import { notify } from "../lib/notifBus.js";
@@ -40,7 +40,7 @@ function normalizeLeadInput(body) {
   const isSupabase = config.storage.driver === "supabase";
   const tsNow = isSupabase ? new Date(now).toISOString() : now;
   return {
-    id: body.id || uid(),
+    id: body.id || (isSupabase ? uuidv4() : uid()),
     client_name: String(body.client_name || body.name || "").trim() || "Client",
     client_contact: String(body.client_contact || body.contact || "").trim(),
     canal: body.canal || (String(body.source || "").toLowerCase().includes("instagram") ? "instagram" : "whatsapp"),

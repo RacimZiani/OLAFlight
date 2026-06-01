@@ -3,7 +3,7 @@
  */
 
 import { getStore } from "../db/index.js";
-import { uid } from "./ids.js";
+import { uid, uuidv4 } from "./ids.js";
 import { config } from "../config.js";
 import { notify } from "./notifBus.js";
 
@@ -78,7 +78,7 @@ export async function createDraftDevisForLead(lead, ctx = {}) {
   const options = [emptyAirlineOption(0), emptyAirlineOption(1)];
 
   const devis = {
-    id: `OLA-${uid().slice(0, 6)}`,
+    id: isSupabase ? uuidv4() : `OLA-${uid().slice(0, 6)}`,
     lead_id: lead?.id || "",
     compagnie: "",
     horaire_dep: "",

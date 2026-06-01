@@ -1,5 +1,6 @@
 import { structuredExtraction } from "./anthropic.js";
-import { uid, safeJsonParse } from "./ids.js";
+import { uid, uuidv4, safeJsonParse } from "./ids.js";
+import { config } from "../config.js";
 import { createLogger } from "../logger.js";
 
 const log = createLogger("lead-extractor");
@@ -37,7 +38,7 @@ export async function extractLeadFromConversation(messages) {
     [parsed.first_name, parsed.last_name].filter(Boolean).join(" ").trim() ||
     "Lead Web";
   return {
-    id: uid(),
+    id: config.storage.driver === "supabase" ? uuidv4() : uid(),
     client_name: name,
     client_contact: parsed.client_contact || "",
     canal: parsed.canal === "instagram" ? "instagram" : "whatsapp",

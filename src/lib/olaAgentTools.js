@@ -16,7 +16,7 @@ import {
 import { getRoutePriceHints, isPricePlausible } from "./routePricing.js";
 import { getStore } from "../db/index.js";
 import { computeCommissions } from "./commissions.js";
-import { uid } from "./ids.js";
+import { uid, uuidv4 } from "./ids.js";
 import { generateDevisPdf } from "./pdf.js";
 import { config } from "../config.js";
 import { buildPublicDevisPdfUrl, publicDevisPdfPath } from "./publicUrl.js";
@@ -796,7 +796,7 @@ async function doCreateDevisFromOffer(input, { context }) {
   // Sinon on prend celui du lead (l'agent met-à-jour le lead avant le devis).
   const effectiveClientType = args.client_type || lead?.client_type || null;
   const devis = {
-    id: `OLA-${uid().slice(0, 6)}`,
+    id: isSupabase ? uuidv4() : `OLA-${uid().slice(0, 6)}`,
     lead_id: leadId || "",
     compagnie: main.compagnie || "",
     horaire_dep: main.horaire_dep || "",

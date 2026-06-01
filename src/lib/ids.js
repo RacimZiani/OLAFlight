@@ -4,6 +4,11 @@ export function uid() {
   ).toUpperCase();
 }
 
+// UUID v4 valide pour Supabase (colonnes de type uuid)
+export function uuidv4() {
+  return crypto.randomUUID();
+}
+
 export function makeId(seed) {
   return Buffer.from(String(seed)).toString("base64url").slice(0, 18);
 }

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { validate } from "../middleware/validate.js";
 import { devisCreateSchema, devisQuerySchema, idParamSchema } from "../schemas/index.js";
 import { getStore } from "../db/index.js";
-import { uid } from "../lib/ids.js";
+import { uid, uuidv4 } from "../lib/ids.js";
 import { computeCommissions, sanitizeDevisForRole } from "../lib/commissions.js";
 import { generateDevisPdf } from "../lib/pdf.js";
 import { sendMessage } from "../lib/messaging/index.js";
@@ -77,7 +77,7 @@ router.post("/", requireDevis, validate({ body: devisCreateSchema }), async (req
     const tsNow = isSupabase ? new Date(now).toISOString() : now;
     const tsValide = isSupabase ? new Date(now + DAY).toISOString() : now + DAY;
     const devis = {
-      id: body.id || `OLA-${uid().slice(0, 6)}`,
+      id: body.id || (isSupabase ? uuidv4() : `OLA-${uid().slice(0, 6)}`),
       lead_id: body.lead_id || null,
       client_name: body.client_name || null,
       compagnie: body.compagnie || "",

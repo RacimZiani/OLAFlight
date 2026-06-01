@@ -3,7 +3,8 @@ import { z } from "zod";
 import { validate } from "../middleware/validate.js";
 import { requireRole, requireAdmin } from "../middleware/auth.js";
 import { getStore } from "../db/index.js";
-import { uid } from "../lib/ids.js";
+import { uid, uuidv4 } from "../lib/ids.js";
+import { config } from "../config.js";
 import { HttpError } from "../middleware/errorHandler.js";
 
 const router = Router();
@@ -43,7 +44,7 @@ router.post("/", validate({ body: createSchema }), async (req, res, next) => {
       body.code?.trim() ||
       `${body.nom.replace(/\s+/g, "").slice(0, 6).toUpperCase()}${Math.floor(Math.random() * 90 + 10)}`;
     const row = await store.apporteurs.insert({
-      id: uid(),
+      id: config.storage.driver === "supabase" ? uuidv4() : uid(),
       nom: body.nom.trim(),
       instagram: body.instagram?.trim() || null,
       phone: body.phone?.trim() || null,

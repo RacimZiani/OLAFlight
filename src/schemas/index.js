@@ -68,7 +68,13 @@ export const leadCreateSchema = z.object({
 
 export const leadPatchSchema = z.object({
   status: LEAD_STATUSES.optional(),
-  notes: z.string().optional(),
+  client_name: z.string().optional(),
+  client_contact: z.string().nullable().optional(),
+  destination: z.string().nullable().optional(),
+  dates: z.string().nullable().optional(),
+  classe: z.string().nullable().optional(),
+  passagers: z.coerce.number().int().min(1).optional(),
+  notes: z.string().nullable().optional(),
   value: z.coerce.number().optional(),
   margin: z.coerce.number().optional(),
   closer_name: z.string().nullable().optional(),
