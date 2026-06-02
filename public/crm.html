@@ -468,6 +468,20 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
       <label class="form-label">Valeur du deal (€)</label>
       <input class="form-input" id="nl-value" type="number" placeholder="0">
     </div>
+    <div class="form-group" id="nl-margin-group" style="display:none">
+      <label class="form-label">Marge (€)</label>
+      <input class="form-input" id="nl-margin" type="number" placeholder="0">
+    </div>
+    <div class="form-group" id="nl-status-group" style="display:none">
+      <label class="form-label">Statut</label>
+      <select class="form-select" id="nl-status">
+        <option value="qualification">Qualification</option>
+        <option value="devis_pending">Devis à préparer</option>
+        <option value="devis_sent">Devis envoyé</option>
+        <option value="won">Gagné ✓</option>
+        <option value="lost">Perdu</option>
+      </select>
+    </div>
     <div class="form-group">
       <label class="form-label">Prochain suivi</label>
       <input class="form-input" id="nl-followup" type="date">
@@ -591,63 +605,108 @@ function switchView(id, el) {
 // ─── DASHBOARD ───
 function renderDashboard() {
   const won = leads.filter(l=>l.status==='won');
-  const active = leads.filter(l=>!['won','lost'].includes(l.status));
-  const totalCA = won.reduce((s,l)=>s+l.value,0);
+  const active = leads.filter(l=>!['won','lost','archived'].includes(l.status));
   const me = window.OlaAuth && window.OlaAuth.user && window.OlaAuth.user.email;
-  const myWon = me ? won.filter(l => l.sdr === me) : won;
-  const totalComm1 = myWon.reduce((s,l)=>s+l.margin*0.10,0);
   const pipeline = active.reduce((s,l)=>s+l.value,0);
+
+  // Helpers mois
+  const now = new Date();
+  const ty = now.getFullYear(), tm = now.getMonth();
+  const lmDate = new Date(ty, tm - 1, 1);
+  const inMonth = (ts, y, mo) => { if (!ts) return false; const d = new Date(typeof ts==='number'?ts:ts); return d.getFullYear()===y&&d.getMonth()===mo; };
+  const wonTM = won.filter(l=>inMonth(l.created_at,ty,tm));
+  const wonLM = won.filter(l=>inMonth(l.created_at,lmDate.getFullYear(),lmDate.getMonth()));
+  const newTM  = leads.filter(l=>inMonth(l.created_at,ty,tm));
+  const caTM   = wonTM.reduce((s,l)=>s+l.value,0);
+  const caLM   = wonLM.reduce((s,l)=>s+l.value,0);
+  const margeTM = wonTM.reduce((s,l)=>s+(l.margin||0),0);
+  const caDelta = caLM>0 ? Math.round((caTM-caLM)/caLM*100) : null;
+
+  // Commissions closer (20%)
+  const myWon = me ? won.filter(l=>l.sdr===me) : [];
+  const myWonTM = myWon.filter(l=>inMonth(l.created_at,ty,tm));
+  const myComm = myWonTM.reduce((s,l)=>s+(l.margin||0)*0.20,0);
+
+  // Relances du jour
   const today = leads.filter(l => {
-    if (l.followup == null || l.followup === '') return false;
-    const d = new Date(typeof l.followup === 'number' ? l.followup : l.followup);
+    if (l.followup==null||l.followup==='') return false;
+    const d = new Date(typeof l.followup==='number'?l.followup:l.followup);
     if (Number.isNaN(d.getTime())) return false;
     const t = new Date();
-    return d.getFullYear()===t.getFullYear() && d.getMonth()===t.getMonth() && d.getDate()===t.getDate();
+    return d.getFullYear()===t.getFullYear()&&d.getMonth()===t.getMonth()&&d.getDate()===t.getDate();
   });
+
+  const kpisHtml = isAdmin() ? `
+    <div class="kpi"><div class="kpi-val">${newTM.length}</div><div class="kpi-label">Nouveaux leads</div><div class="kpi-delta">ce mois</div></div>
+    <div class="kpi"><div class="kpi-val">${active.length}</div><div class="kpi-label">Leads actifs</div></div>
+    <div class="kpi"><div class="kpi-val">${wonTM.length}</div><div class="kpi-label">Deals gagnés</div><div class="kpi-delta" style="color:var(--green-t)">ce mois</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--green-t)">${caTM.toLocaleString('fr-FR')} €</div><div class="kpi-label">CA ce mois</div>${caDelta!==null?`<div class="kpi-delta" style="color:${caDelta>=0?'var(--green-t)':'var(--red-t)'}">${caDelta>=0?'↑':'↓'} ${Math.abs(caDelta)}% vs mois préc.</div>`:''}</div>
+    <div class="kpi"><div class="kpi-val">${caLM.toLocaleString('fr-FR')} €</div><div class="kpi-label">CA mois précédent</div><div class="kpi-delta" style="color:var(--g)">${wonLM.length} deal${wonLM.length!==1?'s':''}</div></div>
+  ` : `
+    <div class="kpi"><div class="kpi-val">${newTM.length}</div><div class="kpi-label">Nouveaux leads</div><div class="kpi-delta">ce mois</div></div>
+    <div class="kpi"><div class="kpi-val">${active.length}</div><div class="kpi-label">Leads actifs</div></div>
+    <div class="kpi"><div class="kpi-val">${wonTM.length}</div><div class="kpi-label">Deals gagnés</div><div class="kpi-delta" style="color:var(--green-t)">ce mois</div></div>
+    <div class="kpi"><div class="kpi-val">${pipeline.toLocaleString('fr-FR')} €</div><div class="kpi-label">Pipeline total</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--green-t)">${Math.round(myComm).toLocaleString('fr-FR')} €</div><div class="kpi-label">Mes commissions</div></div>
+  `;
+
+  const secondCardHtml = isAdmin() ? `
+    <div class="dc-title">CA · Ce mois — ${wonTM.length} deal${wonTM.length!==1?'s':''}</div>
+    <div class="comm-bar">
+      ${wonTM.map(l=>`
+      <div class="cb-row">
+        <div><div class="cb-name">${escapeHtmlCrm(l.name)}</div><div class="cb-num">${escapeHtmlCrm(l.dest)||'—'}</div></div>
+        <div style="text-align:right">
+          <div class="cb-val">${l.value>0?l.value.toLocaleString('fr-FR')+' €':'—'}</div>
+          ${(l.margin||0)>0?`<div style="font-family:Montserrat,sans-serif;font-size:7px;color:var(--green-t);margin-top:2px">marge ${l.margin.toLocaleString('fr-FR')} €</div>`:''}
+        </div>
+      </div>`).join('')}
+      ${wonTM.length===0?'<div style="color:var(--g);font-size:14px;padding:20px 0">Aucun deal closé ce mois.</div>':''}
+    </div>
+    <div style="border-top:1px solid var(--l);margin-top:16px;padding-top:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><div class="kpi-label">CA ce mois</div><div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:300;color:var(--green-t)">${caTM.toLocaleString('fr-FR')} €</div></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><div class="kpi-label">Marge ce mois</div><div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:300;color:var(--w)">${margeTM.toLocaleString('fr-FR')} €</div></div>
+      <div style="display:flex;justify-content:space-between"><div class="kpi-label">CA mois précédent</div><div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:300;color:var(--g)">${caLM.toLocaleString('fr-FR')} €${caDelta!==null?' <span style="font-size:10px;color:'+(caDelta>=0?'var(--green-t)':'var(--red-t)')+'"> ('+( caDelta>=0?'+':'')+caDelta+'%)</span>':''}</div></div>
+    </div>
+  ` : `
+    <div class="dc-title">Mes commissions · Ce mois</div>
+    <div class="comm-bar">
+      ${myWonTM.map(l=>`
+      <div class="cb-row">
+        <div><div class="cb-name">${escapeHtmlCrm(l.name)}</div><div class="cb-num">${escapeHtmlCrm(l.dest)}</div></div>
+        <div class="cb-val">+${Math.round((l.margin||0)*0.20).toLocaleString('fr-FR')} €</div>
+      </div>`).join('')}
+      ${myWonTM.length===0?'<div style="color:var(--g);font-size:14px;padding:20px 0">Aucun deal closé ce mois.</div>':''}
+    </div>
+    <div style="border-top:1px solid var(--l);margin-top:16px;padding-top:16px;display:flex;justify-content:space-between;">
+      <div class="kpi-label">Total commissions</div>
+      <div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:300;color:var(--green-t)">${Math.round(myComm).toLocaleString('fr-FR')} €</div>
+    </div>
+  `;
 
   document.getElementById('v-dashboard-inner').innerHTML = `
   <div style="padding:40px 32px;">
     <div class="dash-title">Bonjour, ${escapeHtmlCrm(currentUserLabel())}</div>
-    <div class="dash-sub">${new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
-    <div class="kpis">
-      <div class="kpi"><div class="kpi-val">${leads.filter(l=>l.status==='new').length}</div><div class="kpi-label">Nouveaux leads</div><div class="kpi-delta">↑ aujourd'hui</div></div>
-      <div class="kpi"><div class="kpi-val">${active.length}</div><div class="kpi-label">Leads actifs</div></div>
-      <div class="kpi"><div class="kpi-val">${won.length}</div><div class="kpi-label">Deals gagnés</div><div class="kpi-delta" style="color:var(--green-t)">ce mois</div></div>
-      <div class="kpi"><div class="kpi-val">${pipeline.toLocaleString('fr-FR')} €</div><div class="kpi-label">Pipeline total</div></div>
-      <div class="kpi"><div class="kpi-val" style="color:var(--green-t)">${Math.round(totalComm1).toLocaleString('fr-FR')} €</div><div class="kpi-label">Mes commissions</div></div>
-    </div>
+    <div class="dash-sub">${now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+    <div class="kpis">${kpisHtml}</div>
     <div class="dash-grid">
       <div class="dash-card">
         <div class="dc-title">Leads récents</div>
         ${leads.slice(0,5).map(l=>`
-        <div class="lead-row" onclick="openLeadModal('${String(l.id).replace(/'/g, "\\'")}')" style="cursor:pointer">
-          <div class="lr-left"><div class="lr-name">${l.name}</div><div class="lr-dest">${l.dest} · ${l.dates||'dates à confirmer'}</div></div>
+        <div class="lead-row" onclick="openLeadModal('${String(l.id).replace(/'/g,"\\'")}')" style="cursor:pointer">
+          <div class="lr-left"><div class="lr-name">${escapeHtmlCrm(l.name)}</div><div class="lr-dest">${escapeHtmlCrm(l.dest)} · ${escapeHtmlCrm(l.dates)||'dates à confirmer'}</div></div>
           <div class="lr-right">
             <span class="status-pill ${statusClass[l.status]}">${statusLabels[l.status]}</span>
             <span class="lr-val">${l.value>0?l.value.toLocaleString('fr-FR')+' €':'—'}</span>
           </div>
         </div>`).join('')}
       </div>
-      <div class="dash-card">
-        <div class="dc-title">Commissions · Ce mois</div>
-        <div class="comm-bar">
-          ${leads.filter(l=>l.status==='won').map(l=>`
-          <div class="cb-row">
-            <div><div class="cb-name">${l.name}</div><div class="cb-num">${l.dest}</div></div>
-            <div class="cb-val">+${Math.round(l.margin*0.10).toLocaleString('fr-FR')} €</div>
-          </div>`).join('')}
-          ${leads.filter(l=>l.status==='won').length===0?'<div style="color:var(--g);font-size:14px;padding:20px 0;">Aucun deal closé ce mois.</div>':''}
-        </div>
-        <div style="border-top:1px solid var(--l);margin-top:16px;padding-top:16px;display:flex;justify-content:space-between;">
-          <div class="kpi-label">Total commissions</div>
-          <div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:300;color:var(--green-t)">${Math.round(totalComm1).toLocaleString('fr-FR')} €</div>
-        </div>
-      </div>
+      <div class="dash-card">${secondCardHtml}</div>
     </div>
     ${today.length>0?`
     <div style="margin-top:24px;background:rgba(250,204,21,0.06);border:1px solid rgba(250,204,21,0.15);padding:20px 24px;">
       <div style="font-family:Montserrat,sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--yellow-t);margin-bottom:12px;">⚡ Relances du jour (${today.length})</div>
-      ${today.map(l=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(250,204,21,0.08)"><span style="font-size:15px;color:var(--w)">${l.name}</span><span style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--yellow-t)">${l.dest}</span></div>`).join('')}
+      ${today.map(l=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(250,204,21,0.08)"><span style="font-size:15px;color:var(--w)">${escapeHtmlCrm(l.name)}</span><span style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--yellow-t)">${escapeHtmlCrm(l.dest)}</span></div>`).join('')}
     </div>`:''}
   </div>`;
 }
@@ -1415,6 +1474,12 @@ async function openLeadEditModal(leadId) {
           </select></div>
         <div class="form-group"><label class="form-label">Valeur du deal (€)</label>
           <input class="form-input" id="le-value" type="number" min="0" value="${Number(l.value)||0}"></div>
+        ${isAdmin() ? `<div class="form-group"><label class="form-label">Marge (€)</label>
+          <input class="form-input" id="le-margin" type="number" min="0" value="${Number(l.margin)||0}"></div>` : ''}
+        ${isAdmin() ? `<div class="form-group"><label class="form-label">Statut</label>
+          <select class="form-select" id="le-status">
+            ${['qualification','devis_pending','devis_sent','won','lost','archived'].map(s=>`<option value="${s}"${l.apiStatus===s||l.status===s?' selected':''}>${statusLabels[s]||s}</option>`).join('')}
+          </select></div>` : ''}
       </div>
       <div class="form-group"><label class="form-label">Notes</label>
         <textarea class="form-textarea" id="le-notes" rows="3">${escapeHtmlCrm(l.notes||'')}</textarea></div>
@@ -1438,6 +1503,8 @@ async function submitLeadEdit(leadId) {
     passagers: parseInt(document.getElementById('le-pax').value, 10) || 1,
     notes: document.getElementById('le-notes').value.trim() || null,
     value: parseInt(document.getElementById('le-value').value, 10) || 0,
+    ...(document.getElementById('le-margin') ? { margin: parseInt(document.getElementById('le-margin').value, 10) || 0 } : {}),
+    ...(document.getElementById('le-status') ? { status: document.getElementById('le-status').value } : {}),
   };
   const r = await fetch('/api/leads/' + encodeURIComponent(leadId), {
     method: 'PATCH',
@@ -1552,7 +1619,8 @@ function saveNewLead() {
     next_followup,
     notes: document.getElementById('nl-notes').value,
     value: parseInt(document.getElementById('nl-value').value, 10) || 0,
-    status: 'qualification',
+    margin: isAdmin() ? (parseInt(document.getElementById('nl-margin')?.value, 10) || 0) : 0,
+    status: isAdmin() ? (document.getElementById('nl-status')?.value || 'qualification') : 'qualification',
     urgent: false,
   };
   fetch('/api/leads', {
@@ -1566,7 +1634,8 @@ function saveNewLead() {
       return alert('Impossible de créer le lead : ' + (body.message || body.error || r.status));
     }
     closeNewLead();
-    ['nl-name','nl-contact','nl-dest','nl-dates','nl-notes','nl-value'].forEach(id => document.getElementById(id).value = '');
+    ['nl-name','nl-contact','nl-dest','nl-dates','nl-notes','nl-value','nl-margin'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    const nls = document.getElementById('nl-status'); if(nls) nls.value = 'qualification';
     document.getElementById('nl-followup').value = '';
     return fetchLeadsFromApi();
   }).catch(() => alert('Réseau indisponible'));
@@ -1934,6 +2003,11 @@ function refreshTopUser() {
   document.querySelectorAll('[data-admin-closer-only]').forEach((node) => {
     node.style.display = (isAdmin() || isCloser()) ? '' : 'none';
   });
+  // Champs marge/statut sur le formulaire nouveau lead — admins uniquement
+  const mg = document.getElementById('nl-margin-group');
+  const sg = document.getElementById('nl-status-group');
+  if (mg) mg.style.display = isAdmin() ? '' : 'none';
+  if (sg) sg.style.display = isAdmin() ? '' : 'none';
 }
 
 function startCrm() {
