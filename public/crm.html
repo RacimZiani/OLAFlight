@@ -967,9 +967,15 @@ async function openAdminPricingEditor(devisId) {
     <div class="dev-opt-card" data-ap-opt="${i}">
       <div class="dev-opt-head">Compagnie ${i + 1}</div>
       <div class="dev-grid">
-        <label>Compagnie aérienne<input data-k="compagnie" value="${escapeHtmlCrm(o.compagnie || '')}" required></label>
-        <label>Prix Business (€)<input type="number" min="1" data-k="prix_vente_business" value="${Number(o.prix_vente_business || o.prix_vente || 0) || ''}"></label>
+        <label>Compagnie aérienne <span style="color:var(--red-t)">*</span><input data-k="compagnie" value="${escapeHtmlCrm(o.compagnie || '')}" placeholder="Ex : Air France"></label>
+        <label>Prix Business (€) <span style="color:var(--red-t)">*</span><input type="number" min="1" data-k="prix_vente_business" value="${Number(o.prix_vente_business || o.prix_vente || 0) || ''}" placeholder="Ex : 4500"></label>
         <label>Prix First (€)<input type="number" min="0" data-k="prix_vente_first" value="${Number(o.prix_vente_first || 0) || ''}"></label>
+        <label>Horaire départ aller<input data-k="horaire_dep" value="${escapeHtmlCrm(o.horaire_dep || '')}" placeholder="Ex : 10:30"></label>
+        <label>Horaire arrivée aller<input data-k="horaire_arr" value="${escapeHtmlCrm(o.horaire_arr || '')}" placeholder="Ex : 14:45"></label>
+      </div>
+      <div class="dev-grid ap-retour-fields" style="display:none">
+        <label>Horaire départ retour<input data-k="horaire_dep_retour" value="${escapeHtmlCrm(o.horaire_dep_retour || '')}" placeholder="Ex : 16:00"></label>
+        <label>Horaire arrivée retour<input data-k="horaire_arr_retour" value="${escapeHtmlCrm(o.horaire_arr_retour || '')}" placeholder="Ex : 20:15"></label>
       </div>
     </div>`;
   }
@@ -985,7 +991,14 @@ async function openAdminPricingEditor(devisId) {
     </div>
     <div class="modal-body" id="ap-form">
       <div class="modal-section">
-        <div class="ms-title">Deux options compagnies (obligatoire)</div>
+        <div class="ms-title">Type de vol</div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-family:Montserrat,sans-serif;font-size:9px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--w)">
+          <input type="checkbox" id="ap-has-retour" ${opts[0]?.horaire_dep_retour ? 'checked' : ''} onchange="document.querySelectorAll('.ap-retour-fields').forEach(el=>el.style.display=this.checked?'':'none')">
+          Voyage aller-retour
+        </label>
+      </div>
+      <div class="modal-section">
+        <div class="ms-title">Deux options compagnies <span style="color:var(--red-t)">*</span></div>
         ${opts.map((o, i) => optRow(o, i)).join('')}
       </div>
       ${showHotel ? `
@@ -1024,6 +1037,14 @@ function readApOptions() {
 
 async function submitAdminPricing(devisId, flags) {
   const options = readApOptions();
+  for (let i = 0; i < options.length; i++) {
+    if (!options[i].compagnie || String(options[i].compagnie).trim() === '') {
+      return alert(`Option ${i + 1} : veuillez saisir le nom de la compagnie aérienne.`);
+    }
+    if (!options[i].prix_vente_business || Number(options[i].prix_vente_business) < 1) {
+      return alert(`Option ${i + 1} : veuillez saisir le prix Business (minimum 1 €).`);
+    }
+  }
   const body = { options, regenerate_pdf: true };
   if (flags.showHotel) {
     const name = document.getElementById('ap-hotel-name')?.value?.trim();
@@ -1043,8 +1064,15 @@ async function submitAdminPricing(devisId, flags) {
     body: JSON.stringify(body),
   });
   if (!r.ok) {
-    const t = await r.text().catch(() => '');
-    return alert('Erreur : ' + (t || r.status));
+    let msg = String(r.status);
+    try {
+      const j = await r.json();
+      msg = j.error || msg;
+      if (Array.isArray(j.issues) && j.issues.length) {
+        msg += ' — ' + j.issues.map(i => i.message).join(', ');
+      }
+    } catch { msg = await r.text().catch(() => msg); }
+    return alert('Erreur : ' + msg);
   }
   const data = await r.json();
   showAdminPricingRecap(devisId, data.recap, flags.leadId);
@@ -1159,13 +1187,17 @@ async function openDevisEditor(devisId, leadId) {
         <div class="dev-grid">
           <label>Label<input data-k="label" value="${escapeHtmlCrm(o.label || '')}" placeholder="Express / Confort / Premium"></label>
           <label>Compagnie<input data-k="compagnie" value="${escapeHtmlCrm(o.compagnie || '')}"></label>
-          <label>Horaire dép.<input data-k="horaire_dep" value="${escapeHtmlCrm(o.horaire_dep || '')}"></label>
-          <label>Horaire arr.<input data-k="horaire_arr" value="${escapeHtmlCrm(o.horaire_arr || '')}"></label>
+          <label>Horaire dép. aller<input data-k="horaire_dep" value="${escapeHtmlCrm(o.horaire_dep || '')}"></label>
+          <label>Horaire arr. aller<input data-k="horaire_arr" value="${escapeHtmlCrm(o.horaire_arr || '')}"></label>
           <label>Durée<input data-k="duration" value="${escapeHtmlCrm(o.duration || '')}"></label>
           <label>Escales<input type="number" min="0" max="5" data-k="stops" value="${Number(o.stops || 0)}"></label>
           ${isAdmin() ? `<label>Prix de revient (€)<input type="number" min="0" data-k="prix_revient" value="${Number(o.prix_revient || 0)}"></label>` : ''}
           <label>Prix de vente (€)<input type="number" min="0" data-k="prix_vente" value="${Number(o.prix_vente || 0)}"></label>
           ${isAdmin() ? `<label>Prix marché (€)<input type="number" min="0" data-k="prix_marche" value="${Number(o.prix_marche || 0)}"></label>` : ''}
+        </div>
+        <div class="dev-grid ed-retour-fields" style="display:${o.horaire_dep_retour ? '' : 'none'}">
+          <label>Horaire dép. retour<input data-k="horaire_dep_retour" value="${escapeHtmlCrm(o.horaire_dep_retour || '')}"></label>
+          <label>Horaire arr. retour<input data-k="horaire_arr_retour" value="${escapeHtmlCrm(o.horaire_arr_retour || '')}"></label>
         </div>
       </div>`;
   }
@@ -1210,6 +1242,10 @@ async function openDevisEditor(devisId, leadId) {
 
       <div class="modal-section">
         <div class="ms-title">Options multiples (max 3)</div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-family:Montserrat,sans-serif;font-size:9px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--w);margin-bottom:12px">
+          <input type="checkbox" id="ed-has-retour" ${opts.some(o => o.horaire_dep_retour) ? 'checked' : ''} onchange="document.querySelectorAll('.ed-retour-fields').forEach(el=>el.style.display=this.checked?'':'none')">
+          Voyage aller-retour
+        </label>
         <div id="ed-options">${opts.map((o, i) => optionRow(o, i)).join('')}</div>
         <button type="button" class="ma-btn ma-ghost" id="ed-add-opt">+ Ajouter une option</button>
       </div>
@@ -1249,6 +1285,10 @@ async function openDevisEditor(devisId, leadId) {
     if (wrap.children.length >= 3) return alert('Max 3 options.');
     const i = wrap.children.length;
     wrap.insertAdjacentHTML('beforeend', optionRow({}, i));
+    const hasRetour = document.getElementById('ed-has-retour')?.checked;
+    if (hasRetour) {
+      wrap.querySelectorAll('.ed-retour-fields').forEach(el => el.style.display = '');
+    }
   });
   document.getElementById('ed-add-hotel').addEventListener('click', () => {
     document.getElementById('ed-hotels').insertAdjacentHTML('beforeend', hotelRow({}));

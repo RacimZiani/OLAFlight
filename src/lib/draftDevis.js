@@ -49,6 +49,8 @@ export function normalizeAdminOptions(rawOptions, lead) {
       prix_marche: Math.max(0, Number(o.prix_marche) || 0),
       horaire_dep: o.horaire_dep || "",
       horaire_arr: o.horaire_arr || "",
+      horaire_dep_retour: o.horaire_dep_retour || "",
+      horaire_arr_retour: o.horaire_arr_retour || "",
       duration: o.duration || "",
       stops: typeof o.stops === "number" ? o.stops : undefined,
       services_inclus: Array.isArray(o.services_inclus) ? o.services_inclus : [],

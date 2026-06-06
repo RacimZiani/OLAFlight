@@ -122,6 +122,8 @@ const optionEditSchema = z.object({
   compagnie: z.string().optional(),
   horaire_dep: z.string().optional(),
   horaire_arr: z.string().optional(),
+  horaire_dep_retour: z.string().optional(),
+  horaire_arr_retour: z.string().optional(),
   duration: z.string().optional(),
   stops: z.coerce.number().int().min(0).max(5).optional(),
   prix_revient: z.coerce.number().min(0).optional(),
@@ -154,6 +156,8 @@ const adminOptionSchema = z.object({
   prix_vente_first: z.coerce.number().min(0).optional().default(0),
   horaire_dep: z.string().optional(),
   horaire_arr: z.string().optional(),
+  horaire_dep_retour: z.string().optional(),
+  horaire_arr_retour: z.string().optional(),
   prix_revient: z.coerce.number().min(0).optional(),
   prix_marche: z.coerce.number().min(0).optional(),
 });
