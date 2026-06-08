@@ -93,6 +93,22 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 .bar-bg{height:3px;background:var(--l2);width:100%;margin-top:6px;}
 .bar-fill{height:3px;background:var(--green-t);}
 
+/* ─── PERIOD PICKER ─── */
+.period-toggle-btn{font-family:Montserrat,sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);background:none;border:1px solid var(--l);padding:7px 16px;cursor:pointer;transition:all 0.15s;margin-top:6px;white-space:nowrap;}
+.period-toggle-btn:hover{color:var(--w);border-color:var(--g);}
+.period-toggle-btn.active{color:var(--w);border-color:var(--g);background:rgba(255,255,255,0.04);}
+.period-picker{margin-bottom:28px;background:var(--b2);border:1px solid var(--l);padding:16px 22px;}
+.period-picker-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.period-picker-group{display:flex;align-items:center;gap:10px;}
+.period-picker-label{font-family:Montserrat,sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);white-space:nowrap;}
+.period-picker-sep{font-family:Montserrat,sans-serif;font-size:7px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);padding:0 4px;}
+.period-select{font-family:Montserrat,sans-serif;font-size:10px;font-weight:300;color:var(--w);background:var(--b);border:1px solid var(--l);padding:6px 12px;cursor:pointer;outline:none;letter-spacing:1px;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.period-select:focus{border-color:var(--g);}
+.period-btn-add{font-family:Montserrat,sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);background:none;border:1px dashed var(--l2);padding:6px 14px;cursor:pointer;transition:all 0.15s;}
+.period-btn-add:hover{color:var(--w);border-color:var(--g);border-style:solid;}
+.period-btn-remove{font-family:Montserrat,sans-serif;font-size:16px;color:var(--g);background:none;border:none;cursor:pointer;padding:0 2px;line-height:1;transition:color 0.15s;}
+.period-btn-remove:hover{color:var(--red-t);}
+
 /* ─── PIPELINE KANBAN ─── */
 #v-pipeline{padding:32px;}
 .pipeline-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
@@ -487,6 +503,12 @@ let apporteuses = [];
 let closers = [];
 let notifs = [];
 let pipelineState = { search: '', closer: '', sort: 'recent', zoom: null };
+let dashPeriodMode = 'simple'; // 'simple' | 'custom'
+let dashPeriodY = new Date().getFullYear();
+let dashPeriodM = new Date().getMonth();
+let dashCompareMode = false;
+let dashCompareY = (new Date().getMonth() === 0) ? new Date().getFullYear() - 1 : new Date().getFullYear();
+let dashCompareM = (new Date().getMonth() === 0) ? 11 : new Date().getMonth() - 1;
 
 const statusLabels = { new: 'Nouveau', contacted: 'Contacté', offer: 'Offre envoyée', nego: 'Négociation', won: 'Gagné', lost: 'Perdu' };
 const statusClass = { new: 'sp-new', contacted: 'sp-contact', offer: 'sp-offer', nego: 'sp-nego', won: 'sp-won', lost: 'sp-lost' };
@@ -588,6 +610,40 @@ function switchView(id, el) {
   if(id==='apporteuses') fetchApporteurs().then(() => renderApporteuses());
 }
 
+// ─── DASHBOARD PERIOD HELPERS ───
+function toggleDashPeriodMode() {
+  if (dashPeriodMode === 'simple') {
+    dashPeriodMode = 'custom';
+  } else {
+    dashPeriodMode = 'simple';
+    dashCompareMode = false;
+  }
+  renderDashboard();
+}
+function changeDashPeriod(y, m) {
+  dashPeriodY = parseInt(y); dashPeriodM = parseInt(m);
+  renderDashboard();
+}
+function changeDashCompare(y, m) {
+  dashCompareY = parseInt(y); dashCompareM = parseInt(m);
+  renderDashboard();
+}
+function toggleDashCompare() {
+  dashCompareMode = !dashCompareMode;
+  renderDashboard();
+}
+function buildMonthOptions(selY, selM) {
+  const now = new Date();
+  let opts = '';
+  for (let i = 0; i < 36; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear(), m = d.getMonth();
+    const label = d.toLocaleDateString('fr-FR', {month:'long', year:'numeric'});
+    opts += `<option value="${y}-${m}"${y===selY&&m===selM?' selected':''}>${label.charAt(0).toUpperCase()+label.slice(1)}</option>`;
+  }
+  return opts;
+}
+
 // ─── DASHBOARD ───
 function renderDashboard() {
   const won = leads.filter(l=>l.status==='won');
@@ -595,18 +651,46 @@ function renderDashboard() {
   const me = window.OlaAuth && window.OlaAuth.user && window.OlaAuth.user.email;
   const pipeline = active.reduce((s,l)=>s+l.value,0);
 
-  // Helpers mois
   const now = new Date();
-  const ty = now.getFullYear(), tm = now.getMonth();
-  const lmDate = new Date(ty, tm - 1, 1);
   const inMonth = (ts, y, mo) => { if (!ts) return false; const d = new Date(typeof ts==='number'?ts:ts); return d.getFullYear()===y&&d.getMonth()===mo; };
-  const wonTM = won.filter(l=>inMonth(l.created_at,ty,tm));
-  const wonLM = won.filter(l=>inMonth(l.created_at,lmDate.getFullYear(),lmDate.getMonth()));
+
+  // Période principale
+  let ty, tm, periodLabel;
+  if (dashPeriodMode === 'custom') {
+    ty = dashPeriodY; tm = dashPeriodM;
+    const pd = new Date(ty, tm, 1);
+    periodLabel = pd.toLocaleDateString('fr-FR', {month:'long', year:'numeric'});
+    periodLabel = periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1);
+  } else {
+    ty = now.getFullYear(); tm = now.getMonth();
+    periodLabel = 'ce mois';
+  }
+
+  // Période de comparaison
+  let cmpY, cmpM, cmpLabel;
+  if (dashPeriodMode === 'custom' && dashCompareMode) {
+    cmpY = dashCompareY; cmpM = dashCompareM;
+    const cd = new Date(cmpY, cmpM, 1);
+    cmpLabel = cd.toLocaleDateString('fr-FR', {month:'long', year:'numeric'});
+    cmpLabel = cmpLabel.charAt(0).toUpperCase() + cmpLabel.slice(1);
+  } else if (dashPeriodMode === 'simple') {
+    const lmDate = new Date(ty, tm - 1, 1);
+    cmpY = lmDate.getFullYear(); cmpM = lmDate.getMonth();
+    cmpLabel = 'mois précédent';
+  } else {
+    cmpY = null; cmpM = null; cmpLabel = null;
+  }
+
+  // KPIs période A
+  const wonTM  = won.filter(l=>inMonth(l.created_at,ty,tm));
   const newTM  = leads.filter(l=>inMonth(l.created_at,ty,tm));
   const caTM   = wonTM.reduce((s,l)=>s+l.value,0);
-  const caLM   = wonLM.reduce((s,l)=>s+l.value,0);
   const margeTM = wonTM.reduce((s,l)=>s+(l.margin||0),0);
-  const caDelta = caLM>0 ? Math.round((caTM-caLM)/caLM*100) : null;
+
+  // KPIs période B
+  const wonLM  = cmpY!==null ? won.filter(l=>inMonth(l.created_at,cmpY,cmpM)) : [];
+  const caLM   = wonLM.reduce((s,l)=>s+l.value,0);
+  const caDelta = (cmpY!==null && caLM>0) ? Math.round((caTM-caLM)/caLM*100) : null;
 
   // Commissions closer (20%)
   const myWon = me ? won.filter(l=>l.sdr===me) : [];
@@ -622,22 +706,47 @@ function renderDashboard() {
     return d.getFullYear()===t.getFullYear()&&d.getMonth()===t.getMonth()&&d.getDate()===t.getDate();
   });
 
+  // Period picker
+  const periodPickerHtml = dashPeriodMode === 'custom' ? `
+    <div class="period-picker">
+      <div class="period-picker-row">
+        <div class="period-picker-group">
+          <span class="period-picker-label">Période</span>
+          <select class="period-select" onchange="(function(v){var p=v.split('-');changeDashPeriod(p[0],p[1])})(this.value)">${buildMonthOptions(dashPeriodY,dashPeriodM)}</select>
+        </div>
+        ${dashCompareMode ? `
+        <div class="period-picker-sep">vs</div>
+        <div class="period-picker-group">
+          <span class="period-picker-label">Comparer avec</span>
+          <select class="period-select" onchange="(function(v){var p=v.split('-');changeDashCompare(p[0],p[1])})(this.value)">${buildMonthOptions(dashCompareY,dashCompareM)}</select>
+        </div>
+        <button class="period-btn-remove" onclick="toggleDashCompare()" title="Supprimer la comparaison">×</button>
+        ` : `
+        <button class="period-btn-add" onclick="toggleDashCompare()">+ Comparer</button>
+        `}
+      </div>
+    </div>
+  ` : '';
+
+  // Toggle button
+  const periodToggleHtml = `<button class="period-toggle-btn${dashPeriodMode==='custom'?' active':''}" onclick="toggleDashPeriodMode()">${dashPeriodMode==='custom'?'↑ Vue standard':'Choisir une période'}</button>`;
+
   const kpisHtml = isAdmin() ? `
-    <div class="kpi"><div class="kpi-val">${newTM.length}</div><div class="kpi-label">Nouveaux leads</div><div class="kpi-delta">ce mois</div></div>
+    <div class="kpi"><div class="kpi-val">${newTM.length}</div><div class="kpi-label">Nouveaux leads</div><div class="kpi-delta">${periodLabel}</div></div>
     <div class="kpi"><div class="kpi-val">${active.length}</div><div class="kpi-label">Leads actifs</div></div>
-    <div class="kpi"><div class="kpi-val">${wonTM.length}</div><div class="kpi-label">Deals gagnés</div><div class="kpi-delta" style="color:var(--green-t)">ce mois</div></div>
-    <div class="kpi"><div class="kpi-val" style="color:var(--green-t)">${caTM.toLocaleString('fr-FR')} €</div><div class="kpi-label">CA ce mois</div>${caDelta!==null?`<div class="kpi-delta" style="color:${caDelta>=0?'var(--green-t)':'var(--red-t)'}">${caDelta>=0?'↑':'↓'} ${Math.abs(caDelta)}% vs mois préc.</div>`:''}</div>
-    <div class="kpi"><div class="kpi-val">${caLM.toLocaleString('fr-FR')} €</div><div class="kpi-label">CA mois précédent</div><div class="kpi-delta" style="color:var(--g)">${wonLM.length} deal${wonLM.length!==1?'s':''}</div></div>
+    <div class="kpi"><div class="kpi-val">${wonTM.length}</div><div class="kpi-label">Deals gagnés</div><div class="kpi-delta" style="color:var(--green-t)">${periodLabel}</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--green-t)">${caTM.toLocaleString('fr-FR')} €</div><div class="kpi-label">CA · ${periodLabel}</div>${caDelta!==null?`<div class="kpi-delta" style="color:${caDelta>=0?'var(--green-t)':'var(--red-t)'}">${caDelta>=0?'↑':'↓'} ${Math.abs(caDelta)}% vs ${cmpLabel}</div>`:''}</div>
+    ${cmpY!==null?`<div class="kpi"><div class="kpi-val">${caLM.toLocaleString('fr-FR')} €</div><div class="kpi-label">CA · ${cmpLabel}</div><div class="kpi-delta" style="color:var(--g)">${wonLM.length} deal${wonLM.length!==1?'s':''}</div></div>`:`<div class="kpi"></div>`}
   ` : `
-    <div class="kpi"><div class="kpi-val">${newTM.length}</div><div class="kpi-label">Nouveaux leads</div><div class="kpi-delta">ce mois</div></div>
+    <div class="kpi"><div class="kpi-val">${newTM.length}</div><div class="kpi-label">Nouveaux leads</div><div class="kpi-delta">${periodLabel}</div></div>
     <div class="kpi"><div class="kpi-val">${active.length}</div><div class="kpi-label">Leads actifs</div></div>
-    <div class="kpi"><div class="kpi-val">${wonTM.length}</div><div class="kpi-label">Deals gagnés</div><div class="kpi-delta" style="color:var(--green-t)">ce mois</div></div>
+    <div class="kpi"><div class="kpi-val">${wonTM.length}</div><div class="kpi-label">Deals gagnés</div><div class="kpi-delta" style="color:var(--green-t)">${periodLabel}</div></div>
     <div class="kpi"><div class="kpi-val">${pipeline.toLocaleString('fr-FR')} €</div><div class="kpi-label">Pipeline total</div></div>
     <div class="kpi"><div class="kpi-val" style="color:var(--green-t)">${Math.round(myComm).toLocaleString('fr-FR')} €</div><div class="kpi-label">Mes commissions</div></div>
   `;
 
   const secondCardHtml = isAdmin() ? `
-    <div class="dc-title">CA · Ce mois — ${wonTM.length} deal${wonTM.length!==1?'s':''}</div>
+    <div class="dc-title">CA · ${periodLabel} — ${wonTM.length} deal${wonTM.length!==1?'s':''}</div>
     <div class="comm-bar">
       ${wonTM.map(l=>`
       <div class="cb-row">
@@ -647,22 +756,22 @@ function renderDashboard() {
           ${(l.margin||0)>0?`<div style="font-family:Montserrat,sans-serif;font-size:7px;color:var(--green-t);margin-top:2px">marge ${l.margin.toLocaleString('fr-FR')} €</div>`:''}
         </div>
       </div>`).join('')}
-      ${wonTM.length===0?'<div style="color:var(--g);font-size:14px;padding:20px 0">Aucun deal closé ce mois.</div>':''}
+      ${wonTM.length===0?`<div style="color:var(--g);font-size:14px;padding:20px 0">Aucun deal closé${dashPeriodMode==='custom'?' sur cette période':' ce mois'}.</div>`:''}
     </div>
     <div style="border-top:1px solid var(--l);margin-top:16px;padding-top:12px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><div class="kpi-label">CA ce mois</div><div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:300;color:var(--green-t)">${caTM.toLocaleString('fr-FR')} €</div></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><div class="kpi-label">Marge ce mois</div><div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:300;color:var(--w)">${margeTM.toLocaleString('fr-FR')} €</div></div>
-      <div style="display:flex;justify-content:space-between"><div class="kpi-label">CA mois précédent</div><div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:300;color:var(--g)">${caLM.toLocaleString('fr-FR')} €${caDelta!==null?' <span style="font-size:10px;color:'+(caDelta>=0?'var(--green-t)':'var(--red-t)')+'"> ('+( caDelta>=0?'+':'')+caDelta+'%)</span>':''}</div></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><div class="kpi-label">CA · ${periodLabel}</div><div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:300;color:var(--green-t)">${caTM.toLocaleString('fr-FR')} €</div></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><div class="kpi-label">Marge · ${periodLabel}</div><div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:300;color:var(--w)">${margeTM.toLocaleString('fr-FR')} €</div></div>
+      ${cmpY!==null?`<div style="display:flex;justify-content:space-between"><div class="kpi-label">CA · ${cmpLabel}</div><div style="font-family:Montserrat,sans-serif;font-size:14px;font-weight:300;color:var(--g)">${caLM.toLocaleString('fr-FR')} €${caDelta!==null?' <span style="font-size:10px;color:'+(caDelta>=0?'var(--green-t)':'var(--red-t)')+'"> ('+(caDelta>=0?'+':'')+caDelta+'%)</span>':''}</div></div>`:''}
     </div>
   ` : `
-    <div class="dc-title">Mes commissions · Ce mois</div>
+    <div class="dc-title">Mes commissions · ${periodLabel}</div>
     <div class="comm-bar">
       ${myWonTM.map(l=>`
       <div class="cb-row">
         <div><div class="cb-name">${escapeHtmlCrm(l.name)}</div><div class="cb-num">${escapeHtmlCrm(l.dest)}</div></div>
         <div class="cb-val">+${Math.round((l.margin||0)*0.20).toLocaleString('fr-FR')} €</div>
       </div>`).join('')}
-      ${myWonTM.length===0?'<div style="color:var(--g);font-size:14px;padding:20px 0">Aucun deal closé ce mois.</div>':''}
+      ${myWonTM.length===0?`<div style="color:var(--g);font-size:14px;padding:20px 0">Aucun deal closé${dashPeriodMode==='custom'?' sur cette période':' ce mois'}.</div>`:''}
     </div>
     <div style="border-top:1px solid var(--l);margin-top:16px;padding-top:16px;display:flex;justify-content:space-between;">
       <div class="kpi-label">Total commissions</div>
@@ -672,8 +781,12 @@ function renderDashboard() {
 
   document.getElementById('v-dashboard-inner').innerHTML = `
   <div style="padding:40px 32px;">
-    <div class="dash-title">Bonjour, ${escapeHtmlCrm(currentUserLabel())}</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+      <div class="dash-title">Bonjour, ${escapeHtmlCrm(currentUserLabel())}</div>
+      ${periodToggleHtml}
+    </div>
     <div class="dash-sub">${now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+    ${periodPickerHtml}
     <div class="kpis">${kpisHtml}</div>
     <div class="dash-grid">
       <div class="dash-card">
