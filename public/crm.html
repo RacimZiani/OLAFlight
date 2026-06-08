@@ -468,20 +468,6 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
       <label class="form-label">Valeur du deal (€)</label>
       <input class="form-input" id="nl-value" type="number" placeholder="0">
     </div>
-    <div class="form-group" id="nl-margin-group" style="display:none">
-      <label class="form-label">Marge (€)</label>
-      <input class="form-input" id="nl-margin" type="number" placeholder="0">
-    </div>
-    <div class="form-group" id="nl-status-group" style="display:none">
-      <label class="form-label">Statut</label>
-      <select class="form-select" id="nl-status">
-        <option value="qualification">Qualification</option>
-        <option value="devis_pending">Devis à préparer</option>
-        <option value="devis_sent">Devis envoyé</option>
-        <option value="won">Gagné ✓</option>
-        <option value="lost">Perdu</option>
-      </select>
-    </div>
     <div class="form-group">
       <label class="form-label">Prochain suivi</label>
       <input class="form-input" id="nl-followup" type="date">
@@ -1659,8 +1645,7 @@ function saveNewLead() {
     next_followup,
     notes: document.getElementById('nl-notes').value,
     value: parseInt(document.getElementById('nl-value').value, 10) || 0,
-    margin: isAdmin() ? (parseInt(document.getElementById('nl-margin')?.value, 10) || 0) : 0,
-    status: isAdmin() ? (document.getElementById('nl-status')?.value || 'qualification') : 'qualification',
+    status: 'qualification',
     urgent: false,
   };
   fetch('/api/leads', {
@@ -1674,8 +1659,7 @@ function saveNewLead() {
       return alert('Impossible de créer le lead : ' + (body.message || body.error || r.status));
     }
     closeNewLead();
-    ['nl-name','nl-contact','nl-dest','nl-dates','nl-notes','nl-value','nl-margin'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-    const nls = document.getElementById('nl-status'); if(nls) nls.value = 'qualification';
+    ['nl-name','nl-contact','nl-dest','nl-dates','nl-notes','nl-value'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('nl-followup').value = '';
     return fetchLeadsFromApi();
   }).catch(() => alert('Réseau indisponible'));
@@ -2043,11 +2027,6 @@ function refreshTopUser() {
   document.querySelectorAll('[data-admin-closer-only]').forEach((node) => {
     node.style.display = (isAdmin() || isCloser()) ? '' : 'none';
   });
-  // Champs marge/statut sur le formulaire nouveau lead — admins uniquement
-  const mg = document.getElementById('nl-margin-group');
-  const sg = document.getElementById('nl-status-group');
-  if (mg) mg.style.display = isAdmin() ? '' : 'none';
-  if (sg) sg.style.display = isAdmin() ? '' : 'none';
 }
 
 function startCrm() {
