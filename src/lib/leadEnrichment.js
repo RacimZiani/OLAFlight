@@ -95,30 +95,34 @@ export function resolveLeadDestination({
   confirmedRoute = null,
   conversationMessages = [],
 }) {
+  // 1. Si le LLM a explicitement fourni une destination, la parser d'abord.
+  //    On s'en sert comme référence pour détecter les faux positifs du serveur.
+  const raw = String(argsDestination || "").trim();
+  const argsRoute = raw && !/\bpas\s+d['']?/i.test(raw) ? parseRouteFromText(raw) : null;
+
+  // 2. Route confirmée par le serveur (calculée en amont dans agentRunner).
   if (confirmedRoute?.from || confirmedRoute?.to) {
     return formatDestinationLabel(confirmedRoute);
   }
 
-  const fromMsgs = extractRouteFromMessages(conversationMessages || []);
-  if (fromMsgs.from || fromMsgs.to) {
-    return formatDestinationLabel(fromMsgs);
+  // 3. Si le LLM a passé une destination valide, on s'y fie directement.
+  //    On évite de ré-extraire depuis les messages (source de faux positifs :
+  //    un message de contact, une phrase hors-sujet, peut matcher un aéroport
+  //    sans rapport avec la route réelle).
+  if (argsRoute?.from || argsRoute?.to) {
+    return formatDestinationLabel({
+      from: argsRoute.from,
+      to: argsRoute.to,
+      label: argsRoute.label || raw,
+    });
   }
 
-  const raw = String(argsDestination || "").trim();
   if (!raw) return existing?.destination || "";
 
   if (/\bpas\s+d['']?/i.test(raw)) {
     return existing?.destination || raw;
   }
 
-  const parsed = parseRouteFromText(raw);
-  if (parsed.from || parsed.to) {
-    return formatDestinationLabel({
-      from: parsed.from,
-      to: parsed.to,
-      label: parsed.label || raw,
-    });
-  }
   return raw;
 }
 
