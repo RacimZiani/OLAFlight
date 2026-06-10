@@ -44,36 +44,22 @@ const MANUAL_FR_ALIASES = {
 
 /** Mots FR courants — ne pas résoudre comme alias IATA (ex. « pas » → PAS Paros). */
 const BLOCKED_PLACE_WORDS = new Set([
-  "pas",
-  "non",
-  "oui",
-  "plus",
-  "sans",
-  "avec",
-  "pour",
-  "tres",
-  "très",
-  "bien",
-  "merci",
-  "ok",
-  "perso",
-  "personnel",
-  "hotel",
-  "hôtel",
-  "chauffeur",
-  "chauffeurs",
-  "entreprise",
-  "professionnel",
-  "ajd",
-  "meme",
-  "même",
-  "possible",
-  "semaine",
-  "tot",
-  "tôt",
-  "tel",
-  "tete",
-  "tête",
+  // Négations / conjonctions
+  "pas", "non", "oui", "mais", "car", "donc", "or", "ni", "que", "qui", "quoi",
+  // Prépositions / articles
+  "plus", "sans", "avec", "pour", "sur", "sous", "par", "des", "les", "une",
+  "ses", "nos", "vos", "tes", "mes", "ton", "son", "leur",
+  // Pronoms personnels — dangereux : MOI=Mitiaro, TON=Tonga, BON=Bandung, etc.
+  "moi", "toi", "lui", "eux", "elle", "elles", "ils", "nous", "vous",
+  // Adjectifs / adverbes courants
+  "bien", "tres", "très", "même", "meme", "tout", "tous", "peu", "bon", "mal",
+  "net", "sol", "rue", "eau", "ami", "ici", "loi", "roi", "sel", "fin",
+  // Termes métier (déjà là + extensions)
+  "ok", "merci", "perso", "personnel", "hotel", "hôtel", "chauffeur", "chauffeurs",
+  "entreprise", "professionnel", "ajd", "possible", "semaine", "tot", "tôt",
+  "tel", "tete", "tête",
+  // Termes voyage non-IATA
+  "vol", "vie", "mer", "mot", "use",
 ]);
 
 /** Codes 3 lettres qui ne sont pas des aéroports dans nos conversations. */
@@ -141,7 +127,7 @@ function isShortCityReply(text) {
   const t = String(text || "").trim();
   if (!t || t.length > 55 || t.includes("\n")) return false;
   if (/^[\d\s+().@-]+$/.test(t)) return false;
-  if (/^(oui|non|ok|yes|no|merci|thanks|business|first|entreprise|corporate)$/i.test(t)) return false;
+  if (/^(oui|non|ok|yes|no|merci|thanks|business|first|entreprise|corporate|moi|toi|lui|eux|nous|vous|bien|tout|bon|mal|vol|vie|mer|sur|par|des|les|une|ses|nos|vos|tes|mes|ton|son)$/i.test(t)) return false;
   if (
     /\b(?:ajd|aujourd|semaine|demain|asap|possible|passager|chauffeur|h[oô]tel|perso|en\s+t[eê]te)\b/i.test(t)
   ) {
