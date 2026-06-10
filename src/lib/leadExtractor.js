@@ -6,7 +6,7 @@ import { createLogger } from "../logger.js";
 const log = createLogger("lead-extractor");
 
 const EXTRACTION_PROMPT =
-  'Extrait les infos du lead Ola Flight depuis la conversation et renvoie UNIQUEMENT un JSON minifié strict (pas de markdown), schéma : {"client_name":string,"first_name":string,"last_name":string,"email":string,"client_contact":string,"canal":"whatsapp"|"instagram","destination":string,"dates":string,"classe":string,"passagers":number}. Si une info manque, mets une chaîne vide.';
+  'Extrait les infos du lead Ola Flight depuis la conversation et renvoie UNIQUEMENT un JSON minifié strict (pas de markdown), schéma : {"client_name":string,"first_name":string,"last_name":string,"email":string,"client_contact":string,"canal":"whatsapp"|"instagram","destination":string,"dates":string,"classe":string,"passagers":number}. RÈGLES IMPÉRATIVES : (1) "destination" = EXACTEMENT les villes/aéroports tels que le client les a énoncés (ex: "Paris Cannes", "CDG → MAD") — ne jamais substituer, interpréter, ni remplacer par une ville différente. (2) Si une info manque, mets une chaîne vide — ne jamais inventer.';
 
 // Reçoit l'historique conversation, demande à Claude d'en extraire les 4 infos,
 // renvoie un objet `lead` prêt à insérer (ou null si infos critiques manquantes).
