@@ -11,11 +11,15 @@ function flattenZodError(err) {
   }));
 }
 
-function runSchema(schema, value) {
+function runSchema(schema, value, where = "unknown") {
   if (!schema) return { ok: true, value };
   const result = schema.safeParse ? schema.safeParse(value) : null;
   if (!result) return { ok: true, value }; // pas un zod schema → on n'applique rien
-  if (!result.success) return { ok: false, issues: flattenZodError(result.error) };
+  if (!result.success) {
+    const issues = flattenZodError(result.error);
+    console.warn(`[validate] échec (${where}):`, JSON.stringify(issues));
+    return { ok: false, issues };
+  }
   return { ok: true, value: result.data };
 }
 
@@ -27,7 +31,7 @@ export function validate({ body, query, params } = {}) {
       ["params", params, req.params],
     ];
     for (const [where, schema, value] of checks) {
-      const out = runSchema(schema, value);
+      const out = runSchema(schema, value, where);
       if (!out.ok) {
         return res.status(400).json({
           error: `Validation échouée (${where})`,
