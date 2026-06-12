@@ -135,6 +135,69 @@ export function isEmailConfigured() {
 }
 
 /**
+ * Envoi simplifié d'un devis (sans options multi-compagnies).
+ * Utilisé par dalsim / closeuse pour les devis "simples".
+ * @returns {Promise<{ ok: boolean, messageId?: string, error?: string }>}
+ */
+export async function sendSimpleDevisEmail({ devis, toEmail, baseUrl }) {
+  const resend = getResend();
+  if (!resend) return { ok: false, error: "RESEND_API_KEY manquante — configurer dans Railway" };
+  if (!toEmail) return { ok: false, error: "Email destinataire manquant" };
+
+  const pdfUrl = buildPublicDevisPdfUrl(devis.id, { publicBaseUrl: baseUrl });
+  const trajet = [devis.ville_dep, devis.ville_arr].filter(Boolean).join(" → ");
+  const retour = [devis.horaire_dep_retour, devis.horaire_arr_retour].filter(Boolean).join(" → ");
+  const services = Array.isArray(devis.services_inclus) ? devis.services_inclus.join(" · ") : String(devis.services_inclus || "");
+  const firstName = escapeHtml((devis.client_name || "Client").split(" ")[0]);
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><style>body{margin:0;padding:0;background:#0a0a0a !important;}*{-webkit-text-size-adjust:none;}</style></head>
+<body style="margin:0;padding:0;background:#0a0a0a !important;background-color:#0a0a0a !important;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;background-color:#0a0a0a;min-height:100vh">
+  <tr><td align="center" style="padding:32px 16px;background:#0a0a0a">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#111111;background-color:#111111;border:1px solid #2a2a2a">
+      <tr><td style="padding:40px 32px;background:#111111;background-color:#111111">
+        <div style="margin:0 0 32px"><img src="${escapeHtml(baseUrl)}/images/logo-texte.png" alt="Ola Flight" style="height:100px;width:auto;display:block"></div>
+        <h1 style="font-family:Georgia,serif;font-weight:300;font-size:26px;color:#f8f5f0 !important;margin:0 0 14px;line-height:1.3">Votre devis, ${firstName}</h1>
+        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:20px">
+          ${trajet ? `<tr><td style="padding:10px 0;border-bottom:1px solid #2a2a2a;font-family:Arial,sans-serif;font-size:13px;color:#888 !important">Trajet</td><td style="padding:10px 0;border-bottom:1px solid #2a2a2a;text-align:right;font-family:Arial,sans-serif;font-size:13px;color:#f8f5f0 !important">${escapeHtml(trajet)}</td></tr>` : ""}
+          ${devis.compagnie ? `<tr><td style="padding:10px 0;border-bottom:1px solid #2a2a2a;font-family:Arial,sans-serif;font-size:13px;color:#888 !important">Compagnie</td><td style="padding:10px 0;border-bottom:1px solid #2a2a2a;text-align:right;font-family:Arial,sans-serif;font-size:13px;color:#f8f5f0 !important">${escapeHtml(devis.compagnie)}</td></tr>` : ""}
+          ${devis.horaire_dep ? `<tr><td style="padding:10px 0;border-bottom:1px solid #2a2a2a;font-family:Arial,sans-serif;font-size:13px;color:#888 !important">Aller</td><td style="padding:10px 0;border-bottom:1px solid #2a2a2a;text-align:right;font-family:Arial,sans-serif;font-size:13px;color:#f8f5f0 !important">${escapeHtml(devis.horaire_dep)}${devis.horaire_arr ? " → " + escapeHtml(devis.horaire_arr) : ""}</td></tr>` : ""}
+          ${retour ? `<tr><td style="padding:10px 0;border-bottom:1px solid #2a2a2a;font-family:Arial,sans-serif;font-size:13px;color:#888 !important">Retour</td><td style="padding:10px 0;border-bottom:1px solid #2a2a2a;text-align:right;font-family:Arial,sans-serif;font-size:13px;color:#f8f5f0 !important">${escapeHtml(retour)}</td></tr>` : ""}
+          ${services ? `<tr><td style="padding:10px 0;border-bottom:1px solid #2a2a2a;font-family:Arial,sans-serif;font-size:13px;color:#888 !important">Inclus</td><td style="padding:10px 0;border-bottom:1px solid #2a2a2a;text-align:right;font-family:Arial,sans-serif;font-size:13px;color:#f8f5f0 !important">${escapeHtml(services)}</td></tr>` : ""}
+          ${Number(devis.prix_vente) > 0 ? `<tr><td style="padding:14px 0;font-family:Arial,sans-serif;font-size:13px;color:#888 !important">Prix de vente</td><td style="padding:14px 0;text-align:right;font-family:Georgia,serif;font-size:22px;color:#c9a96e !important;font-weight:600">${formatMoney(devis.prix_vente)}</td></tr>` : ""}
+        </table>
+        <p style="margin:24px 0 8px;text-align:center">
+          <a href="${escapeHtml(pdfUrl)}" style="display:inline-block;padding:14px 28px;background:#f8f5f0;color:#000 !important;text-decoration:none;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-family:Arial,sans-serif">TÉLÉCHARGER LE PDF</a>
+        </p>
+        <p style="font-size:11px;color:#444 !important;line-height:1.6;margin-top:28px;font-family:Arial,sans-serif">Un conseiller Ola Flight reste disponible pour toute question.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: config.smtp.from || "Ola Flight <noreply@olaflight.fr>",
+      to: toEmail,
+      subject: `Ola Flight — Votre devis`,
+      html,
+    });
+    if (error) {
+      log.error(`resend simple error: ${JSON.stringify(error)}`);
+      return { ok: false, error: error.message || JSON.stringify(error) };
+    }
+    log.info(`simple devis email sent → ${toEmail} (${devis.id})`);
+    return { ok: true, messageId: data?.id };
+  } catch (e) {
+    log.error(`sendSimpleDevisEmail failed: ${e?.message || e}`);
+    return { ok: false, error: e?.message || String(e) };
+  }
+}
+
+/**
  * @returns {Promise<{ ok: boolean, messageId?: string, error?: string }>}
  */
 export async function sendDevisEmailToClient({ devis, lead, baseUrl, lang = "fr" }) {
