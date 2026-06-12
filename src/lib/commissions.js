@@ -38,7 +38,7 @@ const PRIVATE_FINANCIAL_FIELDS = [
 
 export function sanitizeDevisForRole(devis, role) {
   const r = String(role || "").toLowerCase();
-  if (r === "admin" || r === "dalsim") return devis; // accès complet financier
+  if (r === "admin") return devis; // prix_revient + marge : admin seulement
   const clone = { ...devis };
   for (const f of PRIVATE_FINANCIAL_FIELDS) delete clone[f];
   return clone;
