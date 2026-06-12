@@ -215,12 +215,35 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 
   <div class="form-row">
     <div class="form-group">
-      <label class="form-label">Départ <span class="req">*</span></label>
-      <input class="form-input" type="text" id="f-dep" placeholder="CDG · 09:30">
+      <label class="form-label">Ville départ <span class="req">*</span></label>
+      <input class="form-input" type="text" id="f-ville-dep" placeholder="Paris CDG">
     </div>
     <div class="form-group">
-      <label class="form-label">Arrivée <span class="req">*</span></label>
-      <input class="form-input" type="text" id="f-arr" placeholder="DXB · 19:45">
+      <label class="form-label">Ville arrivée <span class="req">*</span></label>
+      <input class="form-input" type="text" id="f-ville-arr" placeholder="Dubaï DXB">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label">Heure départ <span class="req">*</span></label>
+      <input class="form-input" type="text" id="f-dep" placeholder="09:30">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Heure arrivée <span class="req">*</span></label>
+      <input class="form-input" type="text" id="f-arr" placeholder="19:45">
+    </div>
+  </div>
+
+  <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);padding:16px 0 8px;border-top:1px solid var(--l);margin-top:4px;">Vol retour (optionnel)</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label">Départ retour</label>
+      <input class="form-input" type="text" id="f-dep-retour" placeholder="DXB · 22:00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Arrivée retour</label>
+      <input class="form-input" type="text" id="f-arr-retour" placeholder="CDG · 06:30">
     </div>
   </div>
 
@@ -420,7 +443,7 @@ function openDevisFromLead(l, originPage) {
   };
   document.getElementById('dfi-name').value = name;
   document.getElementById('dfi-details').textContent = `${trajet} · ${dates} · ${classe} · ${pax} pax`;
-  ['f-compagnie', 'f-dep', 'f-arr', 'f-prix-four', 'f-prix-vente', 'f-prix-marche', 'f-notes', 'f-compagnie-custom'].forEach(id => {
+  ['f-compagnie', 'f-ville-dep', 'f-ville-arr', 'f-dep', 'f-arr', 'f-dep-retour', 'f-arr-retour', 'f-prix-four', 'f-prix-vente', 'f-prix-marche', 'f-notes', 'f-compagnie-custom'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('f-compagnie-custom').style.display = 'none';
@@ -605,7 +628,7 @@ function openFreeDevis() {
   currentLead = { leadId: null, name: '', trajet: '', dates: '', classe: '', pax: 1, apporteur_name: null, raw: null };
   document.getElementById('dfi-name').value = '';
   document.getElementById('dfi-details').textContent = 'Devis libre — sans lead';
-  ['f-compagnie', 'f-dep', 'f-arr', 'f-prix-four', 'f-prix-vente', 'f-prix-marche', 'f-notes', 'f-compagnie-custom'].forEach(id => {
+  ['f-compagnie', 'f-ville-dep', 'f-ville-arr', 'f-dep', 'f-arr', 'f-dep-retour', 'f-arr-retour', 'f-prix-four', 'f-prix-vente', 'f-prix-marche', 'f-notes', 'f-compagnie-custom'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('f-compagnie-custom').style.display = 'none';
@@ -635,23 +658,29 @@ function getCompagnieName() {
 
 function sendDevis() {
   const comp = getCompagnieName();
+  const villeDep = document.getElementById('f-ville-dep').value;
+  const villeArr = document.getElementById('f-ville-arr').value;
   const dep = document.getElementById('f-dep').value;
   const arr = document.getElementById('f-arr').value;
+  const depRetour = document.getElementById('f-dep-retour').value;
+  const arrRetour = document.getElementById('f-arr-retour').value;
   const prixFour = document.getElementById('f-prix-four').value;
   const prixVente = document.getElementById('f-prix-vente').value;
-  if (!comp || !dep || !arr || !prixFour || !prixVente) {
+  if (!comp || !villeDep || !villeArr || !dep || !arr || !prixFour || !prixVente) {
     alert('Merci de remplir tous les champs obligatoires (*)');
     return;
   }
   const marche = document.getElementById('f-prix-marche').value;
   const services = selectedServices().join(' · ');
+  const retourLine = depRetour ? `<div style="color:var(--w)"><strong style="color:var(--g)">Retour :</strong> ${depRetour} → ${arrRetour}</div>` : '';
   const recap = `
     <div style="background:var(--b3);border:1px solid var(--l);padding:16px;font-size:14px;line-height:2;">
       <div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:10px">Récapitulatif</div>
       <div style="color:var(--w)"><strong style="color:var(--g)">Client :</strong> ${escapeHtml(document.getElementById('dfi-name').value.trim() || currentLead.name)}</div>
-      <div style="color:var(--w)"><strong style="color:var(--g)">Destination :</strong> ${escapeHtml(currentLead.trajet)}</div>
+      <div style="color:var(--w)"><strong style="color:var(--g)">Trajet :</strong> ${escapeHtml(villeDep)} → ${escapeHtml(villeArr)}</div>
       <div style="color:var(--w)"><strong style="color:var(--g)">Compagnie :</strong> ${escapeHtml(comp)}</div>
-      <div style="color:var(--w)"><strong style="color:var(--g)">Horaires :</strong> ${dep} → ${arr}</div>
+      <div style="color:var(--w)"><strong style="color:var(--g)">Aller :</strong> ${dep} → ${arr}</div>
+      ${retourLine}
       <div style="color:var(--yt)"><strong style="color:var(--g)">Prix vente :</strong> ${parseFloat(prixVente).toLocaleString('fr-FR')} €</div>
       ${marche ? `<div style="color:var(--g)"><strong style="color:var(--g)">Prix marché :</strong> ${parseFloat(marche).toLocaleString('fr-FR')} €</div>` : ''}
       ${services ? `<div style="color:var(--g)"><strong style="color:var(--g)">Inclus :</strong> ${escapeHtml(services)}</div>` : ''}
@@ -673,14 +702,16 @@ async function confirmSend() {
       currentLead.name = editedName;
     }
     const comp = getCompagnieName();
-    const dep = document.getElementById('f-dep').value;
-    const arr = document.getElementById('f-arr').value;
     const body = {
       ...(currentLead.leadId ? { lead_id: currentLead.leadId } : {}),
       ...(editedName ? { client_name: editedName } : {}),
       compagnie: comp,
-      horaire_dep: dep,
-      horaire_arr: arr,
+      ville_dep: document.getElementById('f-ville-dep').value,
+      ville_arr: document.getElementById('f-ville-arr').value,
+      horaire_dep: document.getElementById('f-dep').value,
+      horaire_arr: document.getElementById('f-arr').value,
+      horaire_dep_retour: document.getElementById('f-dep-retour').value,
+      horaire_arr_retour: document.getElementById('f-arr-retour').value,
       prix_revient: parseFloat(document.getElementById('f-prix-four').value) || 0,
       prix_vente: parseFloat(document.getElementById('f-prix-vente').value) || 0,
       prix_marche: parseFloat(document.getElementById('f-prix-marche').value) || 0,
@@ -741,10 +772,13 @@ async function openDevisDetail(lead) {
       return;
     }
     const d = items[items.length - 1];
+    const trajet = [d.ville_dep, d.ville_arr].filter(Boolean).join(' → ') || '—';
+    const retour = [d.horaire_dep_retour, d.horaire_arr_retour].filter(Boolean).join(' → ');
     const rows = [
+      ['Trajet', trajet],
       ['Compagnie', d.compagnie || '—'],
-      ['Départ', d.horaire_dep || '—'],
-      ['Arrivée', d.horaire_arr || '—'],
+      ['Départ aller', [d.horaire_dep, d.horaire_arr].filter(Boolean).join(' → ') || '—'],
+      ...(retour ? [['Retour', retour]] : []),
       ['Prix de vente', d.prix_vente > 0 ? fmtEuro(d.prix_vente) : '—'],
       ['Services', Array.isArray(d.services_inclus) && d.services_inclus.length ? d.services_inclus.join(' · ') : '—'],
       ['Notes', d.notes || '—'],
