@@ -51,6 +51,9 @@ router.get("/", validate({ query: devisQuerySchema }), async (req, res, next) =>
   try {
     const store = await getStore();
     let items = await store.devis.list();
+    if (req.query.lead_id) {
+      items = items.filter(d => String(d.lead_id) === String(req.query.lead_id));
+    }
     // Le rôle vient de la session JWT (req.user.role) — la query.role legacy est
     // ignorée pour ne pas pouvoir réclamer un rôle plus élevé via l'URL.
     const role = normalizeRole(req.user.role);
@@ -112,7 +115,7 @@ router.post("/", requireDevis, validate({ body: devisCreateSchema }), async (req
       });
     }
 
-    res.json({ item: devis });
+    res.json({ item: sanitizeDevisForRole(devis, req.user.role) });
   } catch (e) { next(e); }
 });
 
@@ -290,7 +293,7 @@ router.patch(
         } catch { /* schema-tolerant */ }
       }
 
-      res.json({ item: updated, pdf_url });
+      res.json({ item: sanitizeDevisForRole(updated, req.user.role), pdf_url });
     } catch (e) { next(e); }
   }
 );
