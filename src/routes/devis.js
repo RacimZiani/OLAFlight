@@ -12,7 +12,7 @@ import { buildPublicDevisPdfUrl, publicDevisPdfPath } from "../lib/publicUrl.js"
 import { HttpError } from "../middleware/errorHandler.js";
 import { requireBackoffice, requireRole, requireDevis, requireAdmin } from "../middleware/auth.js";
 import { normalizeAdminOptions } from "../lib/draftDevis.js";
-import { sendDevisEmailToClient, isEmailConfigured } from "../lib/email.js";
+import { sendDevisEmailToClient, sendSimpleDevisEmail, isEmailConfigured } from "../lib/email.js";
 import { resolvePublicBaseUrl } from "../lib/publicUrl.js";
 import { canAccessLead, normalizeRole, ROLES, filterLeadsForUser } from "../lib/roles.js";
 
@@ -177,6 +177,7 @@ const adminPricingSchema = z.object({
 });
 
 const devisPatchSchema = z.object({
+  client_name: z.string().optional(),
   compagnie: z.string().optional(),
   ville_dep: z.string().optional(),
   ville_arr: z.string().optional(),
@@ -188,6 +189,7 @@ const devisPatchSchema = z.object({
   prix_vente: z.coerce.number().min(0).optional(),
   prix_marche: z.coerce.number().min(0).optional(),
   services_inclus: z.union([z.array(z.string()), z.string()]).optional(),
+  notes: z.string().optional(),
   options: z.array(optionEditSchema).max(3).optional(),
   hotels: z.array(hotelEditSchema).optional(),
   driver: driverEditSchema.optional(),
@@ -235,13 +237,19 @@ router.patch(
         : undefined;
 
       const patch = {
-        ...(body.compagnie != null   ? { compagnie: body.compagnie } : {}),
-        ...(body.horaire_dep != null ? { horaire_dep: body.horaire_dep } : {}),
-        ...(body.horaire_arr != null ? { horaire_arr: body.horaire_arr } : {}),
+        ...(body.client_name != null  ? { client_name: body.client_name } : {}),
+        ...(body.compagnie != null    ? { compagnie: body.compagnie } : {}),
+        ...(body.ville_dep != null    ? { ville_dep: body.ville_dep } : {}),
+        ...(body.ville_arr != null    ? { ville_arr: body.ville_arr } : {}),
+        ...(body.horaire_dep != null  ? { horaire_dep: body.horaire_dep } : {}),
+        ...(body.horaire_arr != null  ? { horaire_arr: body.horaire_arr } : {}),
+        ...(body.horaire_dep_retour != null ? { horaire_dep_retour: body.horaire_dep_retour } : {}),
+        ...(body.horaire_arr_retour != null ? { horaire_arr_retour: body.horaire_arr_retour } : {}),
         ...(body.prix_revient != null ? { prix_revient: body.prix_revient } : {}),
         ...(body.prix_vente != null   ? { prix_vente: body.prix_vente } : {}),
         ...(body.prix_marche != null  ? { prix_marche: body.prix_marche } : {}),
         ...(services_inclus !== undefined ? { services_inclus } : {}),
+        ...(body.notes != null        ? { notes: body.notes } : {}),
         ...(body.options !== undefined ? { options: body.options } : {}),
         ...(body.hotels !== undefined ? { hotels: body.hotels } : {}),
         ...(body.driver !== undefined ? { driver: body.driver } : {}),
@@ -451,6 +459,42 @@ router.post(
     } catch (e) {
       next(e);
     }
+  }
+);
+
+// ─── Envoi email simple (dalsim / closeuse) ──────────────────────────
+const sendSimpleSchema = z.object({
+  email: z.string().email().optional(),
+});
+
+router.post(
+  "/:id/send-simple",
+  requireDevis,
+  validate({ params: idParamSchema, body: sendSimpleSchema }),
+  async (req, res, next) => {
+    try {
+      const store = await getStore();
+      const devis = await store.devis.findById(req.params.id);
+      if (!devis) throw new HttpError(404, "Devis introuvable");
+      if (!devis.pdf_url) throw new HttpError(400, "PDF non généré — validez d'abord le devis pour générer le PDF");
+
+      const lead = devis.lead_id ? await store.leads.findById(devis.lead_id) : null;
+
+      const emailRegex = /[^\s@]+@[^\s@]+\.[^\s@]+/;
+      const toEmail = req.body.email
+        || [lead?.client_contact, lead?.notes]
+            .map(s => String(s || "").match(emailRegex)?.[0])
+            .find(Boolean)
+        || "";
+
+      if (!toEmail) throw new HttpError(400, "Aucune adresse email — renseignez une adresse dans le formulaire");
+
+      const baseUrl = resolvePublicBaseUrl(req);
+      const sent = await sendSimpleDevisEmail({ devis, toEmail, baseUrl });
+      if (!sent.ok) throw new HttpError(502, sent.error || "Envoi email échoué");
+
+      res.json({ ok: true, messageId: sent.messageId, email: toEmail });
+    } catch (e) { next(e); }
   }
 );
 
