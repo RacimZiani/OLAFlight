@@ -107,6 +107,7 @@ export const devisCreateSchema = z.object({
 
 export const devisQuerySchema = z.object({
   role: z.enum(["admin", "dalsim", "closeuse", "agent"]).optional().default("admin"),
+  lead_id: z.string().optional(),
 });
 
 // ─── /api/admin/scrape & flights ─────────────────────────
