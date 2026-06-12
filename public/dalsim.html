@@ -148,6 +148,15 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 .ddr-val{color:var(--w);}
 .ddr-val.yt{color:var(--yt);}
 .pdf-link{display:block;text-align:center;padding:14px;border:1px solid var(--l2);color:var(--w);text-decoration:none;font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;margin:16px 0;}
+.dv-card{background:var(--l);border-radius:16px;padding:18px;margin-bottom:14px;}
+.dv-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.dv-card-client{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:600;color:var(--w);}
+.dv-card-date{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:0.08em;color:var(--g3);}
+.dv-card-trajet{font-family:'Montserrat',sans-serif;font-size:10px;letter-spacing:0.05em;color:var(--g2);margin-bottom:8px;}
+.dv-card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+.dv-card-prix{font-family:'Montserrat',sans-serif;font-size:15px;font-weight:700;color:var(--w);}
+.dv-card-pdf{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gt);text-decoration:none;padding:7px 14px;border:1px solid var(--l2);border-radius:8px;}
+.dv-card-pdf:hover{color:var(--w);}
 /* SUCCESS TOAST */
 .toast{position:fixed;bottom:80px;left:20px;right:20px;background:var(--gt);color:var(--b);padding:16px 20px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:3px;text-transform:uppercase;z-index:300;display:none;text-align:center;}
 .toast.show{display:block;animation:toastIn .3s ease;}
@@ -190,6 +199,14 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 
 <!-- ═══ PAGE DEVIS FORM ═══ -->
 <div class="page" id="page-devis">
+  <!-- Sous-onglets Création / Mes devis -->
+  <div class="pipeline-filters" id="devis-tabs" style="margin-bottom:16px;">
+    <button type="button" class="pf-btn active" id="dtab-create" onclick="showDevisTab('create')">Création</button>
+    <button type="button" class="pf-btn" id="dtab-list" onclick="showDevisTab('list')">Mes devis</button>
+  </div>
+
+  <!-- ── TAB : CRÉATION ── -->
+  <div id="devis-tab-create">
   <div class="form-header" id="devis-client-info">
     <div class="fh-label">Client — nom complet</div>
     <input class="fh-val-input" id="dfi-name" value="—" placeholder="Prénom Nom">
@@ -305,6 +322,17 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 
   <button type="button" class="btn-send" id="btn-send-devis">Valider le devis</button>
   <button class="btn-skip" style="width:100%;margin-top:8px;" onclick="showPage(devisOriginPage)">← Retour</button>
+  </div><!-- /devis-tab-create -->
+
+  <!-- ── TAB : MES DEVIS ── -->
+  <div id="devis-tab-list" style="display:none;">
+    <div id="devis-list-loading" style="text-align:center;padding:40px;color:var(--g3);font-size:12px;letter-spacing:0.08em;">Chargement…</div>
+    <div id="devis-list-cards"></div>
+    <div class="empty" id="devis-list-empty" hidden>
+      <div class="empty-icon">◇</div>
+      <div class="empty-text">Aucun devis pour l'instant</div>
+    </div>
+  </div>
 </div>
 
 <!-- ═══ PAGE PIPELINE ═══ -->
@@ -822,6 +850,71 @@ function startPolling() {
 }
 if (window.OlaAuth && window.OlaAuth.user) startPolling();
 else document.addEventListener('ola:auth', startPolling, { once: true });
+
+// ── Sous-onglets Devis ──────────────────────────────────────
+function showDevisTab(tab) {
+  document.getElementById('devis-tab-create').style.display = tab === 'create' ? '' : 'none';
+  document.getElementById('devis-tab-list').style.display   = tab === 'list'   ? '' : 'none';
+  document.getElementById('dtab-create').classList.toggle('active', tab === 'create');
+  document.getElementById('dtab-list').classList.toggle('active', tab === 'list');
+  if (tab === 'list') loadDevisList();
+}
+
+async function loadDevisList() {
+  const loadEl  = document.getElementById('devis-list-loading');
+  const cardsEl = document.getElementById('devis-list-cards');
+  const emptyEl = document.getElementById('devis-list-empty');
+  loadEl.hidden  = false;
+  cardsEl.innerHTML = '';
+  emptyEl.hidden = true;
+
+  try {
+    const res = await API('/api/devis');
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    const list = data.items || [];
+    loadEl.hidden = true;
+    if (!list.length) { emptyEl.hidden = false; return; }
+
+    list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    cardsEl.innerHTML = list.map(d => {
+      const client = escapeHtml(d.client_name || '—');
+      const comp   = escapeHtml(d.compagnie || '');
+      const dep    = escapeHtml(d.ville_dep || d.horaire_dep || '');
+      const arr    = escapeHtml(d.ville_arr || d.horaire_arr || '');
+      const trajet = dep && arr ? `${dep} → ${arr}` : (comp || '—');
+      const prix   = d.prix_vente ? `${Number(d.prix_vente).toLocaleString('fr-FR')} €` : '—';
+      const date   = d.created_at ? new Date(d.created_at).toLocaleDateString('fr-FR', {day:'2-digit',month:'short',year:'numeric'}) : '';
+      const pdfBtn = d.pdf_url
+        ? `<a class="dv-card-pdf" href="${escapeHtml(d.pdf_url)}" target="_blank">↗ PDF</a>`
+        : `<button type="button" class="dv-card-pdf" onclick="regenPdf('${escapeHtml(d.id)}')">Générer PDF</button>`;
+      return `<div class="dv-card">
+        <div class="dv-card-top">
+          <div class="dv-card-client">${client}</div>
+          <div class="dv-card-date">${date}</div>
+        </div>
+        <div class="dv-card-trajet">${comp ? comp + ' — ' : ''}${trajet}</div>
+        <div class="dv-card-footer">
+          <div class="dv-card-prix">${prix}</div>
+          ${pdfBtn}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    loadEl.hidden = true;
+    cardsEl.innerHTML = `<div style="color:#e87;text-align:center;padding:30px;font-size:12px;">Erreur chargement devis</div>`;
+  }
+}
+
+async function regenPdf(devisId) {
+  try {
+    const res = await API(`/api/devis/${devisId}`, { method: 'PATCH', body: JSON.stringify({}) });
+    if (!res.ok) throw new Error(res.status);
+    await loadDevisList();
+  } catch(e) {
+    alert('Erreur génération PDF');
+  }
+}
 </script>
 </body>
 </html>
