@@ -157,6 +157,12 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 .dv-card-prix{font-family:'Montserrat',sans-serif;font-size:15px;font-weight:700;color:var(--w);}
 .dv-card-pdf{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gt);text-decoration:none;padding:7px 14px;border:1px solid var(--l2);border-radius:8px;}
 .dv-card-pdf:hover{color:var(--w);}
+.dv-card-actions{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(245,243,239,0.08);}
+.dv-card-btn-act{flex:1;font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--g2);background:none;border:1px solid var(--l);padding:9px 6px;cursor:pointer;transition:all .2s;text-align:center;text-decoration:none;display:inline-block;}
+.dv-card-btn-act:hover{color:var(--w);border-color:var(--l2);}
+.dv-card-btn-act.act-primary{color:var(--w);border-color:var(--l2);}
+.sem-detected{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--g2);line-height:1.7;padding:12px 14px;background:var(--b3);border:1px solid var(--l);margin-bottom:16px;}
+.sem-detected strong{color:var(--w);}
 /* SUCCESS TOAST */
 .toast{position:fixed;bottom:80px;left:20px;right:20px;background:var(--gt);color:var(--b);padding:16px 20px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:3px;text-transform:uppercase;z-index:300;display:none;text-align:center;}
 .toast.show{display:block;animation:toastIn .3s ease;}
@@ -392,6 +398,23 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
   </div>
 </div>
 
+<!-- MODAL ENVOI EMAIL -->
+<div class="modal-bg" id="modal-send-email" onclick="closeSendEmailModal(event)">
+  <div class="modal">
+    <div class="modal-title">
+      <span>Envoyer le devis</span>
+      <span class="modal-close" onclick="closeSendEmailModal()">✕</span>
+    </div>
+    <div id="sem-info" class="sem-detected" style="display:none;"></div>
+    <div class="form-group">
+      <label class="form-label">Email destinataire</label>
+      <input class="form-input" type="email" id="sem-email" placeholder="client@email.com">
+    </div>
+    <button type="button" class="btn-send" id="btn-confirm-send-email" onclick="confirmSendEmail()">Envoyer par email</button>
+    <button class="btn-skip" style="width:100%;margin-top:8px;" onclick="closeSendEmailModal()">Annuler</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast">✓ Devis envoyé au client</div>
 
@@ -418,7 +441,10 @@ const API = (path, opts = {}) =>
 let currentLead = {};
 let devisOriginPage = 'notifs';
 let allLeadsCache = [];
+let devisListCache = [];
 let pipelineFilter = 'all';
+let currentEditingDevisId = null;
+let currentSendDevisId = null;
 
 const STATUS_UI = {
   qualification: { label: 'Qualification', cls: 's-new' },
@@ -483,6 +509,8 @@ function openDevisFromLead(l, originPage) {
   document.getElementById('margin-preview').style.display = 'none';
   document.getElementById('opt-pdf').checked = true;
   document.getElementById('opt-send').checked = false;
+  currentEditingDevisId = null;
+  document.getElementById('btn-send-devis').textContent = 'Valider le devis';
   showPage('devis');
 }
 
@@ -668,6 +696,8 @@ function openFreeDevis() {
   document.getElementById('margin-preview').style.display = 'none';
   document.getElementById('opt-pdf').checked = true;
   document.getElementById('opt-send').checked = false;
+  currentEditingDevisId = null;
+  document.getElementById('btn-send-devis').textContent = 'Valider le devis';
   showPage('devis');
 }
 
@@ -747,17 +777,21 @@ async function confirmSend() {
       notes: document.getElementById('f-notes').value,
       apporteur_name: currentLead.apporteur_name || null,
     };
-    const r = await API('/api/devis', { method: 'POST', body: JSON.stringify(body) });
+    const isEditing = Boolean(currentEditingDevisId);
+    const url = isEditing ? `/api/devis/${currentEditingDevisId}` : '/api/devis';
+    const method = isEditing ? 'PATCH' : 'POST';
+    const r = await API(url, { method, body: JSON.stringify(body) });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) {
       const detail = Array.isArray(data.issues) && data.issues.length
         ? ' — ' + data.issues.map(i => (i.path ? i.path + ': ' : '') + i.message).join(', ')
         : '';
-      throw new Error((data.error || 'Création du devis impossible') + detail);
+      throw new Error((data.error || (isEditing ? 'Mise à jour impossible' : 'Création du devis impossible')) + detail);
     }
 
-    const devisId = data.item?.id;
-    if (document.getElementById('opt-pdf').checked && devisId) {
+    const devisId = isEditing ? currentEditingDevisId : data.item?.id;
+    // Pour un nouveau devis : PDF explicite si coché. Pour une édition, le PATCH régénère déjà le PDF.
+    if (!isEditing && document.getElementById('opt-pdf').checked && devisId) {
       const send = document.getElementById('opt-send').checked;
       const pr = await API('/api/devis/' + encodeURIComponent(devisId) + '/pdf', {
         method: 'POST',
@@ -767,11 +801,17 @@ async function confirmSend() {
     }
     closeModal();
     const toast = document.getElementById('toast');
-    toast.textContent = '✓ Devis enregistré (CRM & client à jour)';
+    toast.textContent = isEditing ? '✓ Devis mis à jour' : '✓ Devis enregistré (CRM & client à jour)';
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3200);
-    await refreshAll();
-    showPage(devisOriginPage);
+    if (isEditing) {
+      currentEditingDevisId = null;
+      document.getElementById('btn-send-devis').textContent = 'Valider le devis';
+      showDevisTab('list');
+    } else {
+      await refreshAll();
+      showPage(devisOriginPage);
+    }
   } catch (e) {
     alert(e.message || String(e));
   } finally {
@@ -877,7 +917,8 @@ async function loadDevisList() {
     if (!list.length) { emptyEl.hidden = false; return; }
 
     list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-    cardsEl.innerHTML = list.map(d => {
+    devisListCache = list;
+    cardsEl.innerHTML = list.map((d, i) => {
       const client = escapeHtml(d.client_name || '—');
       const comp   = escapeHtml(d.compagnie || '');
       const dep    = escapeHtml(d.ville_dep || d.horaire_dep || '');
@@ -887,7 +928,7 @@ async function loadDevisList() {
       const date   = d.created_at ? new Date(d.created_at).toLocaleDateString('fr-FR', {day:'2-digit',month:'short',year:'numeric'}) : '';
       const pdfBtn = d.pdf_url
         ? `<a class="dv-card-pdf" href="${escapeHtml(d.pdf_url)}" target="_blank">↗ PDF</a>`
-        : `<button type="button" class="dv-card-pdf" onclick="regenPdf('${escapeHtml(d.id)}')">Générer PDF</button>`;
+        : `<button type="button" class="dv-card-pdf" onclick="regenPdf(${i}, this)">Générer PDF</button>`;
       return `<div class="dv-card">
         <div class="dv-card-top">
           <div class="dv-card-client">${client}</div>
@@ -898,6 +939,10 @@ async function loadDevisList() {
           <div class="dv-card-prix">${prix}</div>
           ${pdfBtn}
         </div>
+        <div class="dv-card-actions">
+          <button type="button" class="dv-card-btn-act" onclick="openEditDevis(${i})">✏ Éditer</button>
+          <button type="button" class="dv-card-btn-act act-primary" onclick="openSendEmailModal(${i})">✉ Envoyer</button>
+        </div>
       </div>`;
     }).join('');
   } catch(e) {
@@ -906,13 +951,138 @@ async function loadDevisList() {
   }
 }
 
-async function regenPdf(devisId) {
+async function regenPdf(idx, btn) {
+  const d = devisListCache[idx];
+  if (!d) return;
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
-    const res = await API(`/api/devis/${devisId}`, { method: 'PATCH', body: JSON.stringify({}) });
+    const res = await API(`/api/devis/${d.id}/pdf`, { method: 'POST', body: JSON.stringify({}) });
     if (!res.ok) throw new Error(res.status);
     await loadDevisList();
   } catch(e) {
     alert('Erreur génération PDF');
+    if (btn) { btn.disabled = false; btn.textContent = 'Générer PDF'; }
+  }
+}
+
+function openEditDevis(idx) {
+  const d = devisListCache[idx];
+  if (!d) return;
+  currentEditingDevisId = d.id;
+  currentLead = {
+    leadId: d.lead_id || null,
+    name: d.client_name || '',
+    trajet: '', dates: '', classe: '', pax: 1,
+    apporteur_name: d.apporteur_name || null,
+    raw: null,
+  };
+
+  document.getElementById('dfi-name').value = d.client_name || '';
+  document.getElementById('dfi-details').textContent = d.lead_id
+    ? `Édition — lead associé`
+    : 'Édition — devis libre';
+
+  // Compagnie
+  const compSel = document.getElementById('f-compagnie');
+  const knownOpts = [...compSel.options].map(o => o.value);
+  if (d.compagnie && knownOpts.includes(d.compagnie)) {
+    compSel.value = d.compagnie;
+    document.getElementById('f-compagnie-custom').style.display = 'none';
+    document.getElementById('f-compagnie-custom').value = '';
+  } else if (d.compagnie) {
+    compSel.value = 'Autre';
+    document.getElementById('f-compagnie-custom').style.display = 'block';
+    document.getElementById('f-compagnie-custom').value = d.compagnie;
+  } else {
+    compSel.value = '';
+    document.getElementById('f-compagnie-custom').style.display = 'none';
+  }
+
+  // Champs texte
+  const fieldMap = {
+    'f-ville-dep': 'ville_dep', 'f-ville-arr': 'ville_arr',
+    'f-dep': 'horaire_dep',     'f-arr': 'horaire_arr',
+    'f-dep-retour': 'horaire_dep_retour', 'f-arr-retour': 'horaire_arr_retour',
+    'f-notes': 'notes',
+  };
+  Object.entries(fieldMap).forEach(([id, key]) => {
+    document.getElementById(id).value = d[key] || '';
+  });
+
+  document.getElementById('f-prix-four').value  = Number(d.prix_revient) > 0 ? d.prix_revient : '';
+  document.getElementById('f-prix-vente').value  = Number(d.prix_vente)   > 0 ? d.prix_vente   : '';
+  document.getElementById('f-prix-marche').value = Number(d.prix_marche)  > 0 ? d.prix_marche  : '';
+
+  // Services
+  const serviceNames = Array.isArray(d.services_inclus) ? d.services_inclus : [];
+  document.querySelectorAll('#page-devis .service-check').forEach(el => {
+    const name = el.querySelector('.sc-name')?.textContent?.trim();
+    const sel = serviceNames.includes(name);
+    el.classList.toggle('selected', sel);
+    const box = el.querySelector('.sc-box');
+    if (box) box.textContent = sel ? '✓' : '';
+  });
+
+  calcMargin();
+  document.getElementById('opt-pdf').checked = true;
+  document.getElementById('opt-send').checked = false;
+  document.getElementById('btn-send-devis').textContent = 'Mettre à jour le devis';
+  showDevisTab('create');
+}
+
+function openSendEmailModal(idx) {
+  const d = devisListCache[idx];
+  if (!d) return;
+  currentSendDevisId = d.id;
+
+  const emailRegex = /[^\s@]+@[^\s@]+\.[^\s@]+/;
+  const lead = d.lead_id ? allLeadsCache.find(l => l.id === d.lead_id) : null;
+  const detectedEmail = lead
+    ? ([lead.client_contact, lead.notes].map(s => String(s || '').match(emailRegex)?.[0]).find(Boolean) || '')
+    : '';
+
+  const infoEl = document.getElementById('sem-info');
+  if (!d.pdf_url) {
+    infoEl.innerHTML = `<span style="color:var(--yt)">⚠ Aucun PDF généré — générez d'abord le PDF depuis la liste, puis envoyez.</span>`;
+    infoEl.style.display = '';
+  } else if (detectedEmail) {
+    infoEl.innerHTML = `Email détecté depuis le lead :<br><strong>${escapeHtml(detectedEmail)}</strong>`;
+    infoEl.style.display = '';
+  } else {
+    infoEl.style.display = 'none';
+  }
+
+  document.getElementById('sem-email').value = detectedEmail;
+  document.getElementById('modal-send-email').classList.add('open');
+}
+
+async function confirmSendEmail() {
+  const btn = document.getElementById('btn-confirm-send-email');
+  const email = document.getElementById('sem-email').value.trim();
+  if (!email) { alert('Saisissez une adresse email'); return; }
+  btn.disabled = true;
+  try {
+    const res = await API(`/api/devis/${currentSendDevisId}/send-simple`, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`);
+    closeSendEmailModal();
+    const toast = document.getElementById('toast');
+    toast.textContent = `✓ Devis envoyé à ${email}`;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3200);
+  } catch(e) {
+    alert(e.message || String(e));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function closeSendEmailModal(e) {
+  if (!e || e.target === document.getElementById('modal-send-email')) {
+    document.getElementById('modal-send-email').classList.remove('open');
   }
 }
 </script>
