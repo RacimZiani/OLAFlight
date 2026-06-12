@@ -125,6 +125,7 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 .s-won{background:rgba(74,222,128,0.1);color:var(--gt);}
 .s-lost{background:rgba(248,113,113,0.1);color:var(--rt);}
 .pc-val{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:200;color:var(--w);}
+.pc-encoche{font-family:'Montserrat',sans-serif;font-size:7px;letter-spacing:1px;color:var(--gt);margin-top:4px;}
 
 /* COMMISSION BANNER */
 .comm-banner{background:var(--b2);border:1px solid var(--l);padding:16px;margin-bottom:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;}
@@ -141,6 +142,12 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 .modal-title{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:var(--w);margin-bottom:20px;display:flex;justify-content:space-between;}
 .modal-close{cursor:pointer;color:var(--g);font-size:18px;}
 
+.devis-detail-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--l);font-size:14px;}
+.devis-detail-row:last-child{border-bottom:none;}
+.ddr-label{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:3px;}
+.ddr-val{color:var(--w);}
+.ddr-val.yt{color:var(--yt);}
+.pdf-link{display:block;text-align:center;padding:14px;border:1px solid var(--l2);color:var(--w);text-decoration:none;font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;margin:16px 0;}
 /* SUCCESS TOAST */
 .toast{position:fixed;bottom:80px;left:20px;right:20px;background:var(--gt);color:var(--b);padding:16px 20px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:3px;text-transform:uppercase;z-index:300;display:none;text-align:center;}
 .toast.show{display:block;animation:toastIn .3s ease;}
@@ -208,12 +215,12 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 
   <div class="form-row">
     <div class="form-group">
-      <label class="form-label">Heure départ <span class="req">*</span></label>
-      <input class="form-input" type="time" id="f-dep" placeholder="09:00">
+      <label class="form-label">Départ <span class="req">*</span></label>
+      <input class="form-input" type="text" id="f-dep" placeholder="CDG · 09:30">
     </div>
     <div class="form-group">
-      <label class="form-label">Heure arrivée <span class="req">*</span></label>
-      <input class="form-input" type="time" id="f-arr" placeholder="19:30">
+      <label class="form-label">Arrivée <span class="req">*</span></label>
+      <input class="form-input" type="text" id="f-arr" placeholder="DXB · 19:45">
     </div>
   </div>
 
@@ -274,7 +281,7 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
   </div>
 
   <button type="button" class="btn-send" id="btn-send-devis">Valider le devis</button>
-  <button class="btn-skip" style="width:100%;margin-top:8px;" onclick="showPage('notifs')">← Retour</button>
+  <button class="btn-skip" style="width:100%;margin-top:8px;" onclick="showPage(devisOriginPage)">← Retour</button>
 </div>
 
 <!-- ═══ PAGE PIPELINE ═══ -->
@@ -322,6 +329,18 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
   </div>
 </div>
 
+<!-- MODAL DEVIS DETAIL -->
+<div class="modal-bg" id="modal-devis-detail" onclick="closeDevisDetail(event)">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="dmd-title">Devis</span>
+      <span class="modal-close" onclick="closeDevisDetail()">✕</span>
+    </div>
+    <div id="dmd-body"></div>
+    <button class="btn-skip" style="width:100%;margin-top:12px;" onclick="closeDevisDetail()">Fermer</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast">✓ Devis envoyé au client</div>
 
@@ -346,6 +365,7 @@ const API = (path, opts = {}) =>
   fetch(path, { credentials: 'include', ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) } });
 
 let currentLead = {};
+let devisOriginPage = 'notifs';
 let allLeadsCache = [];
 let pipelineFilter = 'all';
 
@@ -381,7 +401,8 @@ function fmtEuro(n) {
   return x.toLocaleString('fr-FR') + ' €';
 }
 
-function openDevisFromLead(l) {
+function openDevisFromLead(l, originPage) {
+  devisOriginPage = originPage || 'notifs';
   const name = l.client_name || 'Client';
   const trajet = l.destination || '—';
   const dates = l.dates || '—';
@@ -424,7 +445,7 @@ function bindNotifActions() {
     if (!card) return;
     const id = card.dataset.leadId;
     const lead = allLeadsCache.find(x => x.id === id);
-    if (prep && lead) openDevisFromLead(lead);
+    if (prep && lead) openDevisFromLead(lead, 'notifs');
     if (skip && id) {
       API('/api/leads/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ status: 'archived' }) }).then(() => refreshAll());
     }
@@ -503,13 +524,16 @@ function renderPipeline() {
     return;
   }
   empty.hidden = true;
+  const DEVIS_DONE = ['devis_sent','interested','offer','call_booked','nego','won'];
   listEl.innerHTML = rows.map(l => {
     const ui = STATUS_UI[l.status] || { label: l.status, cls: 's-new' };
     const sub = [l.destination || '—', l.dates || ''].filter(Boolean).join(' · ');
     const val = Number(l.value) > 0 ? fmtEuro(l.value) : '—';
+    const hasDone = DEVIS_DONE.includes(l.status);
+    const encoche = hasDone ? `<div class="pc-encoche">✓ Devis préparé</div>` : '';
     return `
       <div class="pipeline-card" data-lead-id="${escapeHtml(l.id)}" data-status="${escapeHtml(l.status)}" style="cursor:pointer">
-        <div class="pc-left"><div class="pc-name">${escapeHtml(l.client_name || 'Client')}</div><div class="pc-dest">${escapeHtml(sub)}</div></div>
+        <div class="pc-left"><div class="pc-name">${escapeHtml(l.client_name || 'Client')}</div><div class="pc-dest">${escapeHtml(sub)}</div>${encoche}</div>
         <div class="pc-right"><div class="pc-status ${ui.cls}">${ui.label}</div><div class="pc-val">${val}</div></div>
       </div>`;
   }).join('');
@@ -519,7 +543,12 @@ function renderPipeline() {
     if (!card) return;
     const id = card.dataset.leadId;
     const lead = allLeadsCache.find(x => x.id === id);
-    if (lead && lead.status === 'devis_pending') openDevisFromLead(lead);
+    if (!lead) return;
+    if (lead.status === 'devis_pending') {
+      openDevisFromLead(lead, 'pipeline');
+    } else {
+      openDevisDetail(lead);
+    }
   };
 }
 
@@ -572,6 +601,7 @@ function selectedServices() {
 }
 
 function openFreeDevis() {
+  devisOriginPage = 'notifs';
   currentLead = { leadId: null, name: '', trajet: '', dates: '', classe: '', pax: 1, apporteur_name: null, raw: null };
   document.getElementById('dfi-name').value = '';
   document.getElementById('dfi-details').textContent = 'Devis libre — sans lead';
@@ -682,7 +712,7 @@ async function confirmSend() {
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3200);
     await refreshAll();
-    showPage('notifs');
+    showPage(devisOriginPage);
   } catch (e) {
     alert(e.message || String(e));
   } finally {
@@ -693,6 +723,50 @@ async function confirmSend() {
 function closeModal(e) {
   if (!e || e.target === document.getElementById('modal-confirm')) {
     document.getElementById('modal-confirm').classList.remove('open');
+  }
+}
+
+async function openDevisDetail(lead) {
+  const title = document.getElementById('dmd-title');
+  const body = document.getElementById('dmd-body');
+  title.textContent = escapeHtml(lead.client_name || 'Client') + ' — Devis';
+  body.innerHTML = '<div style="color:var(--g);font-family:Montserrat,sans-serif;font-size:9px;letter-spacing:2px;padding:20px 0;">Chargement…</div>';
+  document.getElementById('modal-devis-detail').classList.add('open');
+  try {
+    const r = await API('/api/devis?lead_id=' + encodeURIComponent(lead.id));
+    const data = await r.json().catch(() => ({}));
+    const items = data.items || [];
+    if (items.length === 0) {
+      body.innerHTML = '<div style="color:var(--g);font-family:Montserrat,sans-serif;font-size:9px;padding:20px 0;">Aucun devis trouvé pour ce lead.</div>';
+      return;
+    }
+    const d = items[items.length - 1];
+    const rows = [
+      ['Compagnie', d.compagnie || '—'],
+      ['Départ', d.horaire_dep || '—'],
+      ['Arrivée', d.horaire_arr || '—'],
+      ['Prix de vente', d.prix_vente > 0 ? fmtEuro(d.prix_vente) : '—'],
+      ['Services', Array.isArray(d.services_inclus) && d.services_inclus.length ? d.services_inclus.join(' · ') : '—'],
+      ['Notes', d.notes || '—'],
+    ].map(([label, val]) => `
+      <div class="devis-detail-row">
+        <div><div class="ddr-label">${label}</div><div class="ddr-val">${escapeHtml(String(val))}</div></div>
+      </div>`).join('');
+    const pdfHtml = d.pdf_url
+      ? `<a class="pdf-link" href="${escapeHtml(d.pdf_url)}" target="_blank">↗ Ouvrir le PDF</a>`
+      : `<div style="color:var(--g);font-family:Montserrat,sans-serif;font-size:9px;letter-spacing:2px;text-align:center;padding:12px 0;">PDF non généré</div>`;
+    const rePrepBtn = lead.status !== 'won'
+      ? `<button class="btn-send" style="margin-top:8px;" onclick="closeDevisDetail();openDevisFromLead(allLeadsCache.find(x=>x.id==='${escapeHtml(lead.id)}'),'pipeline')">+ Nouveau devis</button>`
+      : '';
+    body.innerHTML = rows + pdfHtml + rePrepBtn;
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--rt);font-family:Montserrat,sans-serif;font-size:9px;padding:20px 0;">Erreur : ' + escapeHtml(e.message || String(e)) + '</div>';
+  }
+}
+
+function closeDevisDetail(e) {
+  if (!e || e.target === document.getElementById('modal-devis-detail')) {
+    document.getElementById('modal-devis-detail').classList.remove('open');
   }
 }
 
