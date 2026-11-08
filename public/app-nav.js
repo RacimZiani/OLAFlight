@@ -161,6 +161,7 @@
       <div class="ola-sheet-g">Mon téléphone</div>
       <div class="ola-sheet-actions">
         <button type="button" data-a="push">Recevoir les notifications</button>
+        <button type="button" data-a="password">Changer mon mot de passe</button>
         ${standalone ? "" : `<button type="button" data-a="install">Installer l'application</button>`}
         <button type="button" data-a="logout" class="danger">Déconnexion</button>
       </div>
@@ -174,6 +175,27 @@
     const info = bg.querySelector(".ola-sheet-info");
     const show = (html) => { info.hidden = false; info.innerHTML = html; info.scrollIntoView({ behavior: "smooth", block: "nearest" }); };
 
+    bg.querySelector('[data-a="password"]').addEventListener("click", () => {
+      show(`<form class="ola-pwd" autocomplete="on">
+        <input type="password" name="current" autocomplete="current-password" placeholder="Mot de passe actuel" required>
+        <input type="password" name="next" autocomplete="new-password" placeholder="Nouveau (8 caractères minimum)" minlength="8" required>
+        <input type="password" name="confirm" autocomplete="new-password" placeholder="Confirmer le nouveau" minlength="8" required>
+        <button type="submit">Enregistrer</button><div class="ola-pwd-msg"></div></form>`);
+      const form = info.querySelector("form");
+      const out = form.querySelector(".ola-pwd-msg");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const f = new FormData(form);
+        if (f.get("next") !== f.get("confirm")) { out.textContent = "Les deux mots de passe ne correspondent pas."; return; }
+        try {
+          const r = await fetch("/api/auth/me/password", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ current_password: f.get("current"), new_password: f.get("next") }) });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error((d.issues && d.issues[0]?.message) || d.error || "Erreur");
+          form.innerHTML = "<b>Mot de passe modifié.</b> Utilisez-le à votre prochaine connexion.";
+        } catch (err) { out.textContent = err.message; }
+      });
+    });
     bg.querySelector('[data-a="logout"]').addEventListener("click", () => (window.OlaAuth?.logout ? window.OlaAuth.logout() : (location.href = "/")));
     bg.querySelector('[data-a="install"]')?.addEventListener("click", async () => {
       if (installPrompt) { installPrompt.prompt(); await installPrompt.userChoice.catch(() => {}); installPrompt = null; close(); return; }
