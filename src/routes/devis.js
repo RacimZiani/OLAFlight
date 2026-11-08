@@ -18,6 +18,7 @@ import { resolvePublicBaseUrl } from "../lib/publicUrl.js";
 import { canAccessLead, normalizeRole, ROLES, filterLeadsForUser } from "../lib/roles.js";
 import { conciergeFields, isOwnConciergeDevis } from "../lib/conciergeCommission.js";
 import { followupPatch } from "../lib/followups.js";
+import { writeTolerant } from "../lib/dbTolerant.js";
 
 const router = Router();
 
@@ -291,22 +292,8 @@ router.patch(
         } : {}),
       };
 
-      // Update tolérant aux migrations manquantes (options/hotels/driver).
-      async function updateTolerant(p) {
-        try {
-          return await store.devis.update(req.params.id, p);
-        } catch (e) {
-          const msg = e?.message || String(e);
-          const matches = ["options", "hotels", "driver"].filter((c) => {
-            const re = new RegExp(`'${c}'|"${c}"|\\b${c}\\b`, "i");
-            return re.test(msg) && /column|cache|schema|does not exist/i.test(msg);
-          });
-          if (matches.length === 0) throw e;
-          const reduced = { ...p };
-          for (const c of matches) delete reduced[c];
-          return updateTolerant(reduced);
-        }
-      }
+      // Update tolérant aux colonnes absentes de la base (options/hotels/driver, notes…).
+      const updateTolerant = (p) => writeTolerant((row) => store.devis.update(req.params.id, row), p, { table: "devis" });
 
       const updated = await updateTolerant(patch);
       if (body.paiement_recu === true && !before.paiement_recu) {

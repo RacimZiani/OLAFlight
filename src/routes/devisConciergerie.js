@@ -23,6 +23,7 @@ import { conciergeFields, isOwnConciergeDevis } from "../lib/conciergeCommission
 import { findOrCreateClient } from "../lib/clientMatch.js";
 import { canAccessLead, filterLeadsForUser, isAdmin } from "../lib/roles.js";
 import { generateDevisPdf } from "../lib/pdf.js";
+import { writeTolerant } from "../lib/dbTolerant.js";
 import { followupPatch } from "../lib/followups.js";
 import { buildPublicDevisPdfUrl } from "../lib/publicUrl.js";
 
@@ -131,7 +132,7 @@ router.post("/", requireDevis, validate({ body: bodySchema }), async (req, res, 
       ...legacyCommissionFields(prix_vente, prix_revient, lead.apporteur_name),
       ...(await conciergeFields(store, { user: req.user, lead, prix_vente, prix_revient })),
     };
-    await store.devis.insert(devis);
+    await writeTolerant((row) => store.devis.insert(row), devis, { table: "devis" });
     logAction(req.user, "devis_cree", `Devis ${devis.id} · ${lead.client_name} · ${prix_vente} €`, lead.id);
     if (created_client) logAction(req.user, "client_cree", `Client créé : ${lead.client_name}`, lead.id);
 
@@ -184,7 +185,7 @@ router.put("/:id", requireDevis, validate({ body: putSchema }), async (req, res,
       ...legacyCommissionFields(prix_vente, prix_revient, before.apporteur_name),
       ...(await conciergeFields(store, { lead, conciergeName: before.concierge_name, prix_vente, prix_revient })),
     };
-    const updated = (await store.devis.update(before.id, patch)) || { ...before, ...patch };
+    const updated = (await writeTolerant((row) => store.devis.update(before.id, row), patch, { table: "devis" })) || { ...before, ...patch };
     logAction(req.user, "devis_modifie", `Devis ${before.id} modifié · ${prix_vente} €`, before.lead_id);
     if (lead) {
       store.leads.update(lead.id, { value: prix_vente, margin: prix_vente - prix_revient }).catch(() => {});
