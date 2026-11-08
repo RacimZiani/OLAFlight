@@ -8,6 +8,13 @@
 import { OLA_LOGO_DATA_URI } from "./olaLogo.js";
 import { getServiceType } from "./serviceCatalog.js";
 
+/** Référence lisible pour le client : un UUID (prod) devient « OLA-AC15DAC4 ». */
+export function shortRef(id) {
+  const s = String(id || "");
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(s) ? "OLA-" + s.slice(0, 8).toUpperCase() : s;
+}
+
+
 function esc(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -75,7 +82,7 @@ export function renderConciergerieDevisHtml({ devis, lead, companyLogo = OLA_LOG
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Ola Flight · Devis ${esc(devis.id)}</title>
+<title>Ola Flight · Devis ${esc(shortRef(devis.id))}</title>
 <style>
   /* Les marges haut/bas sont posées par pdf.js (PDF_MARGINS) et peintes en
      noir par l'en-tête / pied de page Chrome : chaque page respire, sans bord blanc. */
@@ -141,7 +148,7 @@ export function renderConciergerieDevisHtml({ devis, lead, companyLogo = OLA_LOG
     </div>
     <div class="ref">
       <div class="ref-l">Référence devis</div>
-      <div class="ref-id">${esc(devis.id)}</div>
+      <div class="ref-id">${esc(shortRef(devis.id))}</div>
       <div class="ref-d">Émis le ${fmtDate(devis.created_at)}</div>
     </div>
   </header>

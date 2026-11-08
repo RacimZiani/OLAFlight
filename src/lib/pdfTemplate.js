@@ -8,6 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { OLA_LOGO_DATA_URI } from "./olaLogo.js";
+import { shortRef } from "./pdfConciergerieTemplate.js";
 
 const FALLBACK_LOGO = OLA_LOGO_DATA_URI;
 
@@ -77,7 +78,7 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Ola Flight — Devis ${escapeHtml(devis.id)}</title>
+<title>Ola Flight — Devis ${escapeHtml(shortRef(devis.id))}</title>
 <style>
   @page { size: A4; margin: 0; }
   *{ margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -182,7 +183,7 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
     </div>
     <div class="ref">
       <div class="ref-label">Référence devis</div>
-      <div class="ref-id">${escapeHtml(devis.id)}</div>
+      <div class="ref-id">${escapeHtml(shortRef(devis.id))}</div>
       <div class="ref-date">Émis le ${fmtDate(devis.created_at)}</div>
     </div>
   </header>
