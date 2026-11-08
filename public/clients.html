@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ola Flight · Clients</title>
+<meta name="ola-required-roles" content="admin,prospecteur,closer,concierge,dalsim,closeuse">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300;400&family=Montserrat:wght@200;300;400&display=swap');
+:root{--b:#0a0a0a;--b2:#111;--b3:#161616;--w:#f5f3ef;--g:rgba(245,243,239,0.45);--g2:rgba(245,243,239,0.7);--l:rgba(245,243,239,0.1);--l2:rgba(245,243,239,0.2);--green:#4ade80;--gold:#d4b56a;--red:#f87171;--blue:#60a5fa;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--b);color:var(--w);}
+body{font-family:'Cormorant Garamond',serif;min-height:100dvh;-webkit-font-smoothing:antialiased;}
+.topbar{height:56px;background:var(--b2);border-bottom:1px solid var(--l);display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:20;}
+.tb-name{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;white-space:nowrap;}
+.wrap{max-width:860px;margin:0 auto;padding:24px 16px 64px;}
+h1{font-size:34px;font-weight:200;line-height:1.1;}
+.sub{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin:8px 0 20px;}
+.label{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);}
+.mono{font-family:'Montserrat',sans-serif;font-weight:300;}
+input,textarea,select{width:100%;background:var(--b3);border:1px solid var(--l);color:var(--w);font-family:'Montserrat',sans-serif;font-size:16px;font-weight:300;padding:12px;outline:none;border-radius:0;-webkit-appearance:none;}
+textarea{resize:vertical;min-height:70px;line-height:1.5;}
+input:focus,textarea:focus,select:focus{border-color:var(--g2);}
+input::placeholder,textarea::placeholder{color:rgba(245,243,239,0.25);}
+.btn{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;padding:12px 14px;border:1px solid var(--l2);background:transparent;color:var(--w);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;}
+.btn:hover{border-color:var(--w);}
+.btn.primary{background:var(--w);color:var(--b);border-color:var(--w);}
+.btn.small{padding:7px 10px;min-height:32px;font-size:8px;letter-spacing:1.5px;}
+.panel{border:1px solid var(--l);background:var(--b2);padding:16px;margin-bottom:14px;}
+.ptitle{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.f{margin-bottom:10px;min-width:0;}
+.f label{display:block;margin-bottom:5px;}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
+@media(max-width:480px){.row2{grid-template-columns:minmax(0,1fr);}}
+.msg{font-family:'Montserrat',sans-serif;font-size:11px;margin-top:8px;min-height:1em;}
+.msg.err{color:var(--red);} .msg.ok{color:var(--green);}
+.chip{display:inline-block;font-family:'Montserrat',sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:3px 7px;border:1px solid var(--l2);color:var(--g2);white-space:nowrap;}
+.chip.gold{color:var(--gold);border-color:rgba(212,181,106,.4);}
+.chip.green{color:var(--green);border-color:rgba(74,222,128,.35);}
+
+/* Recherche */
+.search{position:sticky;top:56px;z-index:10;background:var(--b);padding:4px 0 12px;}
+.search input{font-size:18px;padding:16px 14px;border-color:var(--l2);}
+.hint{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--g);margin-top:8px;line-height:1.6;}
+.result{display:block;text-decoration:none;color:inherit;border:1px solid var(--l);background:var(--b2);padding:14px;margin-bottom:8px;}
+a.result:hover,a.result:active{border-color:var(--g2);}
+.result.locked{opacity:.65;}
+.r-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+.r-name{font-size:22px;font-weight:300;}
+.r-meta{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:300;color:var(--g2);margin-top:4px;line-height:1.6;word-break:break-word;}
+.r-why{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;}
+
+/* Fiche */
+.back{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--g);text-decoration:none;display:inline-block;margin-bottom:14px;}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+.head h1{word-break:break-word;}
+.contacts{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;color:var(--g2);margin-top:8px;line-height:1.7;word-break:break-word;}
+.quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:16px 0;}
+@media(max-width:480px){.quick{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.quick .btn{min-height:50px;}
+.quick .btn[aria-disabled="true"]{opacity:.3;pointer-events:none;}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px;}
+.stat{border:1px solid var(--l);background:var(--b2);padding:12px;}
+.stat .v{font-size:24px;font-weight:300;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.stat .v.small{font-size:13px;font-family:'Montserrat',sans-serif;white-space:normal;line-height:1.3;}
+.types{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;padding-bottom:2px;}
+.types::-webkit-scrollbar{height:0;}
+.type{flex-shrink:0;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:300;padding:9px 11px;border:1px solid var(--l);background:var(--b3);color:var(--g2);cursor:pointer;}
+.type.on{border-color:var(--gold);color:var(--w);}
+.tl{position:relative;}
+.ev{border-left:1px solid var(--l2);padding:0 0 16px 14px;position:relative;}
+.ev::before{content:'';position:absolute;left:-4px;top:5px;width:7px;height:7px;background:var(--g);border-radius:50%;}
+.ev.dm_out::before,.ev.dm_in::before{background:var(--blue);} .ev.call::before,.ev.meeting::before{background:var(--gold);} .ev.devis::before{background:var(--green);}
+.ev-h{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--g);display:flex;justify-content:space-between;gap:8px;}
+.ev-h b{color:var(--w);font-weight:400;letter-spacing:1px;}
+.ev-b{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:300;color:var(--g2);margin-top:4px;line-height:1.6;white-space:pre-line;word-break:break-word;}
+.ev-x{background:none;border:none;color:var(--g);font-size:9px;cursor:pointer;font-family:'Montserrat',sans-serif;}
+.ev-x:hover{color:var(--red);}
+.dv{border:1px solid var(--l);padding:12px;margin-bottom:8px;}
+.dv-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+.dv-t{font-size:18px;font-weight:300;word-break:break-word;}
+.dv-p{font-size:20px;font-weight:300;white-space:nowrap;}
+.dv-m{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--g);margin-top:4px;}
+.dv-a{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.empty{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--g);padding:6px 0;}
+details summary{cursor:pointer;list-style:none;}
+details summary::-webkit-details-marker{display:none;}
+.conv{max-height:320px;overflow:auto;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;line-height:1.6;}
+.conv p{margin-bottom:8px;} .conv .u{color:var(--w);} .conv .a{color:var(--g);}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="tb-name">Ola</div>
+  <nav class="tb-app-nav"></nav>
+</header>
+
+<main class="wrap">
+  <!-- RECHERCHE -->
+  <section id="search-view">
+    <h1>Clients</h1>
+    <p class="sub">Retrouver une fiche, éviter les doublons</p>
+    <div class="search">
+      <input id="q" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Nom, numéro ou @instagram" enterkeyhint="search">
+      <div class="hint" id="hint">Tapez au moins 2 caractères. Le numéro peut être partiel, avec ou sans indicatif.</div>
+    </div>
+    <div id="results"></div>
+    <div id="create" class="panel" style="display:none">
+      <div class="ptitle">Nouveau client</div>
+      <div class="f"><label class="label" for="n-name">Nom</label><input id="n-name"></div>
+      <div class="row2">
+        <div class="f"><label class="label" for="n-phone">Téléphone</label><input id="n-phone" type="tel" inputmode="tel"></div>
+        <div class="f"><label class="label" for="n-insta">Instagram</label><input id="n-insta" autocapitalize="off"></div>
+      </div>
+      <div class="f"><label class="label" for="n-need">Besoin</label><input id="n-need" placeholder="Montre, villa à Mykonos, chauffeur…"></div>
+      <button class="btn primary" type="button" id="n-save">Créer la fiche</button>
+      <div class="msg" id="n-msg"></div>
+    </div>
+  </section>
+
+  <!-- FICHE -->
+  <section id="fiche-view" style="display:none">
+    <a class="back" href="/clients.html">← Tous les clients</a>
+    <div class="head">
+      <div style="min-width:0">
+        <h1 id="f-name"></h1>
+        <div class="contacts" id="f-contacts"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <select id="f-status" style="width:auto;font-size:12px;padding:8px 10px"></select>
+        <span class="chip" id="f-owner"></span>
+      </div>
+    </div>
+
+    <div class="quick">
+      <a class="btn" id="q-wa" target="_blank" rel="noopener">WhatsApp</a>
+      <a class="btn" id="q-ig" target="_blank" rel="noopener">Instagram</a>
+      <a class="btn" id="q-tel">Appeler</a>
+      <a class="btn primary" id="q-devis">+ Devis</a>
+    </div>
+
+    <section class="panel" id="fu-panel">
+      <div class="ptitle">Prochaine relance</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <div><div id="fu-when" style="font-size:24px;font-weight:300"></div><div class="mono" id="fu-step" style="font-size:10px;color:var(--g);margin-top:2px"></div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn primary small" type="button" id="fu-write">Écrire</button>
+          <button class="btn small" type="button" id="fu-snooze">Reporter</button>
+        </div>
+      </div>
+      <div id="fu-opts" style="display:none;gap:6px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn small" data-days="0">Aujourd'hui</button>
+        <button class="btn small" data-days="1">Demain</button>
+        <button class="btn small" data-days="3">Dans 3 j</button>
+        <button class="btn small" data-days="7">Dans 1 sem.</button>
+        <input type="date" id="fu-date" style="width:auto;flex:1;min-width:140px;font-size:13px;padding:7px">
+        <button class="btn small" data-off="1">Ne plus relancer</button>
+      </div>
+    </section>
+
+    <div class="stats">
+      <div class="stat"><div class="label">Achats</div><div class="v" id="s-achats">0 €</div></div>
+      <div class="stat"><div class="label">Devis</div><div class="v" id="s-devis">0</div></div>
+      <div class="stat"><div class="label">Dernier échange</div><div class="v small" id="s-last">Jamais</div></div>
+    </div>
+
+    <section class="panel">
+      <div class="ptitle">Noter un échange</div>
+      <div class="types" id="types"></div>
+      <textarea id="ev-body" rows="2" placeholder="Ce qui s'est dit, ce qu'il faut retenir…"></textarea>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn primary" type="button" id="ev-save">Enregistrer</button></div>
+      <div class="msg" id="ev-msg"></div>
+    </section>
+
+    <section class="panel">
+      <div class="ptitle">Historique</div>
+      <div class="tl" id="timeline"></div>
+    </section>
+
+    <section class="panel">
+      <div class="ptitle">Devis et achats</div>
+      <div id="devis"></div>
+    </section>
+
+    <section class="panel">
+      <div class="ptitle">Coordonnées et préférences</div>
+      <div class="f"><label class="label" for="e-name">Nom</label><input id="e-name"></div>
+      <div class="row2">
+        <div class="f"><label class="label" for="e-phone">Téléphone</label><input id="e-phone" type="tel" inputmode="tel"></div>
+        <div class="f"><label class="label" for="e-insta">Instagram</label><input id="e-insta" autocapitalize="off"></div>
+      </div>
+      <div class="f"><label class="label" for="e-email">Email</label><input id="e-email" type="email" inputmode="email" autocapitalize="off"></div>
+      <div class="f"><label class="label" for="e-need">Besoin actuel</label><input id="e-need"></div>
+      <div class="f"><label class="label" for="e-pref">Préférences</label><textarea id="e-pref" placeholder="Tailles, maisons favorites, allergies, hôtels préférés…"></textarea></div>
+      <div class="f"><label class="label" for="e-notes">Notes internes</label><textarea id="e-notes"></textarea></div>
+      <button class="btn primary" type="button" id="e-save">Enregistrer la fiche</button>
+      <div class="msg" id="e-msg"></div>
+    </section>
+
+    <section class="panel" id="conv-panel" style="display:none">
+      <details>
+        <summary class="ptitle" style="margin:0">Conversation avec l'assistant IA <span id="conv-count"></span></summary>
+        <div class="conv" id="conv" style="margin-top:12px"></div>
+      </details>
+    </section>
+  </section>
+</main>
+
+<script src="/auth-gate.js"></script>
+<script src="/app-nav.js"></script>
+<script src="/dm-composer.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const eur = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/ | /g, ' ') + ' €';
+  // +33612345678 → +33 6 12 34 56 78 (affichage seulement)
+  const fmtPhone = (v) => {
+    const s = String(v || '').trim(); const d = s.replace(/\D/g, '');
+    if (/^\+?33\d{9}$/.test(s.replace(/\s/g, ''))) return '+33 ' + d.slice(2, 3) + ' ' + d.slice(3).replace(/(\d{2})(?=\d)/g, '$1 ');
+    return s;
+  };
+  const toMs = (v) => (typeof v === 'number' ? v : Date.parse(v) || 0);
+  const when = (v) => {
+    const ms = toMs(v); if (!ms) return '';
+    const d = new Date(ms), diff = (Date.now() - ms) / 864e5;
+    if (diff < 1 && d.getDate() === new Date().getDate()) return "Aujourd'hui " + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    if (diff < 2) return 'Hier';
+    if (diff < 7) return `Il y a ${Math.floor(diff)} jours`;
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: diff > 300 ? 'numeric' : undefined });
+  };
+  const api = async (url, opts = {}) => {
+    const r = await fetch(url, { credentials: 'include', ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error((d.issues && d.issues[0]?.message) || d.error || 'Erreur'); e.status = r.status; e.data = d; throw e; }
+    return d;
+  };
+
+  const STATUS = [
+    ['qualification', 'À qualifier'], ['contacted', 'Contacté'], ['interested', 'Intéressé'], ['devis_sent', 'Devis envoyé'],
+    ['call_booked', 'RDV pris'], ['nego', 'Négociation'], ['won', 'Gagné'], ['lost', 'Perdu'],
+  ];
+  const STATUS_LABEL = Object.fromEntries([...STATUS, ['new', 'Nouveau'], ['devis_pending', 'Devis à faire'], ['offer', 'Offre'], ['archived', 'Archivé']]);
+  const EV_TYPES = [
+    ['dm_out', 'DM envoyé'], ['dm_in', 'DM reçu'], ['call', 'Appel'], ['meeting', 'Rendez-vous'], ['note', 'Note'],
+  ];
+  const EV_LABEL = Object.fromEntries(EV_TYPES);
+  const CHAN_LABEL = { instagram: 'Instagram', whatsapp: 'WhatsApp', phone: 'Téléphone', email: 'Email', autre: '' };
+
+  let me = null;
+  let fiche = null;
+  let evType = 'dm_out';
+
+  // ═══ RECHERCHE ═══
+  let timer = null, seq = 0;
+  async function runSearch() {
+    const q = $('q').value.trim();
+    history.replaceState(null, '', q ? '?q=' + encodeURIComponent(q) : location.pathname);
+    if (q.length < 2) { $('results').innerHTML = ''; $('create').style.display = 'none'; return; }
+    const mySeq = ++seq;
+    const { items } = await api('/api/clients/search?q=' + encodeURIComponent(q)).catch(() => ({ items: [] }));
+    if (mySeq !== seq) return;
+    $('results').innerHTML = items.map(renderResult).join('') ||
+      `<div class="empty">Aucun client ne correspond à « ${esc(q)} ».</div>`;
+    prefillCreate(q, items);
+  }
+
+  function renderResult(r) {
+    const why = r.reasons.map((x) => `<span class="chip ${x === 'nom' ? '' : 'gold'}">${x === 'nom' ? 'Nom' : 'Même ' + esc(x)}</span>`).join('');
+    if (!r.accessible) {
+      return `<div class="result locked">
+        <div class="r-top"><div class="r-name">${esc(r.client_name)}</div><span class="chip">Déjà suivi</span></div>
+        <div class="r-meta">Ce client est suivi par <b>${esc(r.owner_name)}</b>. Pas de nouvelle fiche, voyez avec elle ou avec la direction.</div>
+        <div class="r-why">${why}</div></div>`;
+    }
+    const contacts = [r.phone && fmtPhone(r.phone), r.instagram && (String(r.instagram).startsWith('@') ? r.instagram : '@' + r.instagram), r.email].filter(Boolean).join(' · ');
+    return `<a class="result" href="/clients.html?id=${encodeURIComponent(r.id)}">
+      <div class="r-top"><div class="r-name">${esc(r.client_name)}</div><span class="chip">${esc(STATUS_LABEL[r.status] || r.status || '')}</span></div>
+      <div class="r-meta">${esc(contacts || 'Pas de coordonnées')}${r.owner_name && !r.mine ? ' · suivi par ' + esc(r.owner_name) : ''}${r.value ? ' · ' + eur(r.value) : ''}</div>
+      <div class="r-why">${why}</div></a>`;
+  }
+
+  // Propose de créer la fiche quand rien ne correspond aux coordonnées tapées.
+  function prefillCreate(q, items) {
+    const contactHit = items.some((r) => r.reasons.some((x) => x !== 'nom'));
+    if (contactHit) { $('create').style.display = 'none'; return; }
+    $('create').style.display = 'block';
+    const digits = q.replace(/\D/g, '');
+    $('n-phone').value = /^[\d\s+().-]+$/.test(q) && digits.length >= 8 ? q : '';
+    $('n-insta').value = q.startsWith('@') ? q : '';
+    $('n-name').value = !$('n-phone').value && !$('n-insta').value ? q : '';
+    $('n-msg').textContent = '';
+  }
+
+  async function createClient() {
+    const msg = $('n-msg'); msg.className = 'msg'; msg.textContent = '';
+    const name = $('n-name').value.trim();
+    if (!name && !$('n-phone').value.trim() && !$('n-insta').value.trim()) { msg.className = 'msg err'; msg.textContent = 'Un nom ou une coordonnée est nécessaire.'; return; }
+    try {
+      const { item } = await api('/api/leads', { method: 'POST', body: JSON.stringify({
+        client_name: name || $('n-insta').value.trim() || $('n-phone').value.trim(),
+        phone: $('n-phone').value.trim() || undefined,
+        instagram: $('n-insta').value.trim() || undefined,
+        client_contact: $('n-phone').value.trim() || $('n-insta').value.trim() || '',
+        canal: $('n-insta').value.trim() && !$('n-phone').value.trim() ? 'instagram' : 'whatsapp',
+        destination: $('n-need').value.trim(),
+      }) });
+      location.href = '/clients.html?id=' + encodeURIComponent(item.id);
+    } catch (e) {
+      msg.className = 'msg err';
+      const d = e.data?.duplicate;
+      msg.innerHTML = esc(e.message) + (d?.accessible && d.id ? ` · <a href="/clients.html?id=${encodeURIComponent(d.id)}" style="color:var(--w)">Ouvrir sa fiche</a>` : d ? ' · déjà suivi par un autre membre de l’équipe.' : '');
+    }
+  }
+
+  // ═══ FICHE ═══
+  async function loadFiche(id) {
+    $('search-view').style.display = 'none';
+    $('fiche-view').style.display = 'block';
+    try { fiche = await api('/api/clients/' + encodeURIComponent(id)); }
+    catch (e) { $('f-name').textContent = e.status === 403 ? 'Client hors de votre portefeuille' : 'Client introuvable'; return; }
+    renderFiche();
+    loadConversation(id);
+  }
+
+  function renderFiche() {
+    const c = fiche.client;
+    document.title = 'Ola Flight · ' + (c.client_name || 'Client');
+    $('f-name').textContent = c.client_name || 'Client';
+    const phone = c.phone || '';
+    const insta = c.instagram ? String(c.instagram).replace(/^@/, '') : (String(c.client_contact || '').startsWith('@') ? c.client_contact.slice(1) : '');
+    const contactPhone = phone || (/^\+?\d[\d\s]{6,}$/.test(String(c.client_contact || '')) ? c.client_contact : '');
+    $('f-contacts').innerHTML = [contactPhone && esc(fmtPhone(contactPhone)), insta && '@' + esc(insta), c.email && esc(c.email)].filter(Boolean).join(' · ') || 'Aucune coordonnée, complétez la fiche plus bas';
+    $('f-owner').textContent = c.owner ? 'Suivi par ' + c.owner.name : 'Non attribué';
+
+    const sel = $('f-status');
+    sel.innerHTML = STATUS.concat(STATUS.some(([k]) => k === c.status) ? [] : [[c.status, STATUS_LABEL[c.status] || c.status]])
+      .map(([k, v]) => `<option value="${esc(k)}" ${k === c.status ? 'selected' : ''}>${esc(v)}</option>`).join('');
+
+    const digits = String(contactPhone).replace(/\D/g, '');
+    setLink('q-wa', digits ? 'https://wa.me/' + digits : null);
+    setLink('q-ig', insta ? 'https://ig.me/m/' + encodeURIComponent(insta) : null);
+    setLink('q-tel', digits ? 'tel:+' + digits : null);
+    $('q-devis').href = '/devis-conciergerie.html?lead_id=' + encodeURIComponent(c.id);
+
+    const s = fiche.stats;
+    $('s-achats').textContent = eur(s.achats_total);
+    $('s-devis').textContent = String(s.devis_count);
+    $('s-last').textContent = s.dernier_echange ? when(s.dernier_echange) : 'Jamais';
+
+    $('e-name').value = c.client_name || '';
+    $('e-phone').value = fmtPhone(phone);
+    $('e-insta').value = insta ? '@' + insta : '';
+    $('e-email').value = c.email || '';
+    $('e-need').value = c.destination || '';
+    $('e-pref').value = c.preferences || '';
+    $('e-notes').value = c.notes || '';
+
+    renderFollowup();
+    renderTimeline();
+    renderDevis();
+  }
+
+  // ── Relance ──
+  const SEQ_LABEL = ['Premier contact', 'Relance 1 sur 3', 'Relance 2 sur 3', 'Dernière relance'];
+  function renderFollowup() {
+    const c = fiche.client;
+    const closed = ['won', 'lost', 'archived'].includes(c.status);
+    $('fu-panel').style.display = closed ? 'none' : '';
+    const ms = toMs(c.next_followup);
+    const step = Number(c.followup_step) || 0;
+    if (!ms) {
+      $('fu-when').textContent = step > 3 ? 'Sans réponse' : 'Aucune relance prévue';
+      $('fu-step').textContent = step > 3 ? '3 relances sans réponse : à relancer à la main ou passer en perdu' : 'Notez un échange ou choisissez une date';
+      return;
+    }
+    const d = new Date(ms), today = new Date();
+    const late = ms < new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const sameDay = d.toDateString() === today.toDateString();
+    $('fu-when').textContent = late ? 'En retard, ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+      : sameDay ? "Aujourd'hui" : d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    $('fu-when').style.color = late ? 'var(--red)' : sameDay ? 'var(--gold)' : '';
+    $('fu-step').textContent = ['devis_sent', 'offer'].includes(c.status) && step === 0 ? 'Suivi du devis envoyé' : (SEQ_LABEL[Math.min(step, 3)] || '');
+  }
+
+  async function snoozeFollowup(body) {
+    try {
+      const d = await api(`/api/followups/${encodeURIComponent(fiche.client.id)}/snooze`, { method: 'POST', body: JSON.stringify(body) });
+      fiche.client.next_followup = d.next_followup;
+      if (body.date === null) fiche.client.followup_step = 0;
+      $('fu-opts').style.display = 'none';
+      renderFollowup();
+    } catch (e) { alert(e.message); }
+  }
+
+  function setLink(id, href) {
+    const a = $(id);
+    if (href) { a.href = href; a.removeAttribute('aria-disabled'); } else { a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); }
+  }
+
+  function renderTimeline() {
+    const c = fiche.client;
+    const items = [
+      ...fiche.events.map((e) => ({ kind: e.type, at: e.created_at, ev: e })),
+      ...fiche.devis.map((d) => ({ kind: 'devis', at: d.created_at, d })),
+      { kind: 'created', at: c.created_at },
+    ].sort((a, b) => toMs(b.at) - toMs(a.at));
+
+    $('timeline').innerHTML = items.map((it) => {
+      if (it.kind === 'devis') {
+        const t = (it.d.prestations || []).map((p) => p.titre).join(', ') || it.d.compagnie || 'Devis vol';
+        return `<div class="ev devis"><div class="ev-h"><b>Devis ${it.d.paiement_recu ? 'payé' : 'envoyé'}</b><span>${when(it.at)}</span></div>
+          <div class="ev-b">${esc(t)} · ${eur(it.d.prix_vente)}</div></div>`;
+      }
+      if (it.kind === 'created') {
+        return `<div class="ev"><div class="ev-h"><b>Fiche créée</b><span>${when(it.at)}</span></div></div>`;
+      }
+      const e = it.ev;
+      const canDel = me && (me.role === 'admin' || e.author_email === me.email);
+      return `<div class="ev ${esc(e.type)}"><div class="ev-h"><b>${esc(EV_LABEL[e.type] || 'Note')}${e.channel && CHAN_LABEL[e.channel] ? ' · ' + CHAN_LABEL[e.channel] : ''}</b>
+        <span>${when(e.created_at)}${e.author_name && e.author_email !== me?.email ? ' · ' + esc(e.author_name) : ''}${canDel ? ` <button class="ev-x" data-del="${esc(e.id)}">✕</button>` : ''}</span></div>
+        ${e.body ? `<div class="ev-b">${esc(e.body)}</div>` : ''}</div>`;
+    }).join('');
+    $('timeline').querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => {
+      if (!confirm('Retirer cet échange de l’historique ?')) return;
+      await api(`/api/clients/${encodeURIComponent(fiche.client.id)}/events/${encodeURIComponent(b.dataset.del)}`, { method: 'DELETE' }).catch((e) => alert(e.message));
+      fiche.events = fiche.events.filter((x) => String(x.id) !== b.dataset.del);
+      renderTimeline();
+    }));
+  }
+
+  function renderDevis() {
+    if (!fiche.devis.length) {
+      $('devis').innerHTML = `<div class="empty">Aucun devis pour ce client.</div>`;
+      return;
+    }
+    $('devis').innerHTML = fiche.devis.map((d) => {
+      const titre = (d.prestations || []).map((p) => p.titre).join(', ') || [d.compagnie, d.ville_dep && d.ville_arr ? d.ville_dep + ' → ' + d.ville_arr : ''].filter(Boolean).join(' · ') || 'Devis';
+      const edit = d.kind === 'conciergerie' ? `/devis-conciergerie.html?id=${encodeURIComponent(d.id)}` : null;
+      return `<div class="dv">
+        <div class="dv-top"><div class="dv-t">${esc(titre)}</div><div class="dv-p">${eur(d.prix_vente)}</div></div>
+        <div class="dv-m">${esc(d.id)} · ${when(d.created_at)} ${d.paiement_recu ? '<span class="chip green">Payé</span>' : ''}</div>
+        <div class="dv-a">
+          ${d.pdf_url ? `<a class="btn small" href="${esc(d.pdf_url)}" target="_blank" rel="noopener">PDF</a>` : ''}
+          ${edit ? `<a class="btn small" href="${edit}">Modifier</a>` : ''}
+          <button class="btn small" data-paid="${esc(d.id)}" data-v="${d.paiement_recu ? '0' : '1'}">${d.paiement_recu ? 'Annuler le paiement' : 'Marquer payé'}</button>
+        </div></div>`;
+    }).join('');
+    $('devis').querySelectorAll('[data-paid]').forEach((b) => b.addEventListener('click', async () => {
+      const paid = b.dataset.v === '1';
+      if (paid && !confirm('Confirmer que ce devis a été payé ? Il comptera dans les achats et les commissions.')) return;
+      try {
+        await api('/api/devis/' + encodeURIComponent(b.dataset.paid), { method: 'PATCH', body: JSON.stringify({ paiement_recu: paid, regenerate_pdf: false }) });
+        if (paid && fiche.client.status !== 'won') {
+          await api('/api/leads/' + encodeURIComponent(fiche.client.id), { method: 'PATCH', body: JSON.stringify({ status: 'won' }) }).catch(() => {});
+        }
+        await loadFiche(fiche.client.id);
+      } catch (e) { alert(e.message); }
+    }));
+  }
+
+  async function saveEvent() {
+    const body = $('ev-body').value.trim();
+    const msg = $('ev-msg'); msg.className = 'msg'; msg.textContent = '';
+    if (evType === 'note' && !body) { msg.className = 'msg err'; msg.textContent = 'La note est vide.'; return; }
+    const c = fiche.client;
+    const channel = evType === 'call' ? 'phone' : evType.startsWith('dm') ? (c.instagram || String(c.client_contact || '').startsWith('@') ? 'instagram' : 'whatsapp') : null;
+    try {
+      const { event, lead } = await api(`/api/clients/${encodeURIComponent(c.id)}/events`, { method: 'POST', body: JSON.stringify({ type: evType, channel, body }) });
+      fiche.events.unshift(event);
+      if (lead) { Object.assign(c, lead); renderFollowup(); }
+      fiche.stats.dernier_echange = event.created_at;
+      if (['dm_out', 'call', 'meeting'].includes(evType) && ['qualification', 'new'].includes(c.status)) { c.status = 'contacted'; $('f-status').value = 'contacted'; }
+      $('ev-body').value = '';
+      $('s-last').textContent = when(event.created_at);
+      renderTimeline();
+      msg.className = 'msg ok'; msg.textContent = 'Enregistré';
+      setTimeout(() => { msg.textContent = ''; }, 1500);
+    } catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
+  }
+
+  async function saveFiche() {
+    const msg = $('e-msg'); msg.className = 'msg'; msg.textContent = '';
+    try {
+      const { client } = await api('/api/clients/' + encodeURIComponent(fiche.client.id), { method: 'PATCH', body: JSON.stringify({
+        client_name: $('e-name').value.trim() || undefined,
+        phone: $('e-phone').value.trim() || null,
+        instagram: $('e-insta').value.trim() || null,
+        email: $('e-email').value.trim() || null,
+        destination: $('e-need').value.trim(),
+        preferences: $('e-pref').value.trim(),
+        notes: $('e-notes').value.trim(),
+      }) });
+      fiche.client = { ...fiche.client, ...client };
+      renderFiche();
+      msg.className = 'msg ok'; msg.textContent = 'Fiche enregistrée';
+    } catch (e) {
+      msg.className = 'msg err';
+      const d = e.data?.duplicate;
+      msg.innerHTML = esc(e.message) + (d?.accessible && d.id ? ` <a href="/clients.html?id=${encodeURIComponent(d.id)}" style="color:var(--w)">Ouvrir cette fiche</a>` : '');
+    }
+  }
+
+  async function loadConversation(id) {
+    const d = await api('/api/leads/' + encodeURIComponent(id) + '/conversation').catch(() => null);
+    const msgs = d?.messages || [];
+    if (!msgs.length) return;
+    $('conv-panel').style.display = 'block';
+    $('conv-count').textContent = `(${msgs.length})`;
+    $('conv').innerHTML = msgs.map((m) => `<p class="${m.role === 'user' ? 'u' : 'a'}"><b>${m.role === 'user' ? 'Client' : 'Ola'} :</b> ${esc(typeof m.content === 'string' ? m.content : (m.text || ''))}</p>`).join('');
+  }
+
+  // ═══ INIT ═══
+  $('types').innerHTML = EV_TYPES.map(([k, v]) => `<button type="button" class="type ${k === evType ? 'on' : ''}" data-t="${k}">${v}</button>`).join('');
+  $('types').querySelectorAll('.type').forEach((b) => b.addEventListener('click', () => {
+    evType = b.dataset.t;
+    $('types').querySelectorAll('.type').forEach((x) => x.classList.toggle('on', x === b));
+    $('ev-body').placeholder = evType === 'note' ? 'Ce qu’il faut retenir…' : 'Ce qui s’est dit (optionnel)';
+  }));
+  $('ev-save').addEventListener('click', saveEvent);
+  $('fu-write').addEventListener('click', () => {
+    const c = fiche.client;
+    OlaComposer.open({ id: c.id, client_name: c.client_name, phone: c.phone || (/^\+?\d[\d\s]{6,}$/.test(String(c.client_contact || '')) ? c.client_contact : ''), instagram: c.instagram || (String(c.client_contact || '').startsWith('@') ? c.client_contact : ''), canal: c.canal },
+      { onDone: () => loadFiche(c.id) });
+  });
+  $('fu-snooze').addEventListener('click', () => { const o = $('fu-opts'); o.style.display = o.style.display === 'none' ? 'flex' : 'none'; });
+  $('fu-opts').querySelectorAll('[data-days]').forEach((b) => b.addEventListener('click', () => snoozeFollowup({ days: Number(b.dataset.days) })));
+  $('fu-opts').querySelector('[data-off]').addEventListener('click', () => snoozeFollowup({ date: null }));
+  $('fu-date').addEventListener('change', (e) => e.target.value && snoozeFollowup({ date: e.target.value }));
+  $('e-save').addEventListener('click', saveFiche);
+  $('n-save').addEventListener('click', createClient);
+  $('f-status').addEventListener('change', async (e) => {
+    try { await api('/api/leads/' + encodeURIComponent(fiche.client.id), { method: 'PATCH', body: JSON.stringify({ status: e.target.value }) }); fiche.client.status = e.target.value; }
+    catch (err) { alert(err.message); e.target.value = fiche.client.status; }
+  });
+  $('q').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(runSearch, 180); });
+
+  document.addEventListener('ola:auth', (e) => {
+    me = { email: e.detail.email, role: String(e.detail.role || '').toLowerCase() };
+    const p = new URLSearchParams(location.search);
+    if (p.get('id')) loadFiche(p.get('id'));
+    else { if (p.get('q')) { $('q').value = p.get('q'); runSearch(); } $('q').focus(); }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ola Flight · Tableau de bord</title>
+<meta name="ola-required-roles" content="admin,prospecteur,closer,concierge,dalsim,closeuse">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300;400&family=Montserrat:wght@200;300;400&display=swap');
+:root{--b:#0a0a0a;--b2:#111;--b3:#161616;--w:#f5f3ef;--g:rgba(245,243,239,0.45);--g2:rgba(245,243,239,0.7);--l:rgba(245,243,239,0.1);--l2:rgba(245,243,239,0.2);--green:#4ade80;--gold:#d4b56a;--red:#f87171;--silver:#c9c9c9;--bronze:#c08a5b;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--b);color:var(--w);}
+body{font-family:'Cormorant Garamond',serif;min-height:100dvh;-webkit-font-smoothing:antialiased;}
+.topbar{height:56px;background:var(--b2);border-bottom:1px solid var(--l);display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:20;}
+.tb-name{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;white-space:nowrap;}
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 64px;}
+h1{font-size:34px;font-weight:200;line-height:1.1;}
+h2{font-size:24px;font-weight:300;margin:28px 0 12px;}
+.label{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);}
+.mono{font-family:'Montserrat',sans-serif;font-weight:300;}
+.periods{display:flex;gap:6px;margin:14px 0 22px;overflow-x:auto;}
+.periods button{flex-shrink:0;font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:10px 12px;border:1px solid var(--l);background:none;color:var(--g2);cursor:pointer;}
+.periods button.on{border-color:var(--w);color:var(--w);}
+.hero{border:1px solid var(--l);background:var(--b2);padding:20px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:center;}
+@media(max-width:640px){.hero{grid-template-columns:minmax(0,1fr);}}
+.hero .big{font-size:52px;font-weight:300;line-height:1;color:var(--gold);margin-top:6px;word-break:break-word;}
+.rank{border-left:1px solid var(--l);padding-left:20px;}
+@media(max-width:640px){.rank{border-left:none;border-top:1px solid var(--l);padding:16px 0 0;}}
+.rank .n{font-size:44px;font-weight:300;line-height:1;}
+.rank .n sup{font-size:18px;}
+.rank p{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;color:var(--g2);margin-top:8px;line-height:1.6;}
+.rank p b{color:var(--w);font-weight:400;}
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:8px;}
+@media(max-width:760px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr));} .tiles .tile:last-child{grid-column:1/-1;}}
+.tile{border:1px solid var(--l);background:var(--b2);padding:14px;}
+.tile .v{font-size:28px;font-weight:300;margin-top:6px;white-space:nowrap;}
+.tile .v.warn{color:var(--red);}
+.goal{border:1px solid var(--l);background:var(--b2);padding:14px;margin-top:8px;}
+.goal-bar{height:6px;background:var(--b3);border:1px solid var(--l);margin:10px 0 6px;overflow:hidden;}
+.goal-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--green));}
+.badges{display:flex;gap:6px;flex-wrap:wrap;}
+.badge{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;padding:5px 8px;border:1px solid rgba(212,181,106,.45);color:var(--gold);white-space:nowrap;}
+/* Podium + classement */
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:end;margin-bottom:10px;}
+.pod{border:1px solid var(--l);background:var(--b2);padding:14px 10px;text-align:center;}
+.pod.p1{order:2;padding-top:26px;border-color:rgba(212,181,106,.5);} .pod.p2{order:1;} .pod.p3{order:3;}
+.pod .medal{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:3px;}
+.pod.p1 .medal{color:var(--gold);} .pod.p2 .medal{color:var(--silver);} .pod.p3 .medal{color:var(--bronze);}
+.pod .nm{font-size:22px;font-weight:300;margin:6px 0 2px;word-break:break-word;}
+.pod .val{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--g2);}
+.pod.self,.row.self{box-shadow:inset 0 0 0 1px var(--w);}
+.row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--l);background:var(--b2);padding:12px;margin-bottom:6px;}
+.row .r{font-size:22px;font-weight:300;color:var(--g2);text-align:center;}
+.row .nm{font-size:20px;font-weight:300;}
+.row .sub{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:300;color:var(--g);margin-top:2px;}
+.row .val{text-align:right;font-size:20px;font-weight:300;white-space:nowrap;}
+.row .val small{display:block;font-family:'Montserrat',sans-serif;font-size:9px;color:var(--g);}
+.row .badges{margin-top:6px;}
+.empty{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--g);padding:10px 0;line-height:1.7;}
+.settings{border:1px dashed var(--l2);padding:14px;margin-top:22px;}
+.toggle{display:flex;align-items:center;gap:10px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;color:var(--g2);cursor:pointer;margin-top:10px;}
+.toggle input{width:18px;height:18px;accent-color:var(--gold);}
+.team-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+@media(max-width:640px){.team-tiles{grid-template-columns:repeat(2,minmax(0,1fr));}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="tb-name">Ola</div>
+  <nav class="tb-app-nav"></nav>
+</header>
+
+<main class="wrap">
+  <h1>Tableau de bord</h1>
+  <div class="periods" id="periods">
+    <button data-p="week">Cette semaine</button>
+    <button data-p="month" class="on">Ce mois-ci</button>
+    <button data-p="last_month">Mois dernier</button>
+  </div>
+
+  <section id="me"></section>
+  <section id="team"></section>
+  <section id="board"></section>
+  <section id="settings"></section>
+</main>
+
+<script src="/auth-gate.js"></script>
+<script src="/app-nav.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const eur = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/ | /g, ' ') + ' €';
+  const ord = (n, fem = true) => n === 1 ? (fem ? '1<sup>re</sup>' : '1<sup>er</sup>') : `${n}<sup>e</sup>`;
+  let period = 'month';
+  let isAdmin = false;
+
+  const badgesHtml = (list) => list && list.length ? `<div class="badges">${list.map((b) => `<span class="badge" title="${esc(b.hint)}">${esc(b.label)}</span>`).join('')}</div>` : '';
+
+  function renderMe(d) {
+    const m = d.me;
+    if (!m) { $('me').innerHTML = ''; return; }
+    const lbl = d.period.label.toLowerCase();
+    let rankTxt;
+    if (!m.ventes && !m.devis) rankTxt = `Pas encore de devis ${period === 'week' ? 'cette semaine' : 'sur la période'}. Le premier devis lance la course.`;
+    else if (m.rank === 1) rankTxt = `<b>En tête</b> ${esc(lbl)}. Garde le rythme.`;
+    else if (m.gap_to_next != null) rankTxt = `Plus que <b>${eur(m.gap_to_next)}</b> de ventes pour passer ${ord(m.rank - 1)}.`;
+    else rankTxt = `Une belle vente et tu passes ${ord(m.rank - 1)}.`;
+    const goal = m.monthly_goal && period !== 'week'
+      ? `<div class="goal"><div class="label">Objectif de commissions</div>
+          <div class="goal-bar"><span style="width:${Math.min(100, Math.round(m.commissions / m.monthly_goal * 100))}%"></span></div>
+          <div class="mono" style="font-size:11px;color:var(--g2)">${eur(m.commissions)} sur ${eur(m.monthly_goal)} · <b style="color:var(--w);font-weight:400">${Math.round(m.commissions / m.monthly_goal * 100)} %</b></div></div>` : '';
+    $('me').innerHTML = `
+      <div class="hero">
+        <div><div class="label">Mon chiffre d'affaires · ${esc(lbl)}</div><div class="big">${eur(m.ca)}</div>
+          <div style="margin-top:12px">${badgesHtml(m.badges)}</div></div>
+        ${m.rank ? `<div class="rank"><div class="label">Classement</div><div class="n">${ord(m.rank)} <span class="mono" style="font-size:12px;color:var(--g)">sur ${m.out_of}</span></div><p>${rankTxt}</p></div>`
+          : `<div class="rank"><div class="label">Mes commissions</div><div class="n" style="color:var(--gold)">${eur(m.commissions)}</div></div>`}
+      </div>
+      <div class="tiles">
+        <div class="tile"><div class="label">Ventes</div><div class="v">${m.ventes}</div></div>
+        <div class="tile"><div class="label">Devis envoyés</div><div class="v">${m.devis}</div></div>
+        <div class="tile"><div class="label">Conversion</div><div class="v">${m.conversion == null ? '–' : m.conversion + ' %'}</div></div>
+        <div class="tile"><div class="label">Mes commissions</div><div class="v" style="color:var(--gold)">${eur(m.commissions)}</div></div>
+        <div class="tile"><div class="label">Relances en retard</div><div class="v ${m.relances_en_retard ? 'warn' : ''}">${m.relances_en_retard}</div></div>
+      </div>${goal}`;
+  }
+
+  function renderTeam(d) {
+    if (!d.team) { $('team').innerHTML = ''; return; }
+    const t = d.team;
+    $('team').innerHTML = `<h2>L'équipe · ${esc(d.period.label.toLowerCase())}</h2>
+      <div class="team-tiles">
+        <div class="tile"><div class="label">Chiffre d'affaires</div><div class="v">${eur(t.ca)}</div></div>
+        <div class="tile"><div class="label">Marge</div><div class="v">${eur(t.marge)}</div></div>
+        <div class="tile"><div class="label">Ventes / devis</div><div class="v">${t.ventes} / ${t.devis}</div></div>
+        <div class="tile"><div class="label">Commissions dues</div><div class="v">${eur(t.commissions)}</div></div>
+      </div>`;
+  }
+
+  function renderBoard(d) {
+    const lb = d.leaderboard;
+    if (!lb) { $('board').innerHTML = ''; return; }
+    if (!lb.length) { $('board').innerHTML = `<h2>Classement</h2><div class="empty">Aucune concierge pour l’instant.</div>`; return; }
+    const val = (r) => r.ca != null ? eur(r.ca) : `${r.ventes} vente${r.ventes > 1 ? 's' : ''}`;
+    const sub = (r) => [r.ca != null ? `${r.ventes} vente${r.ventes > 1 ? 's' : ''}` : null, `${r.devis} devis`, r.conversion != null ? `${r.conversion} % conv.` : null, `${r.echanges} échanges`].filter(Boolean).join(' · ');
+    const podium = lb.slice(0, 3).filter((r) => r.ventes || r.devis);
+    const medals = ['Or', 'Argent', 'Bronze'];
+    $('board').innerHTML = `<h2>Classement · ${esc(d.period.label.toLowerCase())}</h2>
+      ${podium.length === 3 ? `<div class="podium">${podium.map((r, i) => `
+        <div class="pod p${i + 1} ${r.self ? 'self' : ''}"><div class="medal">${medals[i]}</div><div class="nm">${esc(r.name)}</div><div class="val">${val(r)}</div></div>`).join('')}</div>` : ''}
+      ${lb.map((r) => `<div class="row ${r.self ? 'self' : ''}">
+        <div class="r">${r.rank}</div>
+        <div><div class="nm">${esc(r.name)}${r.self ? ' <span class="mono" style="font-size:9px;color:var(--g)">(moi)</span>' : ''}</div><div class="sub">${esc(sub(r))}</div>${badgesHtml(r.badges)}</div>
+        <div class="val">${val(r)}${r.commissions != null && isAdmin ? `<small>commissions ${eur(r.commissions)}</small>` : ''}</div>
+      </div>`).join('')}`;
+  }
+
+  function renderSettings(d) {
+    if (!isAdmin) { $('settings').innerHTML = ''; return; }
+    const s = d.settings;
+    $('settings').innerHTML = `<div class="settings"><div class="label">Ce que voient les concierges</div>
+      <label class="toggle"><input type="checkbox" id="s-vis" ${s.leaderboard_visible ? 'checked' : ''}> Afficher le classement de l'équipe</label>
+      <label class="toggle"><input type="checkbox" id="s-amt" ${s.leaderboard_amounts ? 'checked' : ''}> Montrer le chiffre d'affaires des autres (sinon : rang et nombre de ventes)</label>
+      <div class="mono" id="s-msg" style="font-size:10px;color:var(--green);margin-top:8px;min-height:1em"></div></div>`;
+    const save = async () => {
+      const r = await fetch('/api/dashboard/settings', { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leaderboard_visible: $('s-vis').checked, leaderboard_amounts: $('s-amt').checked }) });
+      $('s-msg').textContent = r.ok ? 'Enregistré' : 'Erreur';
+      setTimeout(() => { $('s-msg').textContent = ''; }, 1500);
+    };
+    $('s-vis').addEventListener('change', save);
+    $('s-amt').addEventListener('change', save);
+  }
+
+  async function load() {
+    const r = await fetch('/api/dashboard?period=' + period, { credentials: 'include' });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { $('me').innerHTML = `<div class="empty">${esc(d.error || 'Erreur')}</div>`; return; }
+    renderMe(d); renderTeam(d); renderBoard(d); renderSettings(d);
+    if (!d.me && !d.leaderboard) $('me').innerHTML = '<div class="empty">Le classement n’est pas affiché pour le moment.</div>';
+  }
+
+  $('periods').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+    period = b.dataset.p;
+    $('periods').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+    load();
+  }));
+  document.addEventListener('ola:auth', (e) => { isAdmin = String(e.detail.role || '').toLowerCase() === 'admin'; load(); });
+})();
+</script>
+</body>
+</html>

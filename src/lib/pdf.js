@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import { config } from "../config.js";
 import { createLogger } from "../logger.js";
 import { renderDevisHtml } from "./pdfTemplate.js";
+import { renderConciergerieDevisHtml, CONCIERGERIE_PDF_OPTIONS } from "./pdfConciergerieTemplate.js";
 import { OLA_LOGO_DATA_URI } from "./olaLogo.js";
 import { sanitizeDevisForRole } from "./commissions.js";
 
@@ -41,7 +42,8 @@ export async function generateDevisPdf({ devis, lead }) {
   // prix_revient / marge / commissions avant de toucher au template.
   const safeDevis = sanitizeDevisForRole(devis, "client");
 
-  const html = renderDevisHtml({
+  const render = devis.kind === "conciergerie" ? renderConciergerieDevisHtml : renderDevisHtml;
+  const html = render({
     devis: safeDevis,
     lead,
     companyLogo: OLA_LOGO_DATA_URI,
@@ -61,6 +63,7 @@ export async function generateDevisPdf({ devis, lead }) {
       format: "A4",
       printBackground: true,
       margin: { top: "0", right: "0", bottom: "0", left: "0" },
+      ...(devis.kind === "conciergerie" ? CONCIERGERIE_PDF_OPTIONS : {}),
     });
     log.info(`pdf généré → ${publicUrl}`);
     return { absolutePath, publicUrl, filename };

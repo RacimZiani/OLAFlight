@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ola Flight · Import</title>
+<meta name="ola-required-roles" content="admin">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300;400&family=Montserrat:wght@200;300;400&display=swap');
+:root{--b:#0a0a0a;--b2:#111;--b3:#161616;--w:#f5f3ef;--g:rgba(245,243,239,0.45);--g2:rgba(245,243,239,0.7);--l:rgba(245,243,239,0.1);--l2:rgba(245,243,239,0.2);--green:#4ade80;--gold:#d4b56a;--red:#f87171;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--b);color:var(--w);}
+body{font-family:'Cormorant Garamond',serif;min-height:100dvh;-webkit-font-smoothing:antialiased;}
+.topbar{height:56px;background:var(--b2);border-bottom:1px solid var(--l);display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:20;}
+.tb-name{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;white-space:nowrap;}
+.wrap{max-width:920px;margin:0 auto;padding:24px 16px 64px;}
+h1{font-size:34px;font-weight:200;line-height:1.1;}
+h2{font-size:22px;font-weight:300;margin:26px 0 10px;}
+.sub{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;color:var(--g2);margin:10px 0 22px;line-height:1.7;max-width:640px;}
+.label{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);}
+.mono{font-family:'Montserrat',sans-serif;font-weight:300;}
+.drop{border:1px dashed var(--l2);background:var(--b2);padding:36px 16px;text-align:center;cursor:pointer;display:block;}
+.drop:hover,.drop.over{border-color:var(--gold);}
+.drop b{display:block;font-size:24px;font-weight:300;margin-bottom:6px;}
+.drop span{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--g2);}
+.btn{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;padding:14px 18px;border:1px solid var(--l2);background:transparent;color:var(--w);cursor:pointer;min-height:46px;}
+.btn.primary{background:var(--w);color:var(--b);border-color:var(--w);}
+.btn[disabled]{opacity:.4;pointer-events:none;}
+.msg{font-family:'Montserrat',sans-serif;font-size:11px;margin-top:10px;min-height:1em;}
+.msg.err{color:var(--red);}
+.tabs-map{border:1px solid var(--l);}
+.tm{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) auto;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--l);}
+.tm:last-child{border-bottom:none;}
+.tm.empty{opacity:.45;}
+.tm-name{font-size:20px;font-weight:300;}
+.tm-name small{display:block;font-family:'Montserrat',sans-serif;font-size:9px;color:var(--g);}
+.tm select{width:100%;background:var(--b3);border:1px solid var(--l);color:var(--w);font-family:'Montserrat',sans-serif;font-size:13px;padding:10px;border-radius:0;}
+.tm-n{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--g2);text-align:right;white-space:nowrap;line-height:1.5;}
+.tm-n b{color:var(--w);font-weight:400;font-size:13px;}
+@media(max-width:620px){.tm{grid-template-columns:minmax(0,1fr) auto;} .tm select{grid-column:1 / -1;grid-row:2;}}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+@media(max-width:620px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.kpi{border:1px solid var(--l);background:var(--b2);padding:14px;}
+.kpi .v{font-size:30px;font-weight:300;margin-top:6px;}
+.kpi.main .v{color:var(--gold);}
+.opts{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;color:var(--g2);margin:14px 0;}
+.opts input{width:70px;background:var(--b3);border:1px solid var(--l);color:var(--w);font-size:15px;padding:8px;text-align:center;border-radius:0;}
+details{border:1px solid var(--l);background:var(--b2);margin-bottom:8px;}
+details summary{cursor:pointer;padding:12px 14px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;color:var(--g2);list-style:none;}
+details summary::-webkit-details-marker{display:none;}
+details summary b{color:var(--w);font-weight:400;}
+.list{padding:0 14px 12px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;line-height:1.7;color:var(--g2);}
+.list div{border-top:1px solid var(--l);padding:6px 0;}
+table{width:100%;border-collapse:collapse;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--l);}
+th{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--g);font-weight:300;}
+.scroll{overflow-x:auto;}
+.chip{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 6px;border:1px solid var(--l2);white-space:nowrap;}
+.chip.hot{color:var(--red);border-color:rgba(248,113,113,.4);}
+.done{border:1px solid rgba(74,222,128,.35);background:rgba(74,222,128,.05);padding:18px;}
+.done b{font-size:28px;font-weight:300;display:block;}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="tb-name">Ola</div>
+  <nav class="tb-app-nav"></nav>
+</header>
+
+<main class="wrap">
+  <h1>Import du Google Sheet</h1>
+  <p class="sub">Reprenez les prospects du fichier « CRM Prospection » : chaque onglet est attribué à une concierge, les doublons sont fusionnés, et les relances sont programmées automatiquement. Rien n'est enregistré avant de cliquer sur « Importer ». Un client déjà présent dans le CRM n'est jamais recréé, vous pouvez relancer l'import sans risque.</p>
+
+  <section id="step-file">
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept=".xlsx" hidden>
+      <b>Choisir le fichier .xlsx</b>
+      <span>Dans Google Sheets : Fichier → Télécharger → Microsoft Excel (.xlsx)</span>
+    </label>
+    <div class="msg" id="file-msg"></div>
+  </section>
+
+  <section id="step-plan" style="display:none">
+    <h2>1. Attribuer chaque onglet</h2>
+    <div class="tabs-map" id="tabs-map"></div>
+
+    <h2>2. Vérifier</h2>
+    <div class="kpis">
+      <div class="kpi main"><div class="label">Fiches à créer</div><div class="v" id="k-new">0</div></div>
+      <div class="kpi"><div class="label">Doublons fusionnés</div><div class="v" id="k-merged">0</div></div>
+      <div class="kpi"><div class="label">Déjà dans le CRM</div><div class="v" id="k-there">0</div></div>
+      <div class="kpi"><div class="label">Lignes ignorées</div><div class="v" id="k-skip">0</div></div>
+    </div>
+    <div class="opts">
+      Étaler les relances à
+      <input type="number" id="per-day" min="1" max="100" value="10">
+      par jour et par concierge <span id="until"></span>
+    </div>
+    <div id="details"></div>
+
+    <h2>3. Importer</h2>
+    <button class="btn primary" type="button" id="commit">Importer</button>
+    <div class="msg" id="commit-msg"></div>
+  </section>
+
+  <section id="step-done" style="display:none"></section>
+</main>
+
+<script src="/auth-gate.js"></script>
+<script src="/app-nav.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const day = (ms) => ms ? new Date(ms).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+  const STATUS = { contacted: 'Contacté', interested: 'Intéressé', qualification: 'À contacter', call_booked: 'RDV pris', nego: 'Négociation', won: 'Gagné', lost: 'Perdu' };
+  let state = null;
+
+  async function post(url, body, raw) {
+    const r = await fetch(url, raw
+      ? { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/octet-stream', 'X-Filename': raw }, body }
+      : { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((d.issues && d.issues[0]?.message) || d.error || 'Erreur');
+    return d;
+  }
+
+  async function upload(file) {
+    $('file-msg').className = 'msg'; $('file-msg').textContent = 'Lecture du fichier…';
+    try {
+      const d = await post('/api/import/preview', await file.arrayBuffer(), file.name);
+      state = { token: d.token, users: d.users, mapping: d.mapping };
+      $('file-msg').textContent = `« ${file.name} » lu : ${d.preview.tabs.length} onglets.`;
+      $('step-plan').style.display = '';
+      renderMapping(d.preview);
+      renderPreview(d.preview);
+    } catch (e) { $('file-msg').className = 'msg err'; $('file-msg').textContent = e.message; }
+  }
+
+  function renderMapping(p) {
+    const opts = (sel) => `<option value="">Ne pas importer</option>` + state.users.map((u) =>
+      `<option value="${esc(u.email)}" ${u.email === sel ? 'selected' : ''}>${esc(u.name)} · ${esc(u.role_label)}</option>`).join('');
+    $('tabs-map').innerHTML = p.tabs.map((t) => `
+      <div class="tm ${t.rows ? '' : 'empty'}">
+        <div class="tm-name">${esc(t.name)}<small>${t.rows ? t.rows + ' lignes' : 'onglet vide'}</small></div>
+        ${t.rows ? `<select data-tab="${esc(t.name)}">${opts(state.mapping[t.name])}</select>` : '<span></span>'}
+        <div class="tm-n" data-n="${esc(t.name)}"></div>
+      </div>`).join('');
+    $('tabs-map').querySelectorAll('select').forEach((s) => s.addEventListener('change', () => { state.mapping[s.dataset.tab] = s.value; refresh(); }));
+  }
+
+  function renderPreview(p) {
+    $('k-new').textContent = p.totals.a_creer;
+    $('k-merged').textContent = p.totals.fusionnes;
+    $('k-there').textContent = p.totals.deja_la;
+    $('k-skip').textContent = p.totals.ignores;
+    $('until').textContent = p.relances_jusquau ? `· dernières relances le ${day(p.relances_jusquau)}` : '';
+    for (const t of p.tabs) {
+      const el = document.querySelector(`[data-n="${CSS.escape(t.name)}"]`);
+      if (el) el.innerHTML = t.rows ? (t.owner ? `<b>${t.a_creer}</b> à créer${t.fusionnes ? `<br>${t.fusionnes} fusionnés` : ''}${t.deja_la ? `<br>${t.deja_la} déjà là` : ''}${t.ignores ? `<br>${t.ignores} vides` : ''}` : 'ignoré') : '';
+    }
+    const unassigned = p.tabs.filter((t) => t.rows && !t.owner).map((t) => t.name);
+    const reasons = Object.entries(p.ignores_par_raison).map(([r, n]) => `${n} ${r === 'ni nom ni coordonnées' ? 'lignes sans nom ni coordonnées (statut prérempli sans client)' : r}`).join(' · ');
+    $('details').innerHTML = `
+      ${unassigned.length ? `<p class="msg err" style="margin-bottom:10px">Onglet${unassigned.length > 1 ? 's' : ''} non attribué${unassigned.length > 1 ? 's' : ''} : ${esc(unassigned.join(', '))}. Créez le compte dans « Comptes » ou choisissez une concierge.</p>` : ''}
+      <details open><summary><b>Aperçu</b> · ${p.chauds} clients chauds, ${Object.entries(p.statuts).map(([k, n]) => `${n} ${esc((STATUS[k] || k).toLowerCase())}`).join(', ')}</summary>
+        <div class="scroll" style="padding:0 14px 12px"><table><tr><th>Client</th><th>Contact</th><th>Besoin</th><th>Statut</th><th>Onglet</th><th>Relance</th></tr>
+        ${p.exemples.map((c) => `<tr><td>${esc(c.name)} ${c.temperature === 'chaud' ? '<span class="chip hot">chaud</span>' : ''}</td><td>${esc(c.contact)}</td><td>${esc(c.besoin)}</td><td>${esc(STATUS[c.status] || c.status)}</td><td>${esc(c.tab)}</td><td>${esc(day(c.next_followup))}</td></tr>`).join('')}
+        </table></div></details>
+      <details><summary><b>Sources</b> · ${Object.entries(p.sources).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${esc(k)} ${n}`).join(' · ')}</summary></details>
+      ${p.merged.length ? `<details><summary><b>${p.totals.fusionnes} doublons fusionnés</b> · le client reste à la première concierge qui l'a contacté, l'autre contact est noté sur sa fiche</summary>
+        <div class="list">${p.merged.map((m) => `<div>${esc(m.name)} : onglet ${esc(m.tab)} ligne ${m.line} → gardé dans l'onglet ${esc(m.kept.tab)} (ligne ${m.kept.line})</div>`).join('')}</div></details>` : ''}
+      ${p.deja_la.length ? `<details><summary><b>${p.totals.deja_la} déjà dans le CRM</b> · pas recréés</summary>
+        <div class="list">${p.deja_la.map((m) => `<div>${esc(m.name)} (onglet ${esc(m.tab)}, ligne ${m.line}) → fiche existante « ${esc(m.existing)} »</div>`).join('')}</div></details>` : ''}
+      ${p.warnings.length ? `<details><summary><b>${p.warnings.length} corrections automatiques</b></summary>
+        <div class="list">${p.warnings.map((w) => `<div>${esc(w.name)} (onglet ${esc(w.tab)}, ligne ${w.line}) : ${esc(w.warning)}</div>`).join('')}</div></details>` : ''}
+      ${p.totals.ignores ? `<details><summary><b>${p.totals.ignores} lignes ignorées</b> · ${esc(reasons)}</summary></details>` : ''}`;
+    $('commit').disabled = !p.totals.a_creer;
+    $('commit').textContent = p.totals.a_creer ? `Importer ${p.totals.a_creer} clients` : 'Rien à importer';
+  }
+
+  let timer;
+  function refresh() {
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      try {
+        const d = await post('/api/import/plan', { token: state.token, mapping: state.mapping, perDay: Number($('per-day').value) || 10 });
+        renderPreview(d.preview);
+      } catch (e) { $('commit-msg').className = 'msg err'; $('commit-msg').textContent = e.message; }
+    }, 200);
+  }
+
+  $('commit').addEventListener('click', async () => {
+    const n = $('k-new').textContent;
+    if (!confirm(`Créer ${n} fiches clients dans le CRM ?`)) return;
+    $('commit').disabled = true; $('commit').textContent = 'Import en cours…';
+    try {
+      const r = await post('/api/import/commit', { token: state.token, mapping: state.mapping, perDay: Number($('per-day').value) || 10 });
+      const names = new Map(state.users.map((u) => [u.email, u.name]));
+      $('step-plan').style.display = 'none';
+      $('step-file').style.display = 'none';
+      $('step-done').style.display = '';
+      $('step-done').innerHTML = `<div class="done"><b>${r.created} clients importés</b>
+        <p class="mono" style="font-size:12px;color:var(--g2);margin-top:8px;line-height:1.8">
+        ${Object.entries(r.par_concierge).map(([e, n]) => `${esc(names.get(e) || e)} : ${n}`).join(' · ')}<br>
+        ${r.events} échanges repris dans l'historique · ${r.fusionnes} doublons fusionnés · ${r.deja_la} déjà présents${r.errors.length ? ` · <span style="color:var(--red)">${r.errors.length} erreurs</span>` : ''}</p></div>
+        ${r.errors.length ? `<details style="margin-top:10px"><summary><b>Erreurs</b></summary><div class="list">${r.errors.map((e) => `<div>${esc(e.name)} (onglet ${esc(e.tab)}, ligne ${e.line}) : ${esc(e.error)}</div>`).join('')}</div></details>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><a class="btn primary" href="/relances.html" style="text-decoration:none">Voir les relances</a><a class="btn" href="/clients.html" style="text-decoration:none">Rechercher un client</a></div>`;
+    } catch (e) {
+      $('commit-msg').className = 'msg err'; $('commit-msg').textContent = e.message;
+      $('commit').disabled = false; $('commit').textContent = 'Importer';
+    }
+  });
+
+  $('per-day').addEventListener('input', () => state && refresh());
+  $('file').addEventListener('change', (e) => e.target.files[0] && upload(e.target.files[0]));
+  const drop = $('drop');
+  ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => e.dataTransfer.files[0] && upload(e.dataTransfer.files[0]));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ola Flight · Devis conciergerie</title>
+<meta name="ola-required-roles" content="admin,prospecteur,closer,concierge,dalsim,closeuse">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300;400&family=Montserrat:wght@200;300;400&display=swap');
+:root{--b:#0a0a0a;--b2:#111;--b3:#161616;--w:#f5f3ef;--g:rgba(245,243,239,0.45);--g2:rgba(245,243,239,0.7);--l:rgba(245,243,239,0.1);--l2:rgba(245,243,239,0.2);--green:#4ade80;--gold:#d4b56a;--red:#f87171;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--b);color:var(--w);}
+body{font-family:'Cormorant Garamond',serif;min-height:100dvh;-webkit-font-smoothing:antialiased;padding-bottom:calc(120px + env(safe-area-inset-bottom));}
+.topbar{height:56px;background:var(--b2);border-bottom:1px solid var(--l);display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:20;}
+.tb-name{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;white-space:nowrap;}
+.wrap{max-width:860px;margin:0 auto;padding:28px 16px 32px;}
+h1{font-size:34px;font-weight:200;line-height:1.1;}
+.sub{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin:10px 0 24px;}
+.label{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);}
+.panel{border:1px solid var(--l);background:var(--b2);padding:18px;margin-bottom:16px;}
+.ptitle{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.f{margin-bottom:12px;min-width:0;}
+.f label{display:block;margin-bottom:6px;}
+input,textarea,select{width:100%;background:var(--b3);border:1px solid var(--l);color:var(--w);font-family:'Montserrat',sans-serif;font-size:16px;font-weight:300;padding:12px;outline:none;border-radius:0;-webkit-appearance:none;}
+textarea{resize:vertical;min-height:70px;line-height:1.5;}
+input:focus,textarea:focus,select:focus{border-color:var(--g2);}
+input::placeholder,textarea::placeholder{color:rgba(245,243,239,0.25);}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
+.row3{display:grid;grid-template-columns:minmax(0,.6fr) minmax(0,1fr) minmax(0,1fr);gap:10px;}
+@media(max-width:520px){.row3{grid-template-columns:minmax(0,1fr) minmax(0,1fr);} .row3 .f:first-child{grid-column:1 / -1;}}
+.btn{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;padding:14px 18px;border:1px solid var(--l2);background:transparent;color:var(--w);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;}
+.btn:hover{border-color:var(--w);}
+.btn.primary{background:var(--w);color:var(--b);border-color:var(--w);}
+.btn.small{padding:8px 10px;min-height:34px;font-size:8px;letter-spacing:2px;}
+.btn[disabled]{opacity:.4;pointer-events:none;}
+
+/* Client existant */
+.match{display:none;border:1px solid rgba(212,181,106,.4);background:rgba(212,181,106,.06);padding:12px;margin-top:4px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;line-height:1.6;}
+.match b{font-weight:400;}
+.match .btn{margin-top:10px;}
+.linked{display:none;align-items:center;justify-content:space-between;gap:12px;border:1px solid rgba(74,222,128,.35);padding:12px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;}
+
+/* Catalogue */
+.catalog{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
+.cat-btn{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:300;letter-spacing:1px;text-align:left;padding:14px 12px;background:var(--b3);border:1px solid var(--l);color:var(--w);cursor:pointer;min-height:52px;}
+.cat-btn:hover,.cat-btn:active{border-color:var(--gold);}
+.cat-btn small{display:block;color:var(--gold);font-size:16px;margin-bottom:2px;font-family:'Cormorant Garamond',serif;}
+
+/* Lignes */
+.line{border:1px solid var(--l);background:var(--b2);padding:16px;margin-bottom:12px;}
+.line-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;}
+.line-type{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);}
+.line-rm{background:none;border:none;color:var(--g);font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;padding:6px;}
+.line-rm:hover{color:var(--red);}
+.details{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 10px;}
+@media(max-width:420px){.details{grid-template-columns:minmax(0,1fr);}}
+.toggle{display:flex;align-items:center;gap:10px;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:300;color:var(--g2);cursor:pointer;margin-bottom:12px;user-select:none;}
+.toggle input{width:18px;height:18px;accent-color:var(--gold);-webkit-appearance:auto;padding:0;}
+.line-total{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--g2);text-align:right;}
+.line-total b{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;color:var(--w);}
+.empty{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--g);padding:6px 0 14px;}
+
+/* Barre de total collante */
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(17,17,17,.97);border-top:1px solid var(--l2);padding:12px 16px calc(12px + env(safe-area-inset-bottom));z-index:30;backdrop-filter:blur(8px);}
+.bar-in{max-width:860px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.bar-nums{display:flex;gap:18px;min-width:0;}
+.bar-n .label{font-size:7px;letter-spacing:2px;}
+.bar-n .v{font-size:22px;font-weight:300;white-space:nowrap;}
+.bar-n .v.gold{color:var(--gold);}
+@media(max-width:420px){.bar-n.marge{display:none;} .bar-n .v{font-size:19px;}}
+/* Téléphone : la barre du total se pose au-dessus des onglets de navigation. */
+@media(max-width:760px){
+  .ola-has-tabbar .bar{bottom:calc(60px + env(safe-area-inset-bottom));padding-bottom:12px;border-bottom:1px solid var(--l);}
+  html.ola-has-tabbar body{padding-bottom:calc(150px + env(safe-area-inset-bottom)) !important;}
+}
+
+/* Résultat */
+.done{display:none;}
+.done h2{font-size:28px;font-weight:200;margin-bottom:6px;}
+.done p{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;color:var(--g2);line-height:1.7;margin-bottom:16px;}
+.actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;}
+@media(max-width:420px){.actions{grid-template-columns:minmax(0,1fr);}}
+.msg-box{width:100%;min-height:120px;font-size:13px;margin:12px 0 8px;}
+.err{color:var(--red);font-family:'Montserrat',sans-serif;font-size:11px;margin-top:10px;display:none;}
+.warn{color:var(--gold);font-family:'Montserrat',sans-serif;font-size:11px;margin-bottom:12px;}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="tb-name">Ola</div>
+  <nav class="tb-app-nav"></nav>
+</header>
+
+<main class="wrap">
+  <div id="editor">
+    <h1 id="page-title">Devis conciergerie</h1>
+    <p class="sub" id="page-sub">Chauffeur, shopping, horlogerie, hôtel, jet : tout dans un seul devis</p>
+
+    <!-- CLIENT -->
+    <section class="panel" id="client-panel">
+      <div class="ptitle">Client</div>
+      <div class="linked" id="linked">
+        <div>Fiche client : <b id="linked-name"></b><br><span style="color:var(--g)" id="linked-contact"></span></div>
+        <button type="button" class="btn small" id="unlink">Changer</button>
+      </div>
+      <div id="client-fields">
+        <div class="f"><label class="label" for="c-name">Nom</label><input id="c-name" autocomplete="off" placeholder="Marc Dupont"></div>
+        <div class="row2">
+          <div class="f"><label class="label" for="c-phone">Téléphone</label><input id="c-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="06 12 34 56 78"></div>
+          <div class="f"><label class="label" for="c-insta">Instagram</label><input id="c-insta" autocomplete="off" autocapitalize="off" placeholder="@marc.dupont"></div>
+        </div>
+        <div class="f"><label class="label" for="c-email">Email</label><input id="c-email" type="email" inputmode="email" autocomplete="off" autocapitalize="off" placeholder="Optionnel"></div>
+        <div class="match" id="match"></div>
+      </div>
+    </section>
+
+    <!-- PRESTATIONS -->
+    <section class="panel">
+      <div class="ptitle">Prestations</div>
+      <div id="lines"></div>
+      <div class="empty" id="lines-empty">Choisissez une prestation à ajouter :</div>
+      <div class="catalog" id="catalog"></div>
+    </section>
+
+    <!-- CONDITIONS -->
+    <section class="panel">
+      <div class="ptitle">Conditions</div>
+      <div class="f">
+        <label class="label" for="validite">Validité de la proposition</label>
+        <select id="validite">
+          <option value="3">3 jours</option>
+          <option value="7" selected>7 jours</option>
+          <option value="14">14 jours</option>
+          <option value="30">30 jours</option>
+        </select>
+      </div>
+      <div class="f"><label class="label" for="notes">Informations pour le client</label>
+        <textarea id="notes" placeholder="Acompte de 30 % à la commande, livraison en main propre…"></textarea></div>
+      <div class="err" id="err"></div>
+    </section>
+  </div>
+
+  <!-- RÉSULTAT -->
+  <section class="panel done" id="done">
+    <h2 id="done-title">Devis créé</h2>
+    <p id="done-sub"></p>
+    <div class="warn" id="done-warn" style="display:none"></div>
+    <div class="actions">
+      <a class="btn primary" id="a-pdf" target="_blank" rel="noopener">Voir le PDF</a>
+      <a class="btn" id="a-wa" target="_blank" rel="noopener">Envoyer sur WhatsApp</a>
+      <button type="button" class="btn" id="a-copy">Copier le message</button>
+      <a class="btn" id="a-ig" target="_blank" rel="noopener">Ouvrir Instagram</a>
+    </div>
+    <textarea class="msg-box" id="msg"></textarea>
+    <div class="actions">
+      <a class="btn" id="a-edit">Modifier ce devis</a>
+      <a class="btn" href="/devis-conciergerie.html">Nouveau devis</a>
+    </div>
+  </section>
+</main>
+
+<div class="bar" id="bar">
+  <div class="bar-in">
+    <div class="bar-nums">
+      <div class="bar-n"><div class="label">Total client</div><div class="v" id="t-vente">0 €</div></div>
+      <div class="bar-n marge" id="b-marge"><div class="label">Marge</div><div class="v" id="t-marge">0 €</div></div>
+      <div class="bar-n" id="b-com" style="display:none"><div class="label">Ma commission</div><div class="v gold" id="t-com">0 €</div></div>
+    </div>
+    <button type="button" class="btn primary" id="submit" disabled>Générer</button>
+  </div>
+</div>
+
+<script src="/auth-gate.js"></script>
+<script src="/app-nav.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = (v) => { const n = parseFloat(String(v ?? '').replace(/\s/g, '').replace(',', '.')); return Number.isFinite(n) && n >= 0 ? n : 0; };
+  const eur = (n) => Math.round(n).toLocaleString('fr-FR').replace(/ | /g, ' ') + ' €';
+
+  // Mêmes règles que src/lib/clientMatch.js
+  const normPhone = (v) => { let d = String(v || '').replace(/[^\d+]/g, ''); if (!d) return ''; if (d[0] === '+') d = d.slice(1); else if (d.startsWith('00')) d = d.slice(2); else if (d.length === 10 && d[0] === '0') d = '33' + d.slice(1); d = d.replace(/\D/g, ''); return d.length >= 8 ? d : ''; };
+  const normInsta = (v) => { let s = String(v || '').trim().toLowerCase(); s = s.replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/[/?#].*$/, '').replace(/^@+/, ''); return /^[a-z0-9._]{1,30}$/.test(s) ? s : ''; };
+  const normEmail = (v) => { const s = String(v || '').trim().toLowerCase(); return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? s : ''; };
+  const leadIds = (l) => { const c = String(l.client_contact || ''); return {
+    phone: normPhone(l.phone) || normPhone(c),
+    insta: normInsta(l.instagram) || (c.trim().startsWith('@') || l.canal === 'instagram' ? normInsta(c) : ''),
+    email: normEmail(l.email) || normEmail(c) }; };
+
+  let catalog = [];
+  let lines = [];
+  let leads = [];
+  let linkedLead = null;
+  let role = '';
+  let rate = null;
+  let editId = null;
+  let lastResult = null;
+
+  // ── Client ────────────────────────────────────────────────
+  function setLinked(lead) {
+    linkedLead = lead;
+    $('linked').style.display = lead ? 'flex' : 'none';
+    $('client-fields').style.display = lead ? 'none' : '';
+    if (lead) {
+      const id = leadIds(lead);
+      $('linked-name').textContent = lead.client_name || 'Client';
+      $('linked-contact').textContent = [id.phone && '+' + id.phone, id.insta && '@' + id.insta, id.email].filter(Boolean).join(' · ') || 'Pas de coordonnées';
+    }
+    refresh();
+  }
+
+  function checkMatch() {
+    const phone = normPhone($('c-phone').value), insta = normInsta($('c-insta').value), email = normEmail($('c-email').value);
+    const box = $('match');
+    if (!phone && !insta && !email) { box.style.display = 'none'; return; }
+    const hit = leads.find((l) => { const i = leadIds(l); return (phone && i.phone === phone) || (insta && i.insta === insta) || (email && i.email === email); });
+    if (!hit) { box.style.display = 'none'; return; }
+    box.style.display = 'block';
+    box.innerHTML = `Ce client existe déjà : <b>${esc(hit.client_name || 'Client')}</b>${hit.destination ? ' · ' + esc(hit.destination) : ''}.<br>Le devis sera ajouté à sa fiche.<br><button type="button" class="btn small" id="use-match">Utiliser cette fiche</button>`;
+    $('use-match').onclick = () => setLinked(hit);
+  }
+
+  // ── Lignes ────────────────────────────────────────────────
+  function addLine(type, data) {
+    const def = catalog.find((c) => c.type === type) || catalog[catalog.length - 1];
+    lines.push({
+      key: Math.random().toString(36).slice(2),
+      type: def.type,
+      titre: data?.titre ?? '',
+      details: { ...(data?.details || {}) },
+      description: data?.description || '',
+      quantite: data?.quantite || 1,
+      prix_unitaire: data?.prix_unitaire ?? '',
+      prix_achat_unitaire: data?.prix_achat_unitaire ?? '',
+      sur_devis: Boolean(data?.sur_devis),
+    });
+    renderLines();
+    if (!data) {
+      const cards = document.querySelectorAll('.line');
+      const last = cards[cards.length - 1];
+      if (last) { last.scrollIntoView({ behavior: 'smooth', block: 'center' }); last.querySelector('[data-k="titre"]')?.focus({ preventScroll: true }); }
+    }
+  }
+
+  function lineTotal(l) { return l.sur_devis ? 0 : num(l.prix_unitaire) * (Math.max(1, Math.round(num(l.quantite))) || 1); }
+  function lineCost(l) { return l.sur_devis ? 0 : num(l.prix_achat_unitaire) * (Math.max(1, Math.round(num(l.quantite))) || 1); }
+
+  function renderLines() {
+    const host = $('lines');
+    host.innerHTML = lines.map((l, idx) => {
+      const def = catalog.find((c) => c.type === l.type) || { label: l.type, fields: [], defaultTitle: '' };
+      return `
+      <div class="line" data-key="${l.key}">
+        <div class="line-head"><div class="line-type">${esc(def.label)}</div><button type="button" class="line-rm" data-rm="${l.key}">Retirer</button></div>
+        <div class="f"><label class="label">Intitulé</label><input data-k="titre" value="${esc(l.titre)}" placeholder="${esc(def.defaultTitle)}"></div>
+        ${def.fields.length ? `<div class="details">${def.fields.map((f) => `
+          <div class="f"><label class="label">${esc(f.label)}</label><input data-d="${esc(f.key)}" value="${esc(l.details[f.key] || '')}" placeholder="${esc(f.placeholder || '')}"></div>`).join('')}</div>` : ''}
+        <div class="f"><label class="label">Description</label><textarea data-k="description" rows="2" placeholder="Ce que le client doit savoir (inclus, conditions…)">${esc(l.description)}</textarea></div>
+        <label class="toggle"><input type="checkbox" data-k="sur_devis" ${l.sur_devis ? 'checked' : ''}> Prix sur devis (pas de montant affiché)</label>
+        <div class="row3" ${l.sur_devis ? 'style="display:none"' : ''} data-prices>
+          <div class="f"><label class="label">Qté</label><input data-k="quantite" type="number" inputmode="numeric" min="1" value="${esc(l.quantite)}" onfocus="this.select()"></div>
+          <div class="f"><label class="label">Prix client (€)</label><input data-k="prix_unitaire" type="number" inputmode="decimal" min="0" value="${esc(l.prix_unitaire)}" placeholder="0"></div>
+          <div class="f"><label class="label">Prix d'achat (€)</label><input data-k="prix_achat_unitaire" type="number" inputmode="decimal" min="0" value="${esc(l.prix_achat_unitaire)}" placeholder="Confidentiel"></div>
+        </div>
+        <div class="line-total" data-total></div>
+      </div>`;
+    }).join('');
+    $('lines-empty').textContent = lines.length ? 'Ajouter une autre prestation :' : 'Choisissez une prestation à ajouter :';
+
+    host.querySelectorAll('.line').forEach((card) => {
+      const l = lines.find((x) => x.key === card.dataset.key);
+      card.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('input', () => {
+        const k = el.dataset.k;
+        l[k] = el.type === 'checkbox' ? el.checked : el.value;
+        if (k === 'sur_devis') card.querySelector('[data-prices]').style.display = el.checked ? 'none' : '';
+        updateLineTotal(card, l); refresh();
+      }));
+      card.querySelectorAll('[data-d]').forEach((el) => el.addEventListener('input', () => { l.details[el.dataset.d] = el.value; }));
+      card.querySelector('[data-rm]').addEventListener('click', () => { lines = lines.filter((x) => x.key !== l.key); renderLines(); });
+      updateLineTotal(card, l);
+    });
+    refresh();
+  }
+
+  function updateLineTotal(card, l) {
+    const el = card.querySelector('[data-total]');
+    if (l.sur_devis) { el.innerHTML = 'Sur devis'; return; }
+    const t = lineTotal(l), m = t - lineCost(l);
+    el.innerHTML = t ? `<b>${eur(t)}</b>${num(l.prix_achat_unitaire) ? ` · marge ${eur(m)}` : ''}` : '';
+  }
+
+  // ── Totaux + bouton ───────────────────────────────────────
+  function refresh() {
+    const vente = lines.reduce((s, l) => s + lineTotal(l), 0);
+    const cout = lines.reduce((s, l) => s + lineCost(l), 0);
+    const marge = vente - cout;
+    $('t-vente').textContent = eur(vente);
+    $('t-marge').textContent = eur(marge);
+    if (rate != null) $('t-com').textContent = eur(marge > 0 ? marge * rate / 100 : 0);
+    const hasClient = linkedLead || $('c-name').value.trim() || normPhone($('c-phone').value) || normInsta($('c-insta').value) || normEmail($('c-email').value);
+    $('submit').disabled = !(hasClient && lines.length);
+  }
+
+  function payload() {
+    return {
+      prestations: lines.map((l) => ({
+        type: l.type,
+        titre: l.titre.trim() || undefined,
+        details: Object.fromEntries(Object.entries(l.details).filter(([, v]) => String(v).trim())),
+        description: l.description.trim() || undefined,
+        quantite: Math.max(1, Math.round(num(l.quantite))) || 1,
+        prix_unitaire: l.sur_devis ? null : num(l.prix_unitaire),
+        prix_achat_unitaire: num(l.prix_achat_unitaire),
+        sur_devis: Boolean(l.sur_devis),
+      })),
+      notes: $('notes').value.trim(),
+      validite_jours: Number($('validite').value),
+    };
+  }
+
+  async function submit() {
+    const btn = $('submit'), err = $('err');
+    err.style.display = 'none';
+    btn.disabled = true; btn.textContent = 'Génération…';
+    const body = payload();
+    if (!editId) {
+      body.client = linkedLead ? { lead_id: String(linkedLead.id) } : {
+        name: $('c-name').value.trim() || undefined,
+        phone: $('c-phone').value.trim() || undefined,
+        instagram: $('c-insta').value.trim() || undefined,
+        email: $('c-email').value.trim() || undefined,
+      };
+    }
+    try {
+      const r = await fetch('/api/devis-conciergerie' + (editId ? '/' + encodeURIComponent(editId) : ''), {
+        method: editId ? 'PUT' : 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error((d.issues && d.issues[0]?.message) || d.error || 'Échec de la création du devis');
+      showDone(d);
+    } catch (e) {
+      err.textContent = e.message; err.style.display = 'block';
+      btn.disabled = false; btn.textContent = editId ? 'Mettre à jour' : 'Générer';
+    }
+  }
+
+  // ── Après création : envoi au client ──────────────────────
+  function showDone(d) {
+    lastResult = d;
+    const item = d.item || {};
+    const lead = linkedLead || d.lead || {};
+    const firstName = String(item.client_name || lead.client_name || '').trim().split(/\s+/)[0] || '';
+    const prest = (item.prestations || []).map((p) => p.titre).join(', ');
+    const url = d.public_pdf_url || (item.pdf_url ? location.origin + item.pdf_url : '');
+    const jours = item.validite_jours || 7;
+    const message = [
+      `Bonjour${firstName && firstName !== 'Client' ? ' ' + firstName : ''},`,
+      ``,
+      `Voici votre proposition Ola : ${prest}.`,
+      item.prix_vente ? `Montant : ${eur(item.prix_vente)}${(item.prestations || []).some((p) => p.sur_devis) ? ' (hors prestations sur devis)' : ''}.` : null,
+      url ? `Le détail : ${url}` : null,
+      ``,
+      `La proposition est valable ${jours} jours. Je reste disponible pour ajuster chaque détail.`,
+    ].filter((x) => x !== null).join('\n');
+
+    $('editor').style.display = 'none';
+    $('bar').style.display = 'none';
+    $('done').style.display = 'block';
+    window.scrollTo({ top: 0 });
+    $('done-title').textContent = editId ? 'Devis mis à jour' : 'Devis créé';
+    $('done-sub').innerHTML = editId
+      ? `Le PDF a été régénéré avec les nouvelles prestations.`
+      : (d.created_client
+        ? `Une fiche client a été créée pour <b>${esc(d.lead?.client_name || '')}</b> et le devis y est rattaché.`
+        : `Devis ajouté à la fiche de <b>${esc(d.lead?.client_name || lead.client_name || '')}</b>.`);
+    if (d.pdf_error) { $('done-warn').textContent = d.pdf_error; $('done-warn').style.display = 'block'; }
+
+    $('msg').value = message;
+    const pdf = $('a-pdf');
+    if (item.pdf_url) pdf.href = item.pdf_url; else pdf.setAttribute('disabled', '');
+
+    const ids = leadIds(d.lead || linkedLead || {});
+    const phone = ids.phone || normPhone($('c-phone').value);
+    const insta = ids.insta || normInsta($('c-insta').value);
+    $('a-wa').href = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    $('a-wa').style.display = phone ? '' : 'none';
+    $('a-ig').href = insta ? `https://ig.me/m/${encodeURIComponent(insta)}` : '#';
+    $('a-ig').style.display = insta ? '' : 'none';
+    $('a-ig').onclick = () => navigator.clipboard?.writeText(message).catch(() => {});
+    $('a-edit').href = `/devis-conciergerie.html?id=${encodeURIComponent(item.id)}`;
+  }
+
+  $('a-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($('msg').value); $('a-copy').textContent = 'Copié ✓'; }
+    catch { $('msg').select(); document.execCommand('copy'); $('a-copy').textContent = 'Copié ✓'; }
+    setTimeout(() => { $('a-copy').textContent = 'Copier le message'; }, 2000);
+  });
+
+  // ── Chargement ────────────────────────────────────────────
+  async function loadEdit(id) {
+    const r = await fetch('/api/devis/' + encodeURIComponent(id), { credentials: 'include' });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || d.item?.kind !== 'conciergerie') { $('err').textContent = d.error || 'Devis introuvable'; $('err').style.display = 'block'; return; }
+    editId = id;
+    const item = d.item;
+    $('page-title').textContent = 'Modifier le devis';
+    $('page-sub').textContent = item.id;
+    $('submit').textContent = 'Mettre à jour';
+    const lead = leads.find((l) => String(l.id) === String(item.lead_id)) || { id: item.lead_id, client_name: item.client_name };
+    setLinked(lead);
+    $('unlink').style.display = 'none';
+    $('notes').value = item.notes || '';
+    if (item.validite_jours) {
+      const sel = $('validite');
+      if (![...sel.options].some((o) => o.value === String(item.validite_jours))) sel.add(new Option(item.validite_jours + ' jours', item.validite_jours));
+      sel.value = String(item.validite_jours);
+    }
+    (item.prestations || []).forEach((p) => addLine(p.type, { ...p, prix_unitaire: p.prix_unitaire ?? '', prix_achat_unitaire: p.prix_achat_unitaire || '' }));
+  }
+
+  async function init(user) {
+    role = String(user.role || '').toLowerCase();
+    const params = new URLSearchParams(location.search);
+    const [cat, ls] = await Promise.all([
+      fetch('/api/devis-conciergerie/catalog', { credentials: 'include' }).then((r) => r.json()),
+      fetch('/api/leads', { credentials: 'include' }).then((r) => r.json()).catch(() => ({ items: [] })),
+    ]);
+    catalog = cat.items || [];
+    leads = ls.items || [];
+    $('catalog').innerHTML = catalog.map((c) => `<button type="button" class="cat-btn" data-type="${esc(c.type)}"><small>+</small>${esc(c.label)}</button>`).join('');
+    $('catalog').querySelectorAll('.cat-btn').forEach((b) => b.addEventListener('click', () => addLine(b.dataset.type)));
+
+    if (role === 'concierge') {
+      fetch('/api/commissions/me', { credentials: 'include' }).then((r) => r.json()).then((d) => {
+        rate = d.rate_pct ?? 15; $('b-com').style.display = ''; refresh();
+      }).catch(() => {});
+    }
+
+    if (params.get('id')) await loadEdit(params.get('id'));
+    else if (params.get('lead_id')) {
+      const lead = leads.find((l) => String(l.id) === params.get('lead_id'));
+      if (lead) setLinked(lead);
+    }
+    refresh();
+  }
+
+  ['c-name', 'c-phone', 'c-insta', 'c-email'].forEach((id) => $(id).addEventListener('input', () => { checkMatch(); refresh(); }));
+  $('unlink').addEventListener('click', () => setLinked(null));
+  $('submit').addEventListener('click', submit);
+  document.addEventListener('ola:auth', (e) => init(e.detail));
+})();
+</script>
+</body>
+</html>

@@ -280,6 +280,71 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 .summary-meta{font-family:'Montserrat',sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g2);margin-top:8px;}
 .summary-refresh{font-family:'Montserrat',sans-serif;font-size:7px;font-weight:300;letter-spacing:2px;text-transform:uppercase;color:var(--g);background:none;border:1px solid var(--l);padding:6px 12px;cursor:pointer;margin-top:10px;}
 .summary-refresh:hover{color:var(--w);border-color:var(--l2);}
+/* ─── Onglets internes du CRM sur une 2e ligne (le menu commun occupe la 1re) ─── */
+.topbar{flex-wrap:wrap;height:auto;}
+.topbar > .tb-brand,.topbar > .tb-app-nav,.topbar > .tb-right{height:56px;}
+.tb-nav-inner{order:10;flex-basis:calc(100% + 64px);height:44px;border-top:1px solid var(--l);margin:0 -32px;padding:0 32px;}
+.tb-nav-inner .tb-tab{height:44px;}
+.notif-panel{top:100px;}
+
+/* ─── TÉLÉPHONE ─── */
+@media(max-width:760px){
+  /* Barre du haut : la navigation passe en onglets en bas (app-nav). */
+  .topbar{padding:0 12px;gap:8px;}
+  .tb-logo{display:none;}
+  .tb-name{font-size:8px;letter-spacing:3px;white-space:nowrap;}
+  .tb-brand{flex:1;min-width:0;}
+  .tb-nav-inner{overflow-x:auto;min-width:0;-webkit-overflow-scrolling:touch;margin:0 -12px;padding:0 6px;flex-basis:calc(100% + 24px);}
+  /* Le tableau de bord est rendu en JS avec un padding en ligne : on le ramène à 0. */
+  #v-dashboard{padding:0;}
+  #v-pipeline{padding:0;}
+  #v-pipeline > div,#v-commissions-inner > div,#v-apporteuses-inner > div{padding:20px 14px !important;}
+  #v-dashboard-inner > div{padding:20px 14px !important;}
+  #v-dashboard-inner > div > div:first-child{flex-wrap:wrap;gap:10px;}
+  .tb-nav-inner::-webkit-scrollbar{height:0;}
+  .tb-nav-inner .tb-tab{padding:0 10px;font-size:7px;letter-spacing:2px;white-space:nowrap;}
+  .tb-right{gap:6px;}
+  .tb-user{display:none;}
+  .tb-add{padding:9px 10px;font-size:0;}
+  .tb-add::before{content:'+ Lead';font-size:8px;letter-spacing:1.5px;}
+  .notif-panel{left:8px;right:8px;width:auto;top:104px;max-height:70dvh;}
+
+  /* Tableau de bord */
+  #v-pipeline,#v-commissions,#v-apporteuses{padding:20px 14px;}
+  .dash-title{font-size:28px;}
+  .dash-sub{margin-bottom:20px;}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:16px;}
+  .kpis > .kpi:last-child:nth-child(odd){grid-column:1 / -1;}
+  .kpi{padding:16px 14px;}
+  .kpi-val{font-size:28px;word-break:break-word;}
+  .dash-grid{grid-template-columns:minmax(0,1fr);}
+  .dash-card{padding:18px 14px;}
+  .lead-row{gap:10px;}
+  .lr-left{min-width:0;}
+  .lr-right{flex-shrink:0;gap:8px;}
+  .period-picker{padding:12px;}
+
+  /* Pipeline : une colonne par écran, on glisse de l'une à l'autre. */
+  .pipeline-header{flex-direction:column;align-items:stretch;gap:12px;}
+  .ph-actions{overflow-x:auto;gap:6px;padding-bottom:2px;}
+  .ph-actions::-webkit-scrollbar{height:0;}
+  .filter-btn{flex-shrink:0;padding:10px 12px;}
+  .kanban{display:grid;grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:84vw;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px 8px;gap:10px;}
+  .k-col{scroll-snap-align:center;}
+  .k-card{padding:14px 12px;}
+  .kc-name{font-size:17px;}
+
+  /* Commissions et prospecteurs */
+  .comm-kpis{grid-template-columns:minmax(0,1fr);}
+  .ck{padding:18px 16px;}
+  .comm-table-wrap{overflow-x:auto;}
+  .ct-header,.ct-row{min-width:620px;}
+  .ap-layout{grid-template-columns:minmax(0,1fr);gap:16px;}
+  .ap-form-card{padding:18px 14px;}
+  .form-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+  .form-input,.form-textarea{font-size:16px;}   /* évite le zoom auto sur iPhone */
+  .form-select{font-size:12px;}
+}
 @media(max-width:640px){
   .modal{width:100vw;max-height:100dvh;height:100%;border-left:none;border-right:none;border-bottom:none;}
   .modal-bg{align-items:flex-end;}
@@ -291,7 +356,7 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
   .modal-body{padding:16px;}
 }
 </style>
-<meta name="ola-required-roles" content="admin,prospecteur,closer,dalsim,closeuse">
+<meta name="ola-required-roles" content="admin,prospecteur,closer,concierge,dalsim,closeuse">
 <script src="/auth-gate.js"></script>
 <script src="/app-nav.js"></script>
 </head>
@@ -589,9 +654,14 @@ function isProspecteur() {
   const u = window.OlaAuth && window.OlaAuth.user;
   return u && normRole(u.role) === 'prospecteur';
 }
+// Concierge = closeuse de ses propres clients (+ prix d'achat et commission).
+function isConcierge() {
+  const u = window.OlaAuth && window.OlaAuth.user;
+  return u && normRole(u.role) === 'concierge';
+}
 function isCloser() {
   const u = window.OlaAuth && window.OlaAuth.user;
-  return u && normRole(u.role) === 'closer';
+  return u && (normRole(u.role) === 'closer' || normRole(u.role) === 'concierge');
 }
 
 function escapeHtmlCrm(s) {
@@ -695,7 +765,9 @@ function renderDashboard() {
   // Commissions closer (20%)
   const myWon = me ? won.filter(l=>l.sdr===me) : [];
   const myWonTM = myWon.filter(l=>inMonth(l.created_at,ty,tm));
-  const myComm = myWonTM.reduce((s,l)=>s+(l.margin||0)*0.20,0);
+  // Concierge : son vrai taux (users.commission_rate, 15 % par défaut), chargé au démarrage.
+  const commRate = isConcierge() ? (window.__olaConciergeRate ?? 0.15) : 0.20;
+  const myComm = myWonTM.reduce((s,l)=>s+(l.margin||0)*commRate,0);
 
   // Relances du jour
   const today = leads.filter(l => {
@@ -979,8 +1051,10 @@ async function openLeadModal(id) {
       <div class="modal-grid">
         <div class="mf"><div class="mf-label">Valeur du deal</div><div class="mf-val">${l.value>0?l.value.toLocaleString('fr-FR')+' €':'À définir'}</div></div>
         <div class="mf"><div class="mf-label">Marge</div><div class="mf-val">${l.margin>0?l.margin.toLocaleString('fr-FR')+' €':'—'}</div></div>
+        ${isConcierge() ? (() => { const rate = window.__olaConciergeRate ?? 0.15; return `
+        <div class="mf"><div class="mf-label">Ma commission (${Math.round(rate * 1000) / 10} %)</div><div class="mf-val" style="color:var(--green-t)">${l.margin>0?Math.round(l.margin*rate).toLocaleString('fr-FR')+' €':'—'}</div></div>`; })() : `
         <div class="mf"><div class="mf-label">Commission Prospecteur (5%)</div><div class="mf-val" style="color:var(--green-t)">${l.margin>0?Math.round(l.margin*0.05).toLocaleString('fr-FR')+' €':'—'}</div></div>
-        <div class="mf"><div class="mf-label">Commission Closer (10%)</div><div class="mf-val" style="color:var(--green-t)">${l.margin>0?Math.round(l.margin*0.10).toLocaleString('fr-FR')+' €':'—'}</div></div>
+        <div class="mf"><div class="mf-label">Commission Closer (10%)</div><div class="mf-val" style="color:var(--green-t)">${l.margin>0?Math.round(l.margin*0.10).toLocaleString('fr-FR')+' €':'—'}</div></div>`}
       </div>
     </div>
     <div class="modal-section">
@@ -1009,6 +1083,8 @@ async function openLeadModal(id) {
     <div class="modal-actions" id="modal-actions-bar">
       <button class="ma-btn ma-primary" onclick="alert('Lien WhatsApp : wa.me/${l.contact.replace('@','')}')">Contacter sur WhatsApp</button>
       <button class="ma-btn ma-primary" id="devis-action-btn" style="background:var(--yellow-t);color:var(--b)" onclick="createAndOpenDevis('${safeId}')">+ Préparer un devis</button>
+      <a class="ma-btn ma-ghost" style="text-decoration:none;text-align:center" href="/clients.html?id=${encodeURIComponent(l.id)}">Fiche client</a>
+      <a class="ma-btn ma-ghost" style="text-decoration:none;text-align:center" href="/devis-conciergerie.html?lead_id=${encodeURIComponent(l.id)}">+ Devis conciergerie</a>
       <button class="ma-btn ma-ghost" onclick="openLeadEditModal('${safeId}')">Modifier le lead</button>
       <button class="ma-btn ma-ghost">Programmer relance</button>
       <button class="ma-btn ma-danger" onclick="updateStatus('${safeId}','lost');closeModal();">Marquer perdu</button>
@@ -1274,6 +1350,11 @@ async function openDevisEditor(devisId, leadId) {
   if (!r.ok) return alert('Devis introuvable ou hors périmètre');
   const data = await r.json();
   const d = data.item || {};
+  // Devis multi-prestations : éditeur dédié (l'éditeur ci-dessous est celui des vols).
+  if (d.kind === 'conciergerie') {
+    location.href = '/devis-conciergerie.html?id=' + encodeURIComponent(d.id);
+    return;
+  }
   const services = Array.isArray(d.services_inclus) ? d.services_inclus.join('\n') : '';
   const opts = Array.isArray(d.options) ? d.options : [];
   const hotels = Array.isArray(d.hotels) ? d.hotels : [];
@@ -1290,7 +1371,7 @@ async function openDevisEditor(devisId, leadId) {
           <label>Horaire arr. aller<input data-k="horaire_arr" value="${escapeHtmlCrm(o.horaire_arr || '')}"></label>
           <label>Durée<input data-k="duration" value="${escapeHtmlCrm(o.duration || '')}"></label>
           <label>Escales<input type="number" min="0" max="5" data-k="stops" value="${Number(o.stops || 0)}"></label>
-          ${isAdmin() ? `<label>Prix de revient (€)<input type="number" min="0" data-k="prix_revient" value="${Number(o.prix_revient || 0)}"></label>` : ''}
+          ${(isAdmin() || isConcierge()) ? `<label>Prix de revient (€)<input type="number" min="0" data-k="prix_revient" value="${Number(o.prix_revient || 0)}"></label>` : ''}
           <label>Prix de vente (€)<input type="number" min="0" data-k="prix_vente" value="${Number(o.prix_vente || 0)}"></label>
           ${isAdmin() ? `<label>Prix marché (€)<input type="number" min="0" data-k="prix_marche" value="${Number(o.prix_marche || 0)}"></label>` : ''}
         </div>
@@ -1332,7 +1413,7 @@ async function openDevisEditor(devisId, leadId) {
           <label>Compagnie<input id="ed-compagnie" value="${escapeHtmlCrm(d.compagnie || '')}"></label>
           <label>Horaire dép.<input id="ed-horaire_dep" value="${escapeHtmlCrm(d.horaire_dep || '')}"></label>
           <label>Horaire arr.<input id="ed-horaire_arr" value="${escapeHtmlCrm(d.horaire_arr || '')}"></label>
-          ${isAdmin() ? `<label>Prix de revient (€)<input id="ed-prix_revient" type="number" min="0" value="${Number(d.prix_revient || 0)}"></label>` : ''}
+          ${(isAdmin() || isConcierge()) ? `<label>Prix de revient (€)<input id="ed-prix_revient" type="number" min="0" value="${Number(d.prix_revient || 0)}"></label>` : ''}
           <label>Prix de vente (€)<input id="ed-prix_vente" type="number" min="0" value="${Number(d.prix_vente || 0)}"></label>
           ${isAdmin() ? `<label>Prix marché (€) — masqué si particulier<input id="ed-prix_marche" type="number" min="0" value="${Number(d.prix_marche || 0)}"></label>` : ''}
         </div>
@@ -1767,6 +1848,17 @@ function saveNewLead() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   }).then(async r => {
+    if (r.status === 409) {
+      // Doublon : on propose d'ouvrir la fiche existante plutôt que d'en créer une seconde.
+      const body = await r.json().catch(() => ({}));
+      const dup = body.duplicate || {};
+      if (dup.accessible && dup.id) {
+        if (confirm(`${body.error}.\n\nOuvrir sa fiche ?`)) location.href = '/clients.html?id=' + encodeURIComponent(dup.id);
+      } else {
+        alert(`${body.error}. Il est déjà suivi par un autre membre de l'équipe.`);
+      }
+      return;
+    }
     if (!r.ok) {
       const body = await r.json().catch(() => ({}));
       return alert('Impossible de créer le lead : ' + (body.message || body.error || r.status));
@@ -2075,6 +2167,7 @@ function onNotifClick(id, leadId, devisId, notifType) {
     method: 'PATCH', credentials: 'include',
   }).then(() => fetchNotifs()).catch(() => {});
   document.getElementById('notif-panel').classList.remove('open');
+  if (notifType === 'followup_digest') { location.href = '/relances.html'; return; }
   if (leadId && leadId !== 'null') openLeadModal(leadId);
   else if (notifType === 'devis_prices_needed' && devisId && devisId !== 'null' && isAdmin()) {
     openAdminPricingEditor(devisId);
@@ -2144,6 +2237,11 @@ function refreshTopUser() {
 
 function startCrm() {
   refreshTopUser();
+  if (isConcierge()) {
+    fetch('/api/commissions/me', { credentials: 'include' }).then((r) => r.json()).then((d) => {
+      if (d && d.rate_pct != null) { window.__olaConciergeRate = d.rate_pct / 100; renderDashboard(); }
+    }).catch(() => {});
+  }
   fetchLeadsFromApi().then(() => {
     renderDashboard();
     renderKanban();

@@ -56,6 +56,21 @@ function buildCollection(table, options = {}) {
       if (error) throw error;
       return (data || []).map((r) => normalizeRow(table, r));
     },
+    /**
+     * Lignes dont `field` >= value, paginées par 1000 (limite PostgREST).
+     */
+    async listSince(field, value) {
+      const supabase = await getClient();
+      const out = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from(table).select("*").gte(field, value)
+          .order("created_at", { ascending: false }).range(from, from + 999);
+        if (error) throw error;
+        out.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      return out.map((r) => normalizeRow(table, r));
+    },
     async findById(id) {
       const supabase = await getClient();
       const { data, error } = await supabase.from(table).select("*").eq(idField, id).maybeSingle();
@@ -129,6 +144,11 @@ export function createSupabaseStore() {
     conversations_ola: buildCollection("conversations_ola"),
     agent_actions: buildCollection("agent_actions"),
     notifications: buildCollection("notifications"),
+    client_events: buildCollection("client_events"),
+    message_templates: buildCollection("message_templates"),
+    activity_days: buildCollection("user_activity_days"),
+    activity_log: buildCollection("activity_log"),
+    app_settings: buildCollection("app_settings"),
     users: buildCollection("users"),
     async ready() {
       await getClient(); // throw early si conf manquante

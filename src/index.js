@@ -5,6 +5,7 @@ import { getStore } from "./db/index.js";
 import { seedAdminIfNeeded } from "./seeds/admin.js";
 import { refreshBlockedDestinationsIfStale } from "./lib/blockedDestinationsData.js";
 import { isBadPublicUrl } from "./lib/publicUrl.js";
+import { startFollowupScheduler } from "./lib/followupScheduler.js";
 
 async function main() {
   for (const issue of assertCriticalConfig()) logger.warn(issue);
@@ -21,6 +22,8 @@ async function main() {
   refreshBlockedDestinationsIfStale(refreshDays).catch((e) =>
     logger.warn(`blocked destinations refresh: ${e?.message || e}`)
   );
+
+  if (process.env.FOLLOWUP_SCHEDULER !== "off") startFollowupScheduler();
 
   const app = createApp();
   const onListen = () => {

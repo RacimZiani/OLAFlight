@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ola Flight · Direction</title>
+<meta name="ola-required-roles" content="admin">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300;400&family=Montserrat:wght@200;300;400&display=swap');
+:root{--b:#0a0a0a;--b2:#111;--b3:#161616;--w:#f5f3ef;--g:rgba(245,243,239,0.45);--g2:rgba(245,243,239,0.7);--l:rgba(245,243,239,0.1);--l2:rgba(245,243,239,0.2);--green:#4ade80;--gold:#d4b56a;--red:#f87171;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--b);color:var(--w);}
+body{font-family:'Cormorant Garamond',serif;min-height:100dvh;-webkit-font-smoothing:antialiased;}
+.topbar{height:56px;background:var(--b2);border-bottom:1px solid var(--l);display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:20;}
+.tb-name{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;white-space:nowrap;}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 64px;}
+h1{font-size:34px;font-weight:200;line-height:1.1;}
+.sub{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin:8px 0 20px;}
+.label{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:20px;}
+@media(max-width:640px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.kpi{border:1px solid var(--l);background:var(--b2);padding:14px;}
+.kpi .v{font-size:30px;font-weight:300;margin-top:6px;}
+.kpi.alert .v{color:var(--red);}
+.bar-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.btn{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:11px 14px;border:1px solid var(--l2);background:transparent;color:var(--w);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;min-height:42px;}
+.btn:hover{border-color:var(--w);}
+input[type=date]{background:var(--b3);border:1px solid var(--l);color:var(--w);font-family:'Montserrat',sans-serif;font-size:13px;padding:9px;border-radius:0;color-scheme:dark;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;}
+.m{border:1px solid var(--l);background:var(--b2);padding:16px;cursor:pointer;text-align:left;color:inherit;font:inherit;width:100%;}
+.m:hover{border-color:var(--g2);}
+.m.has-alert{border-left:2px solid var(--red);}
+.m-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.m-name{font-size:24px;font-weight:300;}
+.m-role{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-top:2px;}
+.dot{display:inline-flex;align-items:center;gap:6px;font-family:'Montserrat',sans-serif;font-size:9px;color:var(--g2);white-space:nowrap;}
+.dot::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--g);}
+.dot.on{color:var(--green);} .dot.on::before{background:var(--green);box-shadow:0 0 0 3px rgba(74,222,128,.15);}
+.m-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:14px 0 10px;}
+.m-n .v{font-size:22px;font-weight:300;}
+.m-n .label{font-size:7px;letter-spacing:2px;}
+.spark{display:flex;align-items:flex-end;gap:3px;height:34px;margin-top:4px;}
+.spark span{flex:1;background:rgba(245,243,239,.18);min-height:2px;}
+.spark span.today{background:var(--gold);}
+.m-acts{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:300;color:var(--g2);margin-top:10px;line-height:1.6;}
+.alerts{margin-top:10px;display:flex;flex-direction:column;gap:4px;}
+.alerts div{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--red);}
+.empty{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--g);padding:20px 0;}
+/* Détail */
+.back{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--g);background:none;border:none;cursor:pointer;margin-bottom:14px;}
+.panel{border:1px solid var(--l);background:var(--b2);padding:16px;margin-bottom:14px;}
+.ptitle{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:12px;}
+.chart{display:flex;align-items:flex-end;gap:3px;height:140px;border-bottom:1px solid var(--l);padding-top:16px;}
+.chart .c{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;position:relative;}
+.chart .c span{width:100%;background:rgba(245,243,239,.25);min-height:1px;}
+.chart .c.we span{background:rgba(245,243,239,.12);}
+.chart .c.today span{background:var(--gold);}
+.chart .c:hover::after{content:attr(data-t);position:absolute;bottom:100%;white-space:nowrap;font-family:'Montserrat',sans-serif;font-size:9px;background:var(--b3);border:1px solid var(--l2);padding:4px 6px;z-index:2;}
+.axis{display:flex;justify-content:space-between;font-family:'Montserrat',sans-serif;font-size:8px;color:var(--g);margin-top:6px;}
+.j{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--l);font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;}
+.j time{color:var(--g);font-size:10px;white-space:nowrap;}
+.j a{color:var(--w);}
+.t-login{color:var(--g);} .t-devis_paye{color:var(--green);} .t-devis_cree{color:var(--gold);}
+table{width:100%;border-collapse:collapse;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:300;}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--l);white-space:nowrap;}
+th{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--g);font-weight:300;}
+.scroll{overflow-x:auto;}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="tb-name">Ola</div>
+  <nav class="tb-app-nav"></nav>
+</header>
+
+<main class="wrap">
+  <section id="team-view">
+    <h1>Direction</h1>
+    <p class="sub">Activité de l'équipe en temps réel</p>
+    <div class="kpis">
+      <div class="kpi"><div class="label">En ligne</div><div class="v" id="k-online">–</div></div>
+      <div class="kpi"><div class="label">Temps actif aujourd'hui</div><div class="v" id="k-time">–</div></div>
+      <div class="kpi"><div class="label">Actions aujourd'hui</div><div class="v" id="k-actions">–</div></div>
+      <div class="kpi" id="k-alerts-box"><div class="label">Alertes</div><div class="v" id="k-alerts">–</div></div>
+    </div>
+    <div class="bar-top">
+      <div class="label" id="updated"></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <input type="date" id="ex-from" aria-label="Du"><input type="date" id="ex-to" aria-label="Au">
+        <a class="btn" id="export">Exporter (CSV)</a>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="user-view" style="display:none">
+    <button class="back" id="back">← Toute l'équipe</button>
+    <div class="m-top" style="margin-bottom:16px">
+      <div><h1 id="u-name"></h1><div class="m-role" id="u-role"></div></div>
+      <span class="dot" id="u-dot"></span>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="label">Aujourd'hui</div><div class="v" id="u-today">–</div></div>
+      <div class="kpi"><div class="label">7 derniers jours</div><div class="v" id="u-week">–</div></div>
+      <div class="kpi"><div class="label">Relances en retard</div><div class="v" id="u-late">–</div></div>
+      <div class="kpi"><div class="label">Clients suivis</div><div class="v" id="u-clients">–</div></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Temps actif, 30 derniers jours</div>
+      <div class="chart" id="u-chart"></div>
+      <div class="axis" id="u-axis"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Jour par jour</div>
+      <div class="scroll"><table id="u-days"></table></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Journal d'activité</div>
+      <div id="u-journal"></div>
+    </div>
+  </section>
+</main>
+
+<script src="/auth-gate.js"></script>
+<script src="/app-nav.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const toMs = (v) => (typeof v === 'number' ? v : Date.parse(v) || 0);
+  const dur = (min) => { min = Math.round(min || 0); if (min < 60) return min + ' min'; const h = Math.floor(min / 60), m = min % 60; return h + ' h' + (m ? ' ' + String(m).padStart(2, '0') : ''); };
+  const ago = (ms) => {
+    if (!ms) return 'Jamais connectée';
+    const s = (Date.now() - ms) / 1000;
+    if (s < 180) return 'En ligne';
+    if (s < 3600) return `Vue il y a ${Math.round(s / 60)} min`;
+    if (s < 86400) return 'Vue à ' + new Date(ms).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return 'Vue le ' + new Date(ms).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  };
+  const hhmm = (v) => toMs(v) ? new Date(toMs(v)).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+  const api = async (url) => { const r = await fetch(url, { credentials: 'include' }); const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'Erreur'); return d; };
+  const TYPE = { import: 'Import', login: 'Connexion', client_cree: 'Client', devis_cree: 'Devis', devis_modifie: 'Devis modifié', devis_paye: 'Vente', echange: 'Échange', statut: 'Statut' };
+
+  let current = null;
+
+  // ═══ Équipe ═══
+  async function loadTeam() {
+    let d;
+    try { d = await api('/api/activity/team'); } catch (e) { $('grid').innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+    $('k-online').textContent = d.totals.online;
+    $('k-time').textContent = dur(d.totals.active_minutes_today);
+    $('k-actions').textContent = d.totals.actions_today;
+    $('k-alerts').textContent = d.totals.alerts;
+    $('k-alerts-box').classList.toggle('alert', d.totals.alerts > 0);
+    $('updated').textContent = 'Mis à jour à ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    if (!d.members.length) { $('grid').innerHTML = '<div class="empty">Aucun membre d’équipe pour l’instant. Créez des comptes Concierge dans « Comptes ».</div>'; return; }
+    $('grid').innerHTML = d.members.map((m) => {
+      const max = Math.max(60, ...m.week_series.map((x) => x.minutes));
+      const t = m.today;
+      const acts = [t.dm && `${t.dm} échange${t.dm > 1 ? 's' : ''}`, t.clients && `${t.clients} client${t.clients > 1 ? 's' : ''}`, t.devis && `${t.devis} devis`, t.ventes && `${t.ventes} vente${t.ventes > 1 ? 's' : ''}`].filter(Boolean).join(' · ') || 'Aucune action aujourd’hui';
+      return `<button class="m ${m.alerts.length ? 'has-alert' : ''}" data-email="${esc(m.email)}">
+        <div class="m-top"><div><div class="m-name">${esc(m.name)}</div><div class="m-role">${esc(m.role_label)}</div></div>
+          <span class="dot ${m.online ? 'on' : ''}">${esc(ago(m.last_seen))}</span></div>
+        <div class="m-nums">
+          <div class="m-n"><div class="label">Aujourd'hui</div><div class="v">${dur(t.active_minutes)}</div></div>
+          <div class="m-n"><div class="label">7 jours</div><div class="v">${dur(m.week_minutes)}</div></div>
+          <div class="m-n"><div class="label">À relancer</div><div class="v" style="${m.relances.en_retard ? 'color:var(--red)' : ''}">${m.relances.en_retard + m.relances.aujourdhui}</div></div>
+        </div>
+        <div class="spark">${m.week_series.map((x, i) => `<span class="${i === 6 ? 'today' : ''}" style="height:${Math.round(x.minutes / max * 100)}%" title="${esc(x.day)} : ${dur(x.minutes)}"></span>`).join('')}</div>
+        <div class="m-acts">${esc(acts)}${t.first_seen ? ' · arrivée ' + hhmm(t.first_seen) : ''}</div>
+        ${m.alerts.length ? `<div class="alerts">${m.alerts.map((a) => `<div>⚠ ${esc(a)}</div>`).join('')}</div>` : ''}
+      </button>`;
+    }).join('');
+    $('grid').querySelectorAll('[data-email]').forEach((b) => b.addEventListener('click', () => openUser(b.dataset.email)));
+  }
+
+  // ═══ Détail ═══
+  async function openUser(email) {
+    current = email;
+    history.replaceState(null, '', '?u=' + encodeURIComponent(email));
+    $('team-view').style.display = 'none';
+    $('user-view').style.display = 'block';
+    window.scrollTo({ top: 0 });
+    let d;
+    try { d = await api('/api/activity/user?email=' + encodeURIComponent(email)); } catch (e) { $('u-name').textContent = e.message; return; }
+    const m = d.member;
+    $('u-name').textContent = m.name;
+    $('u-role').textContent = m.role_label + ' · ' + m.email;
+    $('u-dot').textContent = ago(m.last_seen); $('u-dot').classList.toggle('on', m.online);
+    $('u-today').textContent = dur(m.today.active_minutes);
+    $('u-week').textContent = dur(m.week_minutes);
+    $('u-late').textContent = m.relances.en_retard;
+    $('u-late').style.color = m.relances.en_retard ? 'var(--red)' : '';
+    $('u-clients').textContent = m.clients_total;
+
+    const max = Math.max(60, ...d.days.map((x) => x.minutes));
+    const dayName = (s) => new Date(s + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+    $('u-chart').innerHTML = d.days.map((x, i) => {
+      const we = [0, 6].includes(new Date(x.day + 'T12:00:00').getDay());
+      return `<div class="c ${we ? 'we' : ''} ${i === d.days.length - 1 ? 'today' : ''}" data-t="${esc(dayName(x.day))} : ${dur(x.minutes)}"><span style="height:${Math.round(x.minutes / max * 100)}%"></span></div>`;
+    }).join('');
+    $('u-axis').innerHTML = `<span>${esc(dayName(d.days[0].day))}</span><span>Aujourd'hui</span>`;
+
+    const rows = d.days.slice().reverse().filter((x) => x.minutes || x.logins || x.actions);
+    $('u-days').innerHTML = `<tr><th>Jour</th><th>Arrivée</th><th>Dernière activité</th><th>Temps actif</th><th>Connexions</th><th>Actions</th></tr>` +
+      (rows.map((x) => `<tr><td>${esc(dayName(x.day))}</td><td>${hhmm(x.first_seen)}</td><td>${hhmm(x.last_seen)}</td><td>${dur(x.minutes)}</td><td>${x.logins}</td><td>${x.actions}</td></tr>`).join('')
+        || `<tr><td colspan="6" style="color:var(--g)">Aucune activité sur 30 jours.</td></tr>`);
+
+    renderJournal(d.journal, 40);
+  }
+
+  function renderJournal(journal, limit) {
+    const shown = journal.slice(0, limit);
+    $('u-journal').innerHTML = shown.length ? shown.map((j) => `<div class="j">
+      <time>${new Date(toMs(j.at)).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
+      <div><b class="t-${esc(j.type)}" style="font-weight:400">${esc(TYPE[j.type] || j.type)}</b> · ${j.lead_id && j.client_name ? `<a href="/clients.html?id=${encodeURIComponent(j.lead_id)}">${esc(j.label)}</a>` : esc(j.label)}</div>
+    </div>`).join('') + (journal.length > limit ? `<button class="btn" id="j-more" style="margin-top:12px">Afficher plus (${journal.length - limit})</button>` : '')
+      : '<div class="empty">Aucune action enregistrée.</div>';
+    $('j-more')?.addEventListener('click', () => renderJournal(journal, limit + 60));
+  }
+
+  function backToTeam() {
+    current = null;
+    history.replaceState(null, '', location.pathname);
+    $('user-view').style.display = 'none';
+    $('team-view').style.display = 'block';
+    loadTeam();
+  }
+
+  // ═══ Export ═══
+  const iso = (ms) => new Date(ms).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+  $('ex-to').value = iso(Date.now());
+  $('ex-from').value = iso(Date.now() - 29 * 864e5);
+  const setExport = () => { $('export').href = `/api/activity/export.csv?from=${$('ex-from').value}&to=${$('ex-to').value}`; };
+  ['ex-from', 'ex-to'].forEach((id) => $(id).addEventListener('change', setExport));
+  setExport();
+
+  $('back').addEventListener('click', backToTeam);
+  document.addEventListener('ola:auth', () => {
+    const u = new URLSearchParams(location.search).get('u');
+    if (u) openUser(u); else loadTeam();
+    // Rafraîchit la vue d'équipe chaque minute (statut en ligne, temps du jour).
+    setInterval(() => { if (!current && document.visibilityState === 'visible') loadTeam(); }, 60000);
+  });
+})();
+</script>
+</body>
+</html>

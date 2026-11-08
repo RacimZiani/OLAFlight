@@ -48,6 +48,7 @@ const PRIORITY_BY_TYPE = {
   devis_created: "default",
   lead_nego: "default",
   lead_lost: "low",
+  followup_digest: "high",
 };
 
 /**
@@ -110,7 +111,9 @@ export async function publishNtfy(topic, { title, body = "", type = "", lead_id 
     Priority: PRIORITY_BY_TYPE[type] || "default",
   };
 
-  if (lead_id && config.publicUrl) {
+  if (type === "followup_digest" && config.publicUrl) {
+    headers.Click = `${config.publicUrl.replace(/\/$/, "")}/relances.html`;
+  } else if (lead_id && config.publicUrl) {
     const click = `${config.publicUrl.replace(/\/$/, "")}/crm.html`;
     headers.Click = click;
   }

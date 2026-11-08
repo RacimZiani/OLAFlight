@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { logAction } from "../lib/activity.js";
 import { z } from "zod";
 import { validate } from "../middleware/validate.js";
 import { devisCreateSchema, devisQuerySchema, idParamSchema } from "../schemas/index.js";
@@ -15,6 +16,8 @@ import { normalizeAdminOptions } from "../lib/draftDevis.js";
 import { sendDevisEmailToClient, sendSimpleDevisEmail, isEmailConfigured } from "../lib/email.js";
 import { resolvePublicBaseUrl } from "../lib/publicUrl.js";
 import { canAccessLead, normalizeRole, ROLES, filterLeadsForUser } from "../lib/roles.js";
+import { conciergeFields, isOwnConciergeDevis } from "../lib/conciergeCommission.js";
+import { followupPatch } from "../lib/followups.js";
 
 const router = Router();
 
@@ -37,7 +40,7 @@ router.get("/:id", validate({ params: idParamSchema }), async (req, res, next) =
     const store = await getStore();
     const devis = await store.devis.findById(req.params.id);
     if (!devis) throw new HttpError(404, "Devis introuvable");
-    if (normalizeRole(req.user.role) !== ROLES.ADMIN) {
+    if (normalizeRole(req.user.role) !== ROLES.ADMIN && !isOwnConciergeDevis(req.user, devis)) {
       const lead = devis.lead_id ? await store.leads.findById(devis.lead_id) : null;
       if (!lead || !canAccessLead(req.user, lead)) {
         throw new HttpError(403, "Devis hors périmètre");
@@ -60,7 +63,9 @@ router.get("/", validate({ query: devisQuerySchema }), async (req, res, next) =>
     if (role !== ROLES.ADMIN) {
       const leads = filterLeadsForUser(await store.leads.list(), req.user);
       const myLeadIds = new Set(leads.map((l) => String(l.id)));
-      items = items.filter((d) => d.lead_id && myLeadIds.has(String(d.lead_id)));
+      items = items.filter(
+        (d) => (d.lead_id && myLeadIds.has(String(d.lead_id))) || isOwnConciergeDevis(req.user, d)
+      );
     }
     res.json({ items: items.map((d) => sanitizeDevisForRole(d, role)) });
   } catch (e) { next(e); }
@@ -105,12 +110,24 @@ router.post("/", requireDevis, validate({ body: devisCreateSchema }), async (req
     };
 
     const store = await getStore();
+    const leadForOwner = devis.lead_id ? await store.leads.findById(devis.lead_id).catch(() => null) : null;
+    Object.assign(devis, await conciergeFields(store, {
+      user: req.user,
+      lead: leadForOwner,
+      prix_vente: devis.prix_vente,
+      prix_revient: devis.prix_revient,
+    }));
     await store.devis.insert(devis);
+    logAction(req.user, "devis_cree", `Devis vol ${devis.id} · ${devis.client_name || leadForOwner?.client_name || ""} · ${devis.prix_vente} €`, devis.lead_id);
 
     // Mise à jour du lead non-bloquante : si elle échoue le devis est déjà créé.
     if (devis.lead_id) {
+      // Un client déjà gagné ou en négociation ne recule pas à « devis envoyé ».
+      const leadBefore = leadForOwner;
+      const keepStatus = leadBefore && ["won", "nego"].includes(leadBefore.status);
       const leadUpdate = {
-        status: devis.prix_vente > 0 ? "devis_sent" : "devis_pending",
+        ...(keepStatus ? {} : { status: devis.prix_vente > 0 ? "devis_sent" : "devis_pending" }),
+        ...(keepStatus || !(devis.prix_vente > 0) ? {} : followupPatch({ ...leadBefore, status: "devis_sent" }, "devis_sent")),
         value: devis.prix_vente,
         margin: marge,
       };
@@ -209,8 +226,8 @@ router.patch(
       const before = await store.devis.findById(req.params.id);
       if (!before) throw new HttpError(404, "Devis introuvable");
 
-      // Closeuse : ne peut éditer que les devis liés à ses leads.
-      if (normalizeRole(req.user.role) !== ROLES.ADMIN) {
+      // Closeuse / concierge : ne peut éditer que les devis liés à ses leads.
+      if (normalizeRole(req.user.role) !== ROLES.ADMIN && !isOwnConciergeDevis(req.user, before)) {
         const lead = before.lead_id ? await store.leads.findById(before.lead_id) : null;
         if (!lead || !canAccessLead(req.user, lead)) {
           throw new HttpError(403, "Devis hors périmètre");
@@ -254,6 +271,19 @@ router.patch(
         ...(body.hotels !== undefined ? { hotels: body.hotels } : {}),
         ...(body.driver !== undefined ? { driver: body.driver } : {}),
         ...(body.paiement_recu != null ? { paiement_recu: body.paiement_recu } : {}),
+        // Date de la vente : c'est elle qui place la vente dans la semaine / le mois du classement.
+        ...(body.paiement_recu === true && !before.paiement_recu ? { paid_at: isSupabase ? new Date().toISOString() : Date.now() } : {}),
+        ...(body.paiement_recu === false ? { paid_at: null } : {}),
+        // Commission concierge : recalculée quand les prix bougent (toutes bases,
+        // ce n'est pas une colonne GENERATED).
+        ...(body.prix_vente != null || body.prix_revient != null
+          ? await conciergeFields(store, {
+              lead: before.lead_id ? await store.leads.findById(before.lead_id).catch(() => null) : null,
+              conciergeName: before.concierge_name,
+              prix_vente: newPV,
+              prix_revient: newPR,
+            })
+          : {}),
         ...(body.refresh_validity ? {
           valide_jusqu_au: isSupabase
             ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
@@ -279,6 +309,9 @@ router.patch(
       }
 
       const updated = await updateTolerant(patch);
+      if (body.paiement_recu === true && !before.paiement_recu) {
+        logAction(req.user, "devis_paye", `Devis ${before.id} payé · ${before.prix_vente} €`, before.lead_id);
+      }
 
       // Régénération PDF (par défaut). Si la migration manque, l'objet `updated`
       // ne contient pas les nouveaux options/hotels/driver — on les complète en

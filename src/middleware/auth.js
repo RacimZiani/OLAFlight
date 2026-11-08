@@ -7,7 +7,7 @@ import { BACKOFFICE_ROLES, hasRole } from "../lib/roles.js";
 // requête en lisant le cookie de session JWT. Fallback : header X-Admin-Token
 // (legacy compat) en attendant la suppression du header X-Admin-Token.
 //
-// Rôles : admin | prospecteur | closer (+ legacy dalsim, closeuse, agent) | guest
+// Rôles : admin | prospecteur | closer | concierge (+ legacy dalsim, closeuse, agent) | guest
 // ─────────────────────────────────────────────────────────────────────────
 
 function readCookieToken(req) {
@@ -69,5 +69,5 @@ export function requireRole(...allowed) {
 
 export const requireAdmin = requireRole("admin");
 export const requireDalsim = requireRole("admin", "dalsim", "prospecteur");
-export const requireDevis = requireRole("admin", "prospecteur", "closer", "dalsim", "closeuse");
+export const requireDevis = requireRole("admin", "prospecteur", "closer", "concierge", "dalsim", "closeuse");
 export const requireBackoffice = requireRole(...BACKOFFICE_ROLES);

@@ -15,6 +15,13 @@ import webhooksRoutes from "./routes/webhooks.js";
 import agentRoutes from "./routes/agent.js";
 import notificationsRoutes from "./routes/notifications.js";
 import teamRoutes from "./routes/team.js";
+import commissionsRoutes from "./routes/commissions.js";
+import devisConciergerieRoutes from "./routes/devisConciergerie.js";
+import clientsRoutes from "./routes/clients.js";
+import followupsRoutes from "./routes/followups.js";
+import activityRoutes from "./routes/activity.js";
+import dashboardRoutes from "./routes/dashboard.js";
+import importRoutes from "./routes/import.js";
 import publicDevisRoutes from "./routes/publicDevis.js";
 
 export function createApp() {
@@ -72,13 +79,20 @@ export function createApp() {
   app.use("/api/auth", authRoutes);
   app.use("/api/chat", chatRoutes);          // public — landing chatbot
   app.use("/api/webhooks", webhooksRoutes);  // public — Meta + Calendly callbacks
+  app.use("/api/import", importRoutes);         // admin : import du Google Sheet
+  app.use("/api/dashboard", dashboardRoutes);  // dashboard perso + classement
+  app.use("/api/activity", activityRoutes);    // suivi d'activité (direction)
+  app.use("/api/followups", followupsRoutes);  // relances + messages types
+  app.use("/api/clients", clientsRoutes);     // fiche client + recherche anti-doublon
   app.use("/api/leads", leadsRoutes);        // protégé interne (cf. routes/leads.js)
+  app.use("/api/devis-conciergerie", devisConciergerieRoutes); // devis multi-prestations
   app.use("/api/devis", devisRoutes);        // protégé interne
   app.use("/api/apporteurs", apporteursRoutes);
   app.use("/api/admin", adminRoutes);        // admin only
   app.use("/api/agent", agentRoutes);        // audit agent IA (back-office)
   app.use("/api/notifications", notificationsRoutes);
   app.use("/api/team", teamRoutes);
+  app.use("/api/commissions", commissionsRoutes); // concierge : compteur + simulateur
 
   app.use(notFoundHandler);
 

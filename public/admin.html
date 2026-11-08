@@ -76,6 +76,12 @@
       .login{max-width:520px;margin:70px auto;padding:22px;border-radius:16px}
       .login h2{font-family:var(--serif);font-weight:300;font-size:34px;margin:0 0 8px}
       .login p{margin:0 0 14px;color:rgba(242,237,232,.6);line-height:1.7}
+      /* Téléphone : les tableaux défilent dans leur cadre */
+      @media(max-width:760px){
+        .wrap{padding:18px 14px}
+        table{display:block;overflow-x:auto;white-space:nowrap}
+        input,select,textarea{font-size:16px}
+      }
     </style>
     <meta name="ola-required-roles" content="admin">
     <script src="/auth-gate.js"></script>

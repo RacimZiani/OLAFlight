@@ -1,9 +1,12 @@
-// Rôles Ola Flight — source de vérité (admin / prospecteur / closer).
+// Rôles Ola Flight — source de vérité (admin / prospecteur / closer / concierge).
+// Concierge : fait tout de A à Z (prospection, devis, closing) sur SES clients.
+// Ses leads portent son email dans closer_name.
 
 export const ROLES = {
   ADMIN: "admin",
   PROSPECTEUR: "prospecteur",
   CLOSER: "closer",
+  CONCIERGE: "concierge",
 };
 
 /** Rôles legacy encore acceptés en base / JWT. */
@@ -16,7 +19,7 @@ export const LEGACY_ROLE_ALIASES = {
 export function normalizeRole(role) {
   const r = String(role || "").toLowerCase().trim();
   if (LEGACY_ROLE_ALIASES[r]) return LEGACY_ROLE_ALIASES[r];
-  if (r === ROLES.ADMIN || r === ROLES.PROSPECTEUR || r === ROLES.CLOSER) return r;
+  if (r === ROLES.ADMIN || r === ROLES.PROSPECTEUR || r === ROLES.CLOSER || r === ROLES.CONCIERGE) return r;
   return r || "guest";
 }
 
@@ -25,6 +28,7 @@ export function roleLabel(role) {
   if (r === ROLES.ADMIN) return "Admin";
   if (r === ROLES.PROSPECTEUR) return "Prospecteur";
   if (r === ROLES.CLOSER) return "Closer";
+  if (r === ROLES.CONCIERGE) return "Concierge";
   return r;
 }
 
@@ -32,6 +36,7 @@ export const BACKOFFICE_ROLES = [
   ROLES.ADMIN,
   ROLES.PROSPECTEUR,
   ROLES.CLOSER,
+  ROLES.CONCIERGE,
   "dalsim",
   "closeuse",
   "agent",
@@ -70,7 +75,20 @@ export function canAccessLead(user, lead) {
   if (role === ROLES.PROSPECTEUR) {
     return Boolean(lead.apporteur_name && lead.apporteur_name === user.email);
   }
+  if (role === ROLES.CONCIERGE) return isConciergeLead(lead, user.email);
   return false;
+}
+
+/** Une concierge possède un lead si elle le close OU l'a apporté. */
+function isConciergeLead(lead, email) {
+  if (!email) return false;
+  return lead.closer_name === email || lead.apporteur_name === email;
+}
+
+/** Rôles qui « closent » un lead (champ closer_name) : closer et concierge. */
+export function isCloserLike(role) {
+  const r = normalizeRole(role);
+  return r === ROLES.CLOSER || r === ROLES.CONCIERGE;
 }
 
 export function filterLeadsForUser(items, user) {
@@ -80,6 +98,9 @@ export function filterLeadsForUser(items, user) {
   }
   if (role === ROLES.PROSPECTEUR) {
     return items.filter((l) => l.apporteur_name && l.apporteur_name === user.email);
+  }
+  if (role === ROLES.CONCIERGE) {
+    return items.filter((l) => isConciergeLead(l, user.email));
   }
   return items;
 }

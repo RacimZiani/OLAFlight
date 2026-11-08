@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ola Flight · Relances</title>
+<meta name="ola-required-roles" content="admin,prospecteur,closer,concierge,dalsim,closeuse">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300;400&family=Montserrat:wght@200;300;400&display=swap');
+:root{--b:#0a0a0a;--b2:#111;--b3:#161616;--w:#f5f3ef;--g:rgba(245,243,239,0.45);--g2:rgba(245,243,239,0.7);--l:rgba(245,243,239,0.1);--l2:rgba(245,243,239,0.2);--green:#4ade80;--gold:#d4b56a;--red:#f87171;--blue:#60a5fa;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--b);color:var(--w);}
+body{font-family:'Cormorant Garamond',serif;min-height:100dvh;-webkit-font-smoothing:antialiased;}
+.topbar{height:56px;background:var(--b2);border-bottom:1px solid var(--l);display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:20;}
+.tb-name{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;white-space:nowrap;}
+.wrap{max-width:820px;margin:0 auto;padding:24px 16px 64px;}
+h1{font-size:34px;font-weight:200;line-height:1.1;}
+.sub{font-family:'Montserrat',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin:8px 0 20px;}
+.sub b{color:var(--gold);font-weight:400;}
+.tabs{display:flex;gap:6px;margin-bottom:16px;}
+.tab{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:10px 12px;border:1px solid var(--l);background:none;color:var(--g2);cursor:pointer;}
+.tab.on{border-color:var(--w);color:var(--w);}
+select,input,textarea{width:100%;background:var(--b3);border:1px solid var(--l);color:var(--w);font-family:'Montserrat',sans-serif;font-size:15px;font-weight:300;padding:11px;outline:none;border-radius:0;-webkit-appearance:none;}
+textarea{resize:vertical;min-height:110px;line-height:1.5;}
+.sec{margin-bottom:22px;}
+.sec-t{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.sec-t .n{font-size:10px;color:var(--w);}
+.sec.late .sec-t{color:var(--red);} .sec.today .sec-t{color:var(--gold);}
+.card{border:1px solid var(--l);background:var(--b2);padding:14px;margin-bottom:8px;}
+.sec.late .card{border-left:2px solid var(--red);} .sec.today .card{border-left:2px solid var(--gold);}
+.c-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+.c-name{font-size:22px;font-weight:300;color:var(--w);text-decoration:none;word-break:break-word;}
+.c-when{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--g2);white-space:nowrap;}
+.sec.late .c-when{color:var(--red);}
+.c-meta{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:300;color:var(--g);margin-top:4px;line-height:1.6;}
+.c-act{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:8px;margin-top:12px;}
+.btn{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:12px 10px;border:1px solid var(--l2);background:transparent;color:var(--w);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:44px;}
+.btn.primary{background:var(--w);color:var(--b);border-color:var(--w);}
+.btn.small{padding:7px 10px;min-height:32px;font-size:8px;letter-spacing:1.5px;}
+.snooze{display:none;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.snooze.open{display:flex;}
+.snooze input{width:auto;flex:1;min-width:140px;font-size:13px;padding:7px;}
+.empty{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--g);padding:4px 0 8px;}
+.done-all{text-align:center;padding:40px 10px;font-family:'Montserrat',sans-serif;font-size:12px;color:var(--g2);line-height:1.8;}
+.done-all b{display:block;font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:300;color:var(--w);}
+/* Modèles (admin) */
+.tpl{border:1px solid var(--l);background:var(--b2);padding:12px;margin-bottom:8px;}
+.tpl-h{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;}
+.tpl .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px;margin-bottom:8px;}
+.tpl-a{display:flex;gap:6px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap;}
+.hint{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--g);line-height:1.6;margin-bottom:12px;}
+.hint code{color:var(--gold);}
+.msg{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--green);min-height:1em;}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="tb-name">Ola</div>
+  <nav class="tb-app-nav"></nav>
+</header>
+
+<main class="wrap">
+  <h1>Relances</h1>
+  <p class="sub" id="sub">Chargement…</p>
+
+  <div class="tabs" id="tabs" style="display:none">
+    <button class="tab on" data-v="list">À relancer</button>
+    <button class="tab" data-v="tpl">Messages types</button>
+  </div>
+  <div id="team-pick" style="display:none;margin-bottom:16px"><select id="team"></select></div>
+
+  <section id="view-list"></section>
+
+  <section id="view-tpl" style="display:none">
+    <p class="hint">Variables disponibles : <code>{prenom}</code> <code>{besoin}</code> <code>{concierge}</code> <code>{devis}</code>. Une phrase dont la variable est vide est retirée automatiquement.</p>
+    <div id="tpls"></div>
+    <button class="btn" id="tpl-add" type="button">+ Nouveau message</button>
+  </section>
+</main>
+
+<script src="/auth-gate.js"></script>
+<script src="/app-nav.js"></script>
+<script src="/dm-composer.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const toMs = (v) => (typeof v === 'number' ? v : Date.parse(v) || 0);
+  const eur = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/ | /g, ' ') + ' €';
+  const api = async (url, opts = {}) => {
+    const r = await fetch(url, { credentials: 'include', ...opts, headers: { 'Content-Type': 'application/json' } });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((d.issues && d.issues[0]?.message) || d.error || 'Erreur');
+    return d;
+  };
+  const CAT_LABEL = { premier_contact: 'Premier contact', relance_1: 'Relance 1', relance_2: 'Relance 2', relance_3: 'Dernière relance', devis: 'Suivi de devis', apres_vente: 'Après-vente', autre: 'Autre' };
+  const STATUS = { qualification: 'À qualifier', new: 'Nouveau', contacted: 'Contacté', interested: 'Intéressé', devis_sent: 'Devis envoyé', devis_pending: 'Devis à faire', call_booked: 'RDV pris', nego: 'Négociation', offer: 'Offre' };
+
+  let isAdmin = false;
+  let data = null;
+
+  function whenLabel(v, group) {
+    const ms = toMs(v);
+    if (!ms) return '';
+    const d = new Date(ms);
+    if (group === 'en_retard') {
+      const days = Math.max(1, Math.round((Date.now() - ms) / 864e5));
+      return `En retard de ${days} j`;
+    }
+    if (group === 'aujourdhui') return "Aujourd'hui";
+    return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  function card(it, group) {
+    const step = it.followup_step;
+    const meta = [
+      STATUS[it.status] || it.status,
+      it.besoin,
+      it.last_devis ? 'Devis ' + eur(it.last_devis.prix_vente) : null,
+      group !== 'froid' ? CAT_LABEL[it.suggested_category] : `${step - 1} relances sans réponse`,
+      isAdmin && it.owner_name ? 'Suivi par ' + it.owner_name : null,
+    ].filter(Boolean).map(esc).join(' · ');
+    const actions = group === 'froid'
+      ? `<button class="btn primary" data-act="lost" data-id="${esc(it.id)}">Marquer perdu</button>
+         <button class="btn" data-act="again" data-id="${esc(it.id)}">Relancer quand même</button>`
+      : `<button class="btn primary" data-act="write" data-id="${esc(it.id)}">Écrire</button>
+         <button class="btn" data-act="snooze" data-id="${esc(it.id)}">Reporter</button>`;
+    return `<div class="card" data-card="${esc(it.id)}">
+      <div class="c-top"><a class="c-name" href="/clients.html?id=${encodeURIComponent(it.id)}">${esc(it.client_name)}</a><span class="c-when">${esc(whenLabel(it.next_followup, group))}</span></div>
+      <div class="c-meta">${meta}</div>
+      <div class="c-act">${actions}</div>
+      <div class="snooze" data-sn="${esc(it.id)}">
+        <button class="btn small" data-days="1">Demain</button>
+        <button class="btn small" data-days="3">Dans 3 j</button>
+        <button class="btn small" data-days="7">Dans 1 sem.</button>
+        <input type="date" aria-label="Choisir une date">
+      </div>
+    </div>`;
+  }
+
+  function render() {
+    const g = data;
+    const due = g.en_retard.length + g.aujourdhui.length;
+    $('sub').innerHTML = due ? `<b>${due}</b> client${due > 1 ? 's' : ''} à relancer aujourd'hui` : 'Rien à relancer aujourd’hui';
+    const sec = (key, cls, title, empty) => {
+      const list = g[key];
+      if (!list.length && !empty) return '';
+      return `<div class="sec ${cls}"><div class="sec-t">${title} <span class="n">${list.length}</span></div>
+        ${list.length ? list.map((it) => card(it, key)).join('') : `<div class="empty">${empty}</div>`}</div>`;
+    };
+    $('view-list').innerHTML = (!due && !g.a_venir.length && !g.froid.length)
+      ? `<div class="done-all"><b>Tout est à jour</b>Aucune relance prévue. Notez vos échanges sur les fiches clients : les prochaines relances se programment toutes seules.</div>`
+      : sec('en_retard', 'late', 'En retard') + sec('aujourdhui', 'today', "Aujourd'hui", due ? '' : 'Rien pour aujourd’hui.') +
+        sec('a_venir', '', 'Cette semaine') + sec('froid', '', 'Sans réponse après 3 relances');
+    bind();
+  }
+
+  function find(id) {
+    for (const k of ['en_retard', 'aujourdhui', 'a_venir', 'froid']) { const it = data[k].find((x) => String(x.id) === String(id)); if (it) return it; }
+  }
+
+  function bind() {
+    document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', async () => {
+      const it = find(b.dataset.id);
+      const act = b.dataset.act;
+      if (act === 'write') OlaComposer.open(it, { onDone: load });
+      if (act === 'snooze') document.querySelector(`[data-sn="${CSS.escape(b.dataset.id)}"]`).classList.toggle('open');
+      if (act === 'lost') {
+        if (!confirm(`Marquer ${it.client_name} comme perdu ? Il sortira des relances.`)) return;
+        await api('/api/leads/' + encodeURIComponent(it.id), { method: 'PATCH', body: JSON.stringify({ status: 'lost' }) }).catch((e) => alert(e.message));
+        load();
+      }
+      if (act === 'again') { await snooze(it.id, { days: 0 }); }
+    }));
+    document.querySelectorAll('[data-sn]').forEach((box) => {
+      box.querySelectorAll('[data-days]').forEach((b) => b.addEventListener('click', () => snooze(box.dataset.sn, { days: Number(b.dataset.days) })));
+      box.querySelector('input').addEventListener('change', (e) => e.target.value && snooze(box.dataset.sn, { date: e.target.value }));
+    });
+  }
+
+  async function snooze(id, body) {
+    try { await api(`/api/followups/${encodeURIComponent(id)}/snooze`, { method: 'POST', body: JSON.stringify(body) }); load(); }
+    catch (e) { alert(e.message); }
+  }
+
+  async function load() {
+    const email = isAdmin ? $('team').value : '';
+    try { data = await api('/api/followups' + (email ? '?email=' + encodeURIComponent(email) : '')); render(); }
+    catch (e) { $('sub').textContent = e.message; }
+  }
+
+  // ── Messages types (admin) ──
+  async function loadTpls() {
+    const { items, categories } = await api('/api/followups/templates');
+    const opts = (sel) => categories.map((c) => `<option value="${c.key}" ${c.key === sel ? 'selected' : ''}>${esc(c.label)}</option>`).join('');
+    $('tpls').innerHTML = items.map((t) => `<div class="tpl" data-tpl="${esc(t.id)}">
+      <div class="row"><select data-f="category">${opts(t.category)}</select><input data-f="title" value="${esc(t.title)}"></div>
+      <textarea data-f="body">${esc(t.body)}</textarea>
+      <div class="tpl-a"><span class="msg"></span>
+        <button class="btn small" data-tact="toggle">${t.active === false ? 'Réactiver' : 'Désactiver'}</button>
+        <button class="btn small" data-tact="del">Supprimer</button>
+        <button class="btn small primary" data-tact="save">Enregistrer</button></div></div>`).join('');
+    $('tpls').querySelectorAll('[data-tpl]').forEach((box) => {
+      const id = box.dataset.tpl;
+      const val = (f) => box.querySelector(`[data-f="${f}"]`).value;
+      box.style.opacity = items.find((t) => String(t.id) === id)?.active === false ? '.5' : '1';
+      box.querySelectorAll('[data-tact]').forEach((b) => b.addEventListener('click', async () => {
+        try {
+          if (b.dataset.tact === 'save') {
+            await api('/api/followups/templates/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ category: val('category'), title: val('title'), body: val('body') }) });
+            box.querySelector('.msg').textContent = 'Enregistré';
+          } else if (b.dataset.tact === 'toggle') {
+            await api('/api/followups/templates/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ active: b.textContent !== 'Désactiver' ? true : false }) });
+            loadTpls();
+          } else if (confirm('Supprimer ce message type ?')) {
+            await api('/api/followups/templates/' + encodeURIComponent(id), { method: 'DELETE' });
+            loadTpls();
+          }
+        } catch (e) { alert(e.message); }
+      }));
+    });
+  }
+
+  $('tpl-add').addEventListener('click', async () => {
+    await api('/api/followups/templates', { method: 'POST', body: JSON.stringify({ category: 'autre', title: 'Nouveau message', body: 'Bonjour {prenom}, ' }) }).catch((e) => alert(e.message));
+    loadTpls();
+  });
+  $('tabs').querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
+    $('tabs').querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === t));
+    const tpl = t.dataset.v === 'tpl';
+    $('view-tpl').style.display = tpl ? '' : 'none';
+    $('view-list').style.display = tpl ? 'none' : '';
+    $('team-pick').style.display = tpl ? 'none' : '';
+    if (tpl) loadTpls();
+  }));
+
+  document.addEventListener('ola:auth', async (e) => {
+    isAdmin = String(e.detail.role || '').toLowerCase() === 'admin';
+    if (isAdmin) {
+      $('tabs').style.display = 'flex';
+      $('team-pick').style.display = 'block';
+      const { items = [] } = await api('/api/auth/users').catch(() => ({}));
+      $('team').innerHTML = '<option value="">Toute l’équipe</option>' + items.filter((u) => u.active && u.role !== 'admin')
+        .map((u) => `<option value="${esc(u.email)}">${esc(u.display_name || u.email)}</option>`).join('');
+      $('team').addEventListener('change', load);
+    }
+    load();
+  });
+})();
+</script>
+</body>
+</html>

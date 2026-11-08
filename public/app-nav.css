@@ -1,5 +1,6 @@
 /* Navigation back-office partagée (injectée via app-nav.js) */
 
+/* ── Barre du haut (ordinateur) ───────────────────────────── */
 nav.tb-app-nav {
   display: flex;
   flex: 1;
@@ -7,22 +8,17 @@ nav.tb-app-nav {
   gap: 0;
   margin-left: 16px;
   min-width: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
-nav.tb-app-nav::-webkit-scrollbar {
-  height: 0;
-}
-
-nav.tb-app-nav a.tb-tab {
+nav.tb-app-nav a.tb-tab,
+nav.tb-app-nav .ola-more-btn {
   font-family: "Montserrat", sans-serif;
   font-size: 8px;
   font-weight: 300;
   letter-spacing: 3px;
   text-transform: uppercase;
   color: rgba(245, 243, 239, 0.55);
-  padding: 0 16px;
+  padding: 0 14px;
   height: 56px;
   display: flex;
   align-items: center;
@@ -37,30 +33,161 @@ nav.tb-app-nav a.tb-tab {
   transition: color 0.2s, border-color 0.2s;
 }
 
-nav.tb-app-nav a.tb-tab:link,
-nav.tb-app-nav a.tb-tab:visited {
-  color: rgba(245, 243, 239, 0.55);
-}
-
 nav.tb-app-nav a.tb-tab:hover,
-nav.tb-app-nav a.tb-tab.active {
+nav.tb-app-nav a.tb-tab.active,
+nav.tb-app-nav .ola-more-btn:hover,
+nav.tb-app-nav .ola-more.open .ola-more-btn {
   color: #f5f3ef;
   border-bottom-color: #f5f3ef;
 }
 
-/* Topbar : laisser de la place à la nav entre brand et actions */
-.topbar nav.tb-app-nav {
-  flex: 1;
-  justify-content: flex-start;
+.topbar nav.tb-app-nav { flex: 1; justify-content: flex-start; }
+
+.ola-more { position: relative; display: flex; }
+.ola-more-btn::after { content: "▾"; margin-left: 6px; letter-spacing: 0; font-size: 9px; }
+.ola-more-menu {
+  display: none;
+  position: absolute;
+  top: 56px;
+  left: 0;
+  min-width: 210px;
+  background: #111;
+  border: 1px solid rgba(245, 243, 239, 0.2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  z-index: 400;
+  padding: 6px 0;
+}
+.ola-more.open .ola-more-menu { display: block; }
+.ola-more-menu a {
+  display: block;
+  padding: 11px 16px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 9px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(245, 243, 239, 0.7);
+  text-decoration: none;
+}
+.ola-more-menu a:hover { color: #f5f3ef; background: rgba(245, 243, 239, 0.05); }
+.ola-more-menu a.on { color: #f5f3ef; box-shadow: inset 2px 0 0 #f5f3ef; }
+
+/* ── Onglets du bas (téléphone) ───────────────────────────── */
+.ola-tabbar { display: none; }
+
+@media (max-width: 760px) {
+  nav.tb-app-nav { display: none !important; }
+  .ola-user-chip { display: none !important; }
+
+  .ola-has-tabbar body { padding-bottom: calc(64px + env(safe-area-inset-bottom)) !important; }
+
+  .ola-tabbar {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 90;
+    background: rgba(17, 17, 17, 0.97);
+    border-top: 1px solid rgba(245, 243, 239, 0.14);
+    padding-bottom: env(safe-area-inset-bottom);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .ola-tabbar a,
+  .ola-tabbar button {
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    color: rgba(245, 243, 239, 0.5);
+    text-decoration: none;
+    background: none;
+    border: none;
+    font-family: "Montserrat", sans-serif;
+    font-size: 8.5px;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    min-width: 0;
+  }
+  .ola-tabbar span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 2px; }
+  .ola-tabbar svg { width: 22px; height: 22px; }
+  .ola-tabbar a.on { color: #f5f3ef; }
+  .ola-tabbar a.on svg { color: #d4b56a; }
 }
 
-@media (max-width: 640px) {
-  nav.tb-app-nav {
-    margin-left: 8px;
-  }
-  nav.tb-app-nav a.tb-tab {
-    padding: 0 12px;
-    font-size: 7px;
-    letter-spacing: 2px;
-  }
+/* ── Menu (feuille du bas) ────────────────────────────────── */
+.ola-sheet-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(0, 0, 0, 0);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transition: background 0.2s;
 }
+.ola-sheet-bg.open { background: rgba(0, 0, 0, 0.6); }
+.ola-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  background: #111;
+  border-top: 1px solid rgba(245, 243, 239, 0.2);
+  padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.2s ease;
+  color: #f5f3ef;
+  font-family: "Montserrat", sans-serif;
+}
+.ola-sheet-bg.open .ola-sheet { transform: none; }
+.ola-sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.ola-sheet-name { font-family: "Cormorant Garamond", serif; font-size: 26px; font-weight: 300; }
+.ola-sheet-role { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: rgba(245, 243, 239, 0.45); margin-top: 2px; }
+.ola-sheet-x { background: none; border: none; color: rgba(245, 243, 239, 0.6); font-size: 20px; padding: 8px; cursor: pointer; }
+.ola-sheet-g { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: rgba(245, 243, 239, 0.45); margin: 18px 0 8px; }
+.ola-sheet-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.ola-sheet-links a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 12px;
+  border: 1px solid rgba(245, 243, 239, 0.1);
+  background: #161616;
+  color: rgba(245, 243, 239, 0.85);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 300;
+  min-width: 0;
+}
+.ola-sheet-links a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ola-sheet-links a.on { border-color: #d4b56a; color: #f5f3ef; }
+.ola-sheet-links svg { width: 18px; height: 18px; flex-shrink: 0; color: #d4b56a; }
+.ola-sheet-actions { display: flex; flex-direction: column; gap: 6px; }
+.ola-sheet-actions button {
+  text-align: left;
+  padding: 14px 12px;
+  border: 1px solid rgba(245, 243, 239, 0.1);
+  background: #161616;
+  color: #f5f3ef;
+  font: 300 12px "Montserrat", sans-serif;
+  cursor: pointer;
+}
+.ola-sheet-actions button.danger { color: #f87171; }
+.ola-sheet-info {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(212, 181, 106, 0.4);
+  background: rgba(212, 181, 106, 0.06);
+  font-size: 12px;
+  font-weight: 300;
+  line-height: 1.7;
+  color: rgba(245, 243, 239, 0.85);
+}
+.ola-sheet-info a { color: #d4b56a; }

@@ -36,6 +36,18 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 
 /* PAGES */
 .page{display:none;padding:20px 20px 84px;min-height:calc(100vh - 56px);}
+/* Téléphone : la barre commune (app-nav) occupe le bas de l'écran ; les onglets
+   de cette page (Notifs / Pipeline / Devis) passent en haut, sous l'en-tête. */
+@media(max-width:760px){
+  .ola-has-tabbar .bottom-nav{top:56px;bottom:auto;height:44px;border-top:none;border-bottom:1px solid var(--l);}
+  .ola-has-tabbar .bn-item{flex-direction:row;gap:6px;}
+  .ola-has-tabbar .bn-icon{font-size:14px;}
+  .ola-has-tabbar .bn-item.active{box-shadow:inset 0 -2px 0 var(--w);}
+  .ola-has-tabbar .page{padding:64px 16px 24px;}
+  .ola-has-tabbar .toast{bottom:calc(76px + env(safe-area-inset-bottom));}
+  .topbar{padding:0 14px;}
+  input,textarea,select{font-size:16px !important;}
+}
 .page.active{display:block;}
 
 /* NOTIFS PAGE */
@@ -173,7 +185,7 @@ html,body{height:100%;background:var(--b);color:var(--w);font-family:'Cormorant 
 .empty-icon{font-size:40px;margin-bottom:16px;opacity:0.3;}
 .empty-text{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:var(--g);}
 </style>
-<meta name="ola-required-roles" content="admin,prospecteur,closer,dalsim,closeuse">
+<meta name="ola-required-roles" content="admin,prospecteur,closer,concierge,dalsim,closeuse">
 <script src="/auth-gate.js"></script>
 <script src="/app-nav.js"></script>
 </head>

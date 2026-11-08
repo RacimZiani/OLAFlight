@@ -20,3 +20,7 @@ pdfs/
 # Fichiers de spec / brouillons à la racine (ne pas versionner)
 /*.docx
 /*.pdf
+
+# Exports de prospection (données personnelles clients) : jamais dans git
+/*.xlsx
+/*.csv

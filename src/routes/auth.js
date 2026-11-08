@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { recordLogin } from "../lib/activity.js";
 import { z } from "zod";
 import { validate } from "../middleware/validate.js";
 import { getStore } from "../db/index.js";
@@ -55,6 +56,7 @@ router.post("/login", validate({ body: loginSchema }), async (req, res, next) =>
       secure: config.auth.cookieSecure,
     });
     log.info(`login OK · ${user.email} (${user.role})`);
+    recordLogin(user); // non bloquant
     res.json({ user: publicUser(user) });
   } catch (e) { next(e); }
 });
@@ -82,9 +84,12 @@ router.get("/me", async (req, res) => {
 const userCreateSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, "8 caractères minimum"),
-  role: z.enum(["admin", "prospecteur", "closer", "dalsim", "closeuse", "agent"]),
+  role: z.enum(["admin", "prospecteur", "closer", "concierge", "dalsim", "closeuse", "agent"]),
   display_name: z.string().min(1).optional(),
   whatsapp: z.string().optional(),
+  // Concierge : % de la marge (vide = 15 %) et objectif mensuel de commissions.
+  commission_rate: z.coerce.number().min(0).max(100).nullable().optional(),
+  monthly_goal: z.coerce.number().min(0).nullable().optional(),
 });
 
 router.get("/users", async (req, res, next) => {
@@ -94,6 +99,7 @@ router.get("/users", async (req, res, next) => {
     const items = (await store.users.list()).map((u) => ({
       id: u.id, email: u.email, role: u.role,
       display_name: u.display_name, whatsapp: u.whatsapp, active: !!u.active,
+      commission_rate: u.commission_rate ?? null, monthly_goal: u.monthly_goal ?? null,
       created_at: u.created_at,
     }));
     res.json({ items });
@@ -119,6 +125,8 @@ router.post("/users", validate({ body: userCreateSchema }), async (req, res, nex
       display_name: req.body.display_name || null,
       whatsapp: req.body.whatsapp || null,
       active: 1,
+      ...(req.body.commission_rate != null ? { commission_rate: req.body.commission_rate } : {}),
+      ...(req.body.monthly_goal != null ? { monthly_goal: req.body.monthly_goal } : {}),
     });
     log.info(`user créé · ${email} (${req.body.role}) par ${req.user.email}`);
     res.json({
@@ -131,11 +139,13 @@ router.post("/users", validate({ body: userCreateSchema }), async (req, res, nex
 });
 
 const userPatchSchema = z.object({
-  role: z.enum(["admin", "prospecteur", "closer", "dalsim", "closeuse", "agent"]).optional(),
+  role: z.enum(["admin", "prospecteur", "closer", "concierge", "dalsim", "closeuse", "agent"]).optional(),
   display_name: z.string().optional(),
   whatsapp: z.string().nullable().optional(),
   active: z.boolean().optional(),
   password: z.string().min(8).optional(),
+  commission_rate: z.coerce.number().min(0).max(100).nullable().optional(),
+  monthly_goal: z.coerce.number().min(0).nullable().optional(),
 });
 
 router.patch("/users/:id", validate({ body: userPatchSchema }), async (req, res, next) => {
@@ -154,6 +164,7 @@ router.patch("/users/:id", validate({ body: userPatchSchema }), async (req, res,
       user: {
         id: updated.id, email: updated.email, role: updated.role,
         display_name: updated.display_name, whatsapp: updated.whatsapp, active: !!updated.active,
+        commission_rate: updated.commission_rate ?? null, monthly_goal: updated.monthly_goal ?? null,
       },
     });
   } catch (e) { next(e); }

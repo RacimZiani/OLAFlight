@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ola Flight — Espace équipe</title>
-<meta name="ola-required-roles" content="admin,prospecteur,closer,dalsim,closeuse">
+<meta name="ola-required-roles" content="admin,prospecteur,closer,concierge,dalsim,closeuse">
 </head>
 <body>
 <header class="topbar">
@@ -19,16 +19,26 @@
   <h1>Espace équipe</h1>
   <p class="sub">Choisissez un outil</p>
   <div class="cards" id="cards"></div>
+  <p class="sub" style="margin-top:40px;opacity:.7;text-transform:none;letter-spacing:1px;line-height:1.7">
+    Information : vos connexions, votre temps d'activité sur l'espace équipe et vos actions (clients, devis, échanges)
+    sont enregistrés pour le suivi de l'équipe par la direction.
+  </p>
 </main>
 <script src="/auth-gate.js"></script>
 <script src="/app-nav.js"></script>
 <script>
 (function(){
   const ALL = [
-    { href:'/crm.html', title:'Pipeline clients', desc:'Suivi des leads, statuts, conversations.', roles:['admin','prospecteur','closer','dalsim','closeuse'] },
-    { href:'/dalsim.html', title:'Création de devis', desc:'Générer et envoyer des propositions tarifaires.', roles:['admin','prospecteur','closer','dalsim','closeuse'] },
+    { href:'/dashboard.html', title:'Tableau de bord', desc:'Mes chiffres, ma place au classement et celui de l’équipe.', roles:['admin','closer','concierge','closeuse'] },
+    { href:'/relances.html', title:'Relances', desc:'Les clients à recontacter aujourd’hui, avec le message prêt à envoyer.', roles:['admin','prospecteur','closer','concierge','dalsim','closeuse'] },
+    { href:'/clients.html', title:'Clients', desc:'Rechercher par nom, numéro ou @instagram, fiche et historique.', roles:['admin','prospecteur','closer','concierge','dalsim','closeuse'] },
+    { href:'/crm.html', title:'Pipeline clients', desc:'Suivi des leads, statuts, conversations.', roles:['admin','prospecteur','closer','concierge','dalsim','closeuse'] },
+    { href:'/devis-conciergerie.html', title:'Devis conciergerie', desc:'Chauffeur, shopping, horlogerie, hôtel, jet : un devis multi-prestations.', roles:['admin','prospecteur','closer','concierge','dalsim','closeuse'] },
+    { href:'/dalsim.html', title:'Devis vol', desc:'Générer et envoyer des propositions de vol.', roles:['admin','prospecteur','closer','concierge','dalsim','closeuse'] },
+    { href:'/commissions.html', title:'Mes commissions', desc:'Simulateur de vente et compteur de gains du mois.', roles:['concierge','admin'] },
+    { href:'/direction.html', title:'Direction', desc:'Qui est connecté, temps passé, actions du jour, alertes et export.', roles:['admin'] },
     { href:'/team.html', title:'Vue équipe', desc:'Performance closers et prospecteurs.', roles:['admin'] },
-    { href:'/users.html', title:'Comptes équipe', desc:'Créer et gérer les accès admin, prospecteurs, closers.', roles:['admin'] },
+    { href:'/users.html', title:'Comptes équipe', desc:'Créer et gérer les accès admin, concierges, prospecteurs, closers.', roles:['admin'] },
   ];
   function norm(r){ if(r==='closeuse')return'closer'; if(r==='dalsim'||r==='agent')return'prospecteur'; return r; }
   document.addEventListener('ola:auth', e => {

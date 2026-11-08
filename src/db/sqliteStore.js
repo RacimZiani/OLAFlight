@@ -24,12 +24,13 @@ let _db;
 const JSON_FIELDS = {
   flights: ["route", "meta"],
   leads: [],
-  devis: ["services_inclus", "options", "hotels", "driver"],
+  devis: ["services_inclus", "options", "hotels", "driver", "prestations"],
   apporteurs: [],
   conversations_ola: ["messages"],
   agent_actions: ["input", "output"],
   users: [],
   notifications: ["meta"],
+  app_settings: ["value"],
 };
 
 // Champs "boolean" stockés en INTEGER : on coerce à la lecture.
@@ -42,6 +43,7 @@ const BOOL_FIELDS = {
   agent_actions: [],
   users: ["active"],
   notifications: ["read"],
+  message_templates: ["active"],
 };
 
 function getDb() {
@@ -177,6 +179,14 @@ function buildCollection(table, options = {}) {
       return items.length;
     },
     /**
+     * Lignes dont `field` >= value (ex. activité des 30 derniers jours), sans limite de nombre.
+     */
+    async listSince(field, value) {
+      if (!/^[a-z_]+$/.test(field)) throw new Error(`champ invalide : ${field}`);
+      const rows = db().prepare(`SELECT * FROM ${table} WHERE ${field} >= ? ORDER BY ${orderBy}`).all(value);
+      return rows.map((r) => decodeRow(table, r));
+    },
+    /**
      * Filtre arbitraire : findAll({ status: 'devis_pending' }) → [...].
      */
     async findAll(filter = {}) {
@@ -197,6 +207,11 @@ export function createSqliteStore() {
     conversations_ola: buildCollection("conversations_ola"),
     agent_actions:     buildCollection("agent_actions"),
     notifications:     buildCollection("notifications"),
+    client_events:     buildCollection("client_events"),
+    message_templates: buildCollection("message_templates", { orderBy: "sort ASC, created_at ASC" }),
+    activity_days:     buildCollection("user_activity_days"),
+    activity_log:      buildCollection("activity_log"),
+    app_settings:      buildCollection("app_settings"),
     users:             buildCollection("users", { orderBy: "created_at ASC" }),
     raw: getDb,
     async ready() {

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ola Flight · Mes commissions</title>
+<meta name="ola-required-roles" content="concierge,admin">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300;400&family=Montserrat:wght@200;300;400&display=swap');
+:root{--b:#0a0a0a;--b2:#111;--b3:#161616;--w:#f5f3ef;--g:rgba(245,243,239,0.45);--g2:rgba(245,243,239,0.7);--l:rgba(245,243,239,0.1);--green:#4ade80;--gold:#d4b56a;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--b);color:var(--w);}
+body{font-family:'Cormorant Garamond',serif;min-height:100dvh;-webkit-font-smoothing:antialiased;}
+.topbar{height:56px;background:var(--b2);border-bottom:1px solid var(--l);display:flex;align-items:center;padding:0 16px;gap:12px;position:sticky;top:0;z-index:5;}
+.tb-name{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;white-space:nowrap;}
+.wrap{max-width:980px;margin:0 auto;padding:28px 16px 64px;}
+h1{font-size:34px;font-weight:200;line-height:1.1;}
+.sub{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin:10px 0 28px;}
+.sub b{color:var(--gold);font-weight:400;}
+.label{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);}
+.grid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr);}
+.grid > *{min-width:0;}
+@media(min-width:820px){.grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);}}
+.panel{border:1px solid var(--l);background:var(--b2);padding:20px;}
+.panel + .panel{margin-top:0;}
+.ptitle{font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--g);margin-bottom:16px;}
+
+/* Simulateur */
+.field{margin-bottom:14px;}
+.field label{display:block;margin-bottom:6px;}
+.field input{width:100%;background:var(--b3);border:1px solid var(--l);color:var(--w);font-family:'Montserrat',sans-serif;font-size:16px;font-weight:300;padding:14px 12px;outline:none;border-radius:0;-webkit-appearance:none;}
+.field input:focus{border-color:var(--g2);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;-webkit-overflow-scrolling:touch;}
+.chips::-webkit-scrollbar{height:0;}
+.chip{flex-shrink:0;font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:1px;color:var(--g2);background:transparent;border:1px solid var(--l);padding:10px 12px;cursor:pointer;white-space:nowrap;}
+.chip:active,.chip:hover{border-color:var(--w);color:var(--w);}
+.hint{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--g);margin-top:6px;line-height:1.5;}
+.result{margin-top:6px;border-top:1px solid var(--l);padding-top:18px;}
+.big{font-size:56px;font-weight:300;line-height:1;color:var(--gold);letter-spacing:-1px;word-break:break-word;}
+.big small{font-size:22px;}
+.result p{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:300;color:var(--g2);margin-top:10px;line-height:1.6;}
+.result p b{color:var(--w);font-weight:400;}
+
+/* Compteur */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+.kpi{background:var(--b3);border:1px solid var(--l);padding:14px;}
+.kpi .v{font-size:28px;font-weight:300;margin-top:6px;}
+.kpi .v.green{color:var(--green);}
+.goal-bar{height:6px;background:var(--b3);border:1px solid var(--l);margin:10px 0 6px;overflow:hidden;}
+.goal-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--green));width:0;transition:width .6s ease;}
+.goal-txt{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--g2);line-height:1.6;}
+.list{margin-top:18px;}
+.item{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--l);font-family:'Montserrat',sans-serif;font-size:10px;font-weight:300;}
+.item .n{color:var(--w);}
+.item .m{color:var(--g);font-size:9px;margin-top:3px;}
+.item .c{text-align:right;white-space:nowrap;}
+.tag{display:inline-block;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:3px 6px;margin-top:4px;border:1px solid var(--l);color:var(--g2);}
+.tag.encaisse{color:var(--green);border-color:rgba(74,222,128,.35);}
+.tag.perdu{opacity:.5;}
+.empty{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--g);padding:12px 0;}
+.admin-pick{margin-bottom:20px;display:none;}
+.admin-pick select{width:100%;background:var(--b3);border:1px solid var(--l);color:var(--w);font-family:'Montserrat',sans-serif;font-size:14px;padding:12px;border-radius:0;}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="tb-name">Ola</div>
+  <nav class="tb-app-nav"></nav>
+</header>
+
+<main class="wrap">
+  <h1>Mes commissions</h1>
+  <p class="sub" id="rate-line">Chargement…</p>
+
+  <div class="admin-pick" id="admin-pick">
+    <div class="label" style="margin-bottom:8px">Voir la concierge</div>
+    <select id="pick"></select>
+  </div>
+
+  <div class="grid">
+    <section class="panel">
+      <div class="ptitle">Simulateur de vente</div>
+      <div class="chips" id="chips"></div>
+
+      <div class="field">
+        <label class="label" for="s-produit">Ce que je vends</label>
+        <input id="s-produit" type="text" placeholder="Patek Philippe Nautilus" autocomplete="off">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label class="label" for="s-vente">Prix de vente (€)</label>
+          <input id="s-vente" type="number" inputmode="decimal" min="0" placeholder="85 000">
+        </div>
+        <div class="field">
+          <label class="label" for="s-achat">Prix d'achat (€)</label>
+          <input id="s-achat" type="number" inputmode="decimal" min="0" placeholder="Optionnel">
+        </div>
+      </div>
+      <div class="field" id="marge-field">
+        <label class="label" for="s-marge">Marge estimée (%)</label>
+        <input id="s-marge" type="number" inputmode="decimal" min="0" max="100" value="10">
+        <div class="hint">Utilisée tant que le prix d'achat n'est pas renseigné.</div>
+      </div>
+
+      <div class="result">
+        <div class="label">Ma commission</div>
+        <div class="big" id="r-com">0 <small>€</small></div>
+        <p id="r-detail">Entre un prix de vente pour voir ce que la vente te rapporte.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="ptitle">Ce mois-ci</div>
+      <div class="kpis">
+        <div class="kpi"><div class="label">Encaissé</div><div class="v green" id="k-enc">0 €</div></div>
+        <div class="kpi"><div class="label">En cours</div><div class="v" id="k-pot">0 €</div></div>
+        <div class="kpi"><div class="label">Ventes</div><div class="v" id="k-ventes">0</div></div>
+        <div class="kpi"><div class="label">Total encaissé</div><div class="v" id="k-total">0 €</div></div>
+      </div>
+      <div id="goal-box">
+        <div class="label">Objectif du mois</div>
+        <div class="goal-bar"><span id="goal-fill"></span></div>
+        <div class="goal-txt" id="goal-txt"></div>
+      </div>
+      <div class="list" id="list"></div>
+    </section>
+  </div>
+</main>
+
+<script src="/auth-gate.js"></script>
+<script src="/app-nav.js"></script>
+<script>
+(function () {
+  // Exemples rapides : prix de vente + marge habituelle du secteur.
+  const PRESETS = [
+    { label: 'Montre de luxe · 85 000 €', produit: 'Patek Philippe Nautilus', vente: 85000, marge: 8 },
+    { label: 'Sac Hermès · 28 000 €', produit: 'Hermès Birkin', vente: 28000, marge: 12 },
+    { label: 'Jet privé · 24 000 €', produit: 'Vol en jet privé', vente: 24000, marge: 15 },
+    { label: 'Chauffeur · 1 200 €', produit: 'Chauffeur privé, 1 journée', vente: 1200, marge: 30 },
+    { label: 'Villa · 15 000 €', produit: 'Location de villa, 1 semaine', vente: 15000, marge: 20 },
+  ];
+
+  let state = { rate: 15, goal: null, encMois: 0 };
+  const $ = (id) => document.getElementById(id);
+  const fmt = (n) => Math.round(n).toLocaleString('fr-FR').replace(/ | /g, ' ') + ' €';
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = (v) => { const n = parseFloat(String(v).replace(',', '.')); return Number.isFinite(n) ? n : 0; };
+
+  function simulate() {
+    const vente = num($('s-vente').value);
+    const achatRaw = $('s-achat').value.trim();
+    const hasAchat = achatRaw !== '';
+    $('marge-field').style.opacity = hasAchat ? '.35' : '1';
+    const marge = hasAchat ? vente - num(achatRaw) : vente * num($('s-marge').value) / 100;
+    const com = marge > 0 ? marge * state.rate / 100 : 0;
+    $('r-com').innerHTML = esc(Math.round(com).toLocaleString('fr-FR')) + ' <small>€</small>';
+
+    if (!vente) {
+      $('r-detail').textContent = 'Entre un prix de vente pour voir ce que la vente te rapporte.';
+      return;
+    }
+    if (marge <= 0) {
+      $('r-detail').innerHTML = 'Marge nulle ou négative : <b>pas de commission</b> sur cette vente.';
+      return;
+    }
+    const produit = $('s-produit').value.trim() || 'cette vente';
+    let txt = `${esc(produit)} : marge de <b>${fmt(marge)}</b>, tu touches <b>${state.rate} %</b>.`;
+    if (state.goal) {
+      const reste = Math.max(state.goal - state.encMois, 0);
+      if (reste <= 0) txt += `<br>Objectif du mois déjà atteint, tout ce qui suit est du bonus.`;
+      else if (com >= reste) txt += `<br>Cette vente suffit à <b>atteindre ton objectif</b> du mois.`;
+      else txt += `<br>Encore <b>${Math.ceil(reste / com)}</b> vente(s) comme celle-ci pour atteindre ton objectif.`;
+    }
+    $('r-detail').innerHTML = txt;
+  }
+
+  function renderChips() {
+    $('chips').innerHTML = PRESETS.map((p, i) => `<button type="button" class="chip" data-i="${i}">${esc(p.label)}</button>`).join('');
+    $('chips').querySelectorAll('.chip').forEach((b) => b.addEventListener('click', () => {
+      const p = PRESETS[b.dataset.i];
+      $('s-produit').value = p.produit;
+      $('s-vente').value = p.vente;
+      $('s-achat').value = '';
+      $('s-marge').value = p.marge;
+      simulate();
+    }));
+  }
+
+  function renderCounter(d) {
+    const t = d.totals || {};
+    state.rate = d.rate_pct ?? 15;
+    state.goal = d.monthly_goal;
+    state.encMois = t.encaisse_mois || 0;
+    $('rate-line').innerHTML = `Commission : <b>${esc(state.rate)} %</b> de la marge sur chaque vente`;
+    $('k-enc').textContent = fmt(t.encaisse_mois || 0);
+    $('k-pot').textContent = fmt(t.potentiel || 0);
+    $('k-ventes').textContent = String(t.ventes_mois || 0);
+    $('k-total').textContent = fmt(t.encaisse || 0);
+
+    if (state.goal) {
+      const pct = Math.min(100, Math.round((state.encMois / state.goal) * 100));
+      $('goal-box').style.display = '';
+      $('goal-fill').style.width = pct + '%';
+      $('goal-txt').innerHTML = `${fmt(state.encMois)} sur ${fmt(state.goal)} · <b>${pct} %</b>`
+        + (t.potentiel ? ` · ${fmt(t.potentiel)} en jeu sur tes devis en cours` : '');
+    } else {
+      $('goal-box').style.display = 'none';
+    }
+
+    const items = d.items || [];
+    const LABEL = { encaisse: 'Encaissé', potentiel: 'En cours', perdu: 'Perdu' };
+    $('list').innerHTML = items.length
+      ? `<div class="label" style="margin-bottom:4px">Derniers devis</div>` + items.slice(0, 12).map((i) => `
+        <div class="item">
+          <div><div class="n">${esc(i.client_name || 'Client')}</div><div class="m">Vente ${fmt(i.prix_vente)}</div></div>
+          <div class="c">${fmt(i.commission)}<br><span class="tag ${i.state}">${LABEL[i.state] || i.state}</span></div>
+        </div>`).join('')
+      : `<div class="empty">Aucun devis pour l'instant. Tes commissions apparaîtront ici dès ton premier devis.</div>`;
+    simulate();
+  }
+
+  async function load(email) {
+    const url = '/api/commissions/me' + (email ? '?email=' + encodeURIComponent(email) : '');
+    const r = await fetch(url, { credentials: 'include' });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { $('rate-line').textContent = d.error || 'Impossible de charger les commissions.'; return; }
+    renderCounter(d);
+  }
+
+  async function setupAdmin() {
+    const r = await fetch('/api/auth/users', { credentials: 'include' });
+    const { items = [] } = await r.json().catch(() => ({}));
+    const concierges = items.filter((u) => u.role === 'concierge' && u.active);
+    $('admin-pick').style.display = 'block';
+    $('pick').innerHTML = concierges.length
+      ? concierges.map((u) => `<option value="${esc(u.email)}">${esc(u.display_name || u.email)}</option>`).join('')
+      : '<option value="">Aucune concierge pour l’instant</option>';
+    $('pick').addEventListener('change', () => load($('pick').value));
+    if (concierges.length) load(concierges[0].email);
+    else { $('rate-line').innerHTML = 'Simulateur au taux par défaut : <b>15 %</b> de la marge'; renderCounter({ rate_pct: 15, totals: {}, items: [] }); }
+  }
+
+  ['s-vente', 's-achat', 's-marge', 's-produit'].forEach((id) => $(id).addEventListener('input', simulate));
+  renderChips();
+
+  document.addEventListener('ola:auth', (e) => {
+    const role = String(e.detail?.role || '').toLowerCase();
+    if (role === 'admin') { $('rate-line').textContent = ''; setupAdmin(); }
+    else load();
+  });
+})();
+</script>
+</body>
+</html>

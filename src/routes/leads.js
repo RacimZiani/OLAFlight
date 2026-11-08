@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { logAction } from "../lib/activity.js";
 import { validate } from "../middleware/validate.js";
 import { leadCreateSchema, leadPatchSchema, idParamSchema, LEAD_STATUSES } from "../schemas/index.js";
 import { getStore } from "../db/index.js";
@@ -16,6 +17,8 @@ import {
   prospecteurWantsNotif,
 } from "../lib/roles.js";
 import { summarizeLeadConversation } from "../lib/conversationSummary.js";
+import { sanitizeDevisForRole } from "../lib/commissions.js";
+import { findMatchingLeads, normalizePhone, normalizeInstagram, normalizeEmail } from "../lib/clientMatch.js";
 import { requireBackoffice } from "../middleware/auth.js";
 import { createLogger } from "../logger.js";
 import { coerceLeadRowForDb, parsePassagers, leadBoolForDb } from "../lib/dbCoerce.js";
@@ -128,7 +131,9 @@ router.get("/closers/list", async (_req, res, next) => {
     const all = await store.users.list().catch(() => []);
     const items = all
       .filter((u) => {
-        return normalizeRole(u.role) === ROLES.CLOSER && u.active !== false;
+        const role = normalizeRole(u.role);
+        // Les concierges closent aussi : l'admin peut leur assigner un lead.
+        return (role === ROLES.CLOSER || role === ROLES.CONCIERGE) && u.active !== false;
       })
       .map((u) => ({ email: u.email, name: u.name || u.email, role: u.role }));
     res.json({ items });
@@ -141,13 +146,40 @@ router.post("/", validate({ body: leadCreateSchema }), async (req, res, next) =>
     const role = normalizeRole(req.user.role);
     if (role === ROLES.CLOSER) lead.closer_name = req.user.email;
     if (role === ROLES.PROSPECTEUR) lead.apporteur_name = req.user.email;
+    // La concierge fait tout de A à Z : elle est la closeuse de ses clients.
+    if (role === ROLES.CONCIERGE) lead.closer_name = req.user.email;
 
     const store = await getStore();
+
+    // Coordonnées structurées + anti-doublon (sauf confirmation explicite).
+    const contact = String(req.body.client_contact || req.body.contact || "").trim();
+    const phone = normalizePhone(req.body.phone) || (contact.startsWith("@") ? "" : normalizePhone(contact));
+    const instagram = normalizeInstagram(req.body.instagram) || (contact.startsWith("@") || lead.canal === "instagram" ? normalizeInstagram(contact) : "");
+    const email = normalizeEmail(req.body.email) || normalizeEmail(contact);
+    if (phone) lead.phone = "+" + phone;
+    if (instagram) lead.instagram = instagram;
+    if (email) lead.email = email;
+    if (!req.body.allow_duplicate && (phone || instagram || email)) {
+      const dup = findMatchingLeads(await store.leads.list(), { phone, instagram, email })[0];
+      if (dup) {
+        const accessible = canAccessLead(req.user, dup) || role === ROLES.ADMIN;
+        return res.status(409).json({
+          error: `Ce client existe déjà : ${dup.client_name}`,
+          duplicate: { client_name: dup.client_name, accessible, ...(accessible ? { id: dup.id } : {}) },
+        });
+      }
+    }
+
+    // Un nouveau prospect saisi à la main est à contacter aujourd'hui.
+    if (!lead.next_followup && ["qualification", "new"].includes(lead.status)) {
+      lead.next_followup = toIsoIfSupabase(Date.now());
+    }
     const inserted = await store.leads.insert(lead);
+    logAction(req.user, "client_cree", `Client créé : ${lead.client_name}`, (inserted || lead).id);
     if (DALSIM_TRIGGER_STATUSES.has(lead.status)) {
       notifyDalsimOfNewLead(lead).catch((e) => log.warn(`notif dalsim: ${e.message}`));
     }
-    if (inserted?.closer_name) {
+    if (inserted?.closer_name && inserted.closer_name !== req.user.email) {
       notify({
         recipients: [{ email: inserted.closer_name }],
         type: "lead_assigned",
@@ -187,13 +219,29 @@ router.patch(
       if (role === ROLES.PROSPECTEUR && !canAccessLead(req.user, before)) {
         throw new HttpError(403, "Lead hors périmètre prospecteur");
       }
+      if (role === ROLES.CONCIERGE) {
+        if (!canAccessLead(req.user, before)) throw new HttpError(403, "Client hors de votre portefeuille");
+        const reassign = ["closer_name", "apporteur_name"].some(
+          (f) => req.body[f] !== undefined && req.body[f] !== before[f] && req.body[f] !== req.user.email
+        );
+        if (reassign) throw new HttpError(403, "Réassignation réservée aux admins");
+      }
       if (role === ROLES.CLOSER && req.body.closer_name && req.body.closer_name !== req.user.email) {
         throw new HttpError(403, "Réassignation réservée aux admins");
       }
       if (role === ROLES.PROSPECTEUR && req.body.apporteur_name && req.body.apporteur_name !== req.user.email) {
         throw new HttpError(403, "Réassignation réservée aux admins");
       }
-      const updated = await store.leads.update(req.params.id, req.body);
+      const patch = { ...req.body };
+      // Gagné / perdu / archivé : la séquence de relance s'arrête.
+      if (patch.status && ["won", "lost", "archived"].includes(patch.status) && patch.status !== before.status) {
+        patch.next_followup = null;
+        patch.followup_step = 0;
+      }
+      const updated = await store.leads.update(req.params.id, patch);
+      if (patch.status && updated && patch.status !== before.status) {
+        logAction(req.user, "statut", `${updated.client_name} : ${before.status} → ${patch.status}`, updated.id);
+      }
       if (!updated) throw new HttpError(404, "Lead introuvable");
 
       const wasPending = before && DALSIM_TRIGGER_STATUSES.has(before.status);
@@ -252,7 +300,9 @@ router.get("/:id/devis", validate({ params: idParamSchema }), async (req, res, n
         const ta = typeof a.created_at === "number" ? a.created_at : Date.parse(a.created_at) || 0;
         const tb = typeof b.created_at === "number" ? b.created_at : Date.parse(b.created_at) || 0;
         return tb - ta;
-      });
+      })
+      // Même règle que /api/devis : prix d'achat, marge et commissions selon le rôle.
+      .map((d) => sanitizeDevisForRole(d, req.user.role));
     res.json({ items });
   } catch (e) { next(e); }
 });
