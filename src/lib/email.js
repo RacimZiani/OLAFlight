@@ -95,7 +95,7 @@ function buildDevisEmailHtml({ devis, lead, baseUrl, lang = "fr" }) {
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#111111;background-color:#111111;border:1px solid #2a2a2a">
       <tr><td style="padding:40px 32px;background:#111111;background-color:#111111">
 
-        <div style="margin:0 0 32px"><img src="${baseUrl}/images/logo-texte.png" alt="Ola Flight" style="height:100px;width:auto;display:block"></div>
+        <div style="margin:0 0 32px"><img src="${baseUrl}/images/logo-texte.png" alt="Ola" style="height:100px;width:auto;display:block"></div>
 
         <h1 style="font-family:Georgia,serif;font-weight:300;font-size:26px;color:#f8f5f0 !important;margin:0 0 14px;line-height:1.3">
           ${fr ? `Votre proposition, ${name}` : `Your proposal, ${name}`}
@@ -120,7 +120,7 @@ function buildDevisEmailHtml({ devis, lead, baseUrl, lang = "fr" }) {
         </div>
 
         <p style="font-size:11px;color:#444444 !important;line-height:1.6;margin-top:28px;font-family:Arial,sans-serif">
-          ${fr ? "Un conseiller Ola Flight vous recontacte après votre choix." : "An Ola Flight advisor will follow up after your choice."}
+          ${fr ? "Un conseiller Ola vous recontacte après votre choix." : "An Ola advisor will follow up after your choice."}
         </p>
 
       </td></tr>
@@ -158,7 +158,7 @@ export async function sendSimpleDevisEmail({ devis, toEmail, baseUrl }) {
   <tr><td align="center" style="padding:32px 16px;background:#0a0a0a">
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#111111;background-color:#111111;border:1px solid #2a2a2a">
       <tr><td style="padding:40px 32px;background:#111111;background-color:#111111">
-        <div style="margin:0 0 32px"><img src="${escapeHtml(baseUrl)}/images/logo-texte.png" alt="Ola Flight" style="height:100px;width:auto;display:block"></div>
+        <div style="margin:0 0 32px"><img src="${escapeHtml(baseUrl)}/images/logo-texte.png" alt="Ola" style="height:100px;width:auto;display:block"></div>
         <h1 style="font-family:Georgia,serif;font-weight:300;font-size:26px;color:#f8f5f0 !important;margin:0 0 14px;line-height:1.3">Votre devis, ${firstName}</h1>
         <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:20px">
           ${trajet ? `<tr><td style="padding:10px 0;border-bottom:1px solid #2a2a2a;font-family:Arial,sans-serif;font-size:13px;color:#888 !important">Trajet</td><td style="padding:10px 0;border-bottom:1px solid #2a2a2a;text-align:right;font-family:Arial,sans-serif;font-size:13px;color:#f8f5f0 !important">${escapeHtml(trajet)}</td></tr>` : ""}
@@ -171,7 +171,7 @@ export async function sendSimpleDevisEmail({ devis, toEmail, baseUrl }) {
         <p style="margin:24px 0 8px;text-align:center">
           <a href="${escapeHtml(pdfUrl)}" style="display:inline-block;padding:14px 28px;background:#f8f5f0;color:#000 !important;text-decoration:none;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-family:Arial,sans-serif">TÉLÉCHARGER LE PDF</a>
         </p>
-        <p style="font-size:11px;color:#444 !important;line-height:1.6;margin-top:28px;font-family:Arial,sans-serif">Un conseiller Ola Flight reste disponible pour toute question.</p>
+        <p style="font-size:11px;color:#444 !important;line-height:1.6;margin-top:28px;font-family:Arial,sans-serif">Un conseiller Ola reste disponible pour toute question.</p>
       </td></tr>
     </table>
   </td></tr>
@@ -180,9 +180,9 @@ export async function sendSimpleDevisEmail({ devis, toEmail, baseUrl }) {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: config.smtp.from || "Ola Flight <noreply@olaflight.fr>",
+      from: config.smtp.from || "Ola <noreply@olaflight.fr>",
       to: toEmail,
-      subject: `Ola Flight — Votre devis`,
+      subject: `Ola — Votre devis`,
       html,
     });
     if (error) {
@@ -217,12 +217,12 @@ export async function sendDevisEmailToClient({ devis, lead, baseUrl, lang = "fr"
   const html = buildDevisEmailHtml({ devis, lead, baseUrl, lang });
   const subject =
     lang === "en"
-      ? `Ola Flight — Your quote ${devis.id}`
-      : `Ola Flight — Votre devis ${devis.id}`;
+      ? `Ola — Your quote ${devis.id}`
+      : `Ola — Votre devis ${devis.id}`;
 
   try {
     const { data, error } = await resend.emails.send({
-      from: config.smtp.from || "Ola Flight <noreply@olaflight.fr>",
+      from: config.smtp.from || "Ola <noreply@olaflight.fr>",
       to: recipient,
       subject,
       html,

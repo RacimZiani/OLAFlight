@@ -82,7 +82,7 @@ export function renderConciergerieDevisHtml({ devis, lead, companyLogo = OLA_LOG
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Ola Flight · Devis ${esc(shortRef(devis.id))}</title>
+<title>Ola Conciergerie Privée · Devis ${esc(shortRef(devis.id))}</title>
 <style>
   /* Les marges haut/bas sont posées par pdf.js (PDF_MARGINS) et peintes en
      noir par l'en-tête / pied de page Chrome : chaque page respire, sans bord blanc. */
@@ -140,10 +140,9 @@ export function renderConciergerieDevisHtml({ devis, lead, companyLogo = OLA_LOG
 <div class="page">
   <header class="head">
     <div class="brand">
-      ${companyLogo ? `<img src="${companyLogo}" alt="Ola Flight">` : ""}
+      ${companyLogo ? `<img src="${companyLogo}" alt="Ola">` : ""}
       <div>
-        <div class="brand-name">Ola Flight</div>
-        <div class="brand-sub">Conciergerie privée · Paris</div>
+        <div class="brand-name">Ola Conciergerie Privée</div>
       </div>
     </div>
     <div class="ref">
@@ -180,7 +179,7 @@ export function renderConciergerieDevisHtml({ devis, lead, companyLogo = OLA_LOG
       <div class="foot-l">Proposition valable ${jours} jour${jours > 1 ? "s" : ""}</div>
       <div class="foot-d">Jusqu'au ${fmtDate(devis.valide_jusqu_au)}</div>
     </div>
-    <div class="foot-note">Ola Flight, conciergerie privée.<br>Votre concierge reste à votre disposition pour ajuster chaque détail.</div>
+    <div class="foot-note">Ola Conciergerie Privée.<br>Votre concierge reste à votre disposition pour ajuster chaque détail.</div>
   </footer>
 </div>
 </body>

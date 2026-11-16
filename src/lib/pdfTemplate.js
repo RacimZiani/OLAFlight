@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────
-// Template PDF brandé Ola Flight (DSL identique à brief.html / index.html :
+// Template PDF brandé Ola Conciergerie Privée (DSL identique à brief.html / index.html :
 // Cormorant Garamond + Montserrat, palette black/cream).
 //
 // ⚠ RÈGLE S01 (brief.html section 05) :
@@ -71,14 +71,14 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
 
   const logoSrc = companyLogo || FALLBACK_LOGO;
   const brandLogoHtml = logoSrc
-    ? `<img class="brand-logo-img" src="${logoSrc}" alt="Ola Flight" />`
+    ? `<img class="brand-logo-img" src="${logoSrc}" alt="Ola" />`
     : `<div class="brand-logo-fallback">Ō</div>`;
 
   return `<!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Ola Flight — Devis ${escapeHtml(shortRef(devis.id))}</title>
+<title>Ola Conciergerie Privée — Devis ${escapeHtml(shortRef(devis.id))}</title>
 <style>
   @page { size: A4; margin: 0; }
   *{ margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -177,8 +177,7 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
     <div class="brand">
       ${brandLogoHtml}
       <div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:200;letter-spacing:1px;">Ola Flight</div>
-        <div class="brand-name">Private Travel · Paris</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:200;letter-spacing:1px;">Ola Conciergerie Privée</div>
       </div>
     </div>
     <div class="ref">
@@ -191,7 +190,7 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
   <div class="title-block">
     <div class="eyebrow">Proposition de voyage</div>
     <h1 class="title">${escapeHtml(trajet.replace(/->|→/g, "→")) || "Votre vol"}<br><em>${escapeHtml(devis.compagnie || "Compagnie à confirmer")}</em></h1>
-    <p class="sub">Préparé pour ${escapeHtml(lead?.client_name || "vous")}. Ce devis reprend la meilleure option disponible sur cette route, à conditions négociées Ola Flight.</p>
+    <p class="sub">Préparé pour ${escapeHtml(lead?.client_name || "vous")}. Ce devis reprend la meilleure option disponible sur cette route, à conditions négociées Ola.</p>
   </div>
 
   <div class="grid-2">
@@ -262,13 +261,13 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
     <div class="price-sep"></div>
     ` : `
     <div class="price-row">
-      <div class="pr-l">Pack Ola Flight</div>
+      <div class="pr-l">Pack Ola</div>
       <div class="pr-v" style="color:var(--g)">Services premium + réservation</div>
     </div>
     <div class="price-sep"></div>
     `}
     <div class="price-row">
-      <div class="pr-l">Tarif Ola Flight</div>
+      <div class="pr-l">Tarif Ola</div>
       <div class="pr-v pr-final">${fmtMoney(devis.prix_vente)}</div>
     </div>
     ${economie > 0 ? `
@@ -332,7 +331,7 @@ export function renderDevisHtml({ devis, lead, companyLogo = FALLBACK_LOGO }) {
       <div class="validity-d">Expiration : ${fmtDate(devis.valide_jusqu_au)}</div>
     </div>
     <div class="footer-note">
-      Ola Flight — conciergerie de voyage premium.<br>
+      Ola Conciergerie Privée, voyage premium.<br>
       Pour finaliser, votre conseillère prendra le relais en visio.
     </div>
   </footer>

@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ola Flight — Pipeline Commercial</title>
+<title>Ola — Pipeline Commercial</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,200;0,300;1,200;1,300&family=Montserrat:wght@200;300;400&display=swap');
 :root{
@@ -28,6 +28,7 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 .topbar{height:56px;background:var(--b2);border-bottom:1px solid var(--l);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:100;}
 .tb-brand{display:flex;align-items:center;gap:12px;}
 .tb-logo{width:24px;height:24px;background:var(--l2);border:1px solid var(--l2);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--w);}
+.tb-logo-img{height:22px;width:auto;display:block;}
 .tb-name{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:var(--w);}
 .tb-app-nav{display:flex;gap:0;flex:1;}
 .tb-nav{display:flex;gap:0;}
@@ -365,8 +366,8 @@ body{background:var(--b);color:var(--w);font-family:'Cormorant Garamond',serif;f
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="tb-brand">
-    <div class="tb-logo">✦</div>
-    <div class="tb-name">Ola Flight · CRM</div>
+    <img class="tb-logo-img" src="/assets/ola-logo-blanc.png" alt="Ola">
+    <div class="tb-name">CRM</div>
   </div>
   <nav class="tb-app-nav"></nav>
   <div class="tb-nav tb-nav-inner">
@@ -1911,7 +1912,7 @@ function renderCommissions() {
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--l);">
         <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">Prospecteur</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">5 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
         <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">Closer</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">10 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
-        <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">Ola Flight</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">85 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
+        <div style="background:var(--b3);padding:20px"><div style="font-family:Montserrat,sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--g);margin-bottom:8px">Ola</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:200;color:var(--w)">85 %</div><div style="font-family:Montserrat,sans-serif;font-size:8px;color:var(--g);margin-top:4px">sur marge nette</div></div>
       </div>
     </div>
   </div>`;
@@ -1980,7 +1981,7 @@ function renderApporteuses() {
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Comment a-t-il entendu parler d'Ola Flight ?</label>
+          <label class="form-label">Comment a-t-il entendu parler d'Ola ?</label>
           <input class="form-input" id="ap-ref" placeholder="Recommandation, Instagram, réseau perso…">
         </div>
         <div class="form-group">
@@ -2190,7 +2191,7 @@ async function openNtfyPushSetup(e) {
       return;
     }
     const msg = [
-      'Notifications push Ola Flight (ntfy)',
+      'Notifications push Ola (ntfy)',
       '',
       'Vous recevez uniquement VOS alertes (comme la cloche du CRM), pas celles des autres.',
       '',

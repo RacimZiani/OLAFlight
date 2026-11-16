@@ -1,4 +1,4 @@
-/* Ola Flight — auth gate client.
+/* Ola — auth gate client.
  * Inclus dans crm.html / dalsim.html / admin.html.
  * Bloque l'affichage tant que la session n'est pas vérifiée, redirige vers
  * /login.html?next=<page actuelle> si pas authentifié, et expose

@@ -6,7 +6,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Ola Flight · Clients</title>
+<title>Ola · Clients</title>
 <meta name="ola-required-roles" content="admin,prospecteur,closer,concierge,dalsim,closeuse">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300;400&family=Montserrat:wght@200;300;400&display=swap');
@@ -328,7 +328,7 @@ details summary::-webkit-details-marker{display:none;}
 
   function renderFiche() {
     const c = fiche.client;
-    document.title = 'Ola Flight · ' + (c.client_name || 'Client');
+    document.title = 'Ola · ' + (c.client_name || 'Client');
     $('f-name').textContent = c.client_name || 'Client';
     const phone = c.phone || '';
     const insta = c.instagram ? String(c.instagram).replace(/^@/, '') : (String(c.client_contact || '').startsWith('@') ? c.client_contact.slice(1) : '');
