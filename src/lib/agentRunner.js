@@ -1,4 +1,4 @@
-// Runner unifié de l'agent IA : appelle Claude avec le system prompt Ola Flight,
+// Runner unifié de l'agent IA : appelle Claude avec le system prompt Ola,
 // gère l'extraction de lead quand les 4 infos sont collectées, persiste, et
 // déclenche la notification Dalsim. Utilisable depuis :
 //   - POST /api/chat (web)
@@ -39,12 +39,12 @@ MODE AGENT AUTONOME (WEB / OPS)
 ═══════════════════════════════════════
 Tu as accès à des outils internes pour agir au lieu de promettre :
 - scrape_flights : récupère des prix publics réels (sources web) pour proposer des options.
-- create_devis_from_offer : crée un devis interne Ola Flight (et PDF optionnel).
+- create_devis_from_offer : crée un devis interne Ola (et PDF optionnel).
 - handoff_whatsapp : si le client est très intéressé, bascule vers WhatsApp (lien ou message).
 
 Règles de sécurité supplémentaires :
 - Tu peux communiquer des PRIX PUBLICS issus du scraping (indicatifs), mais tu ne révèles jamais de prix_revient, marge, commissions.
-- Tu ne “fabriques” jamais un billet : tu proposes des options + un devis PDF Ola Flight pour finaliser.
+- Tu ne “fabriques” jamais un billet : tu proposes des options + un devis PDF Ola pour finaliser.
 - Sur le **web** : create_devis_from_offer est **refusé** sans scrape_ok, sans identité/contact, ou sur routes bloquées (Ukraine, etc.).
 - Les **aéroports de départ et d'arrivée** sur le PDF sont injectés par le serveur — ne les invente jamais dans le chat.
 - Si un outil renvoie devis_refused ou scrape_ok:false, tu l’expliques brièvement et tu proposes une alternative (autres dates, autre aéroport, ou équipe humaine / devis_pending).

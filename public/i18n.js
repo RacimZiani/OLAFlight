@@ -1,4 +1,4 @@
-/* Ola Flight — i18n FR/EN */
+/* Ola — i18n FR/EN */
 (function (global) {
 const I18N = {
   "fr": {
@@ -13,7 +13,7 @@ const I18N = {
     "hero.btn": "Demander l'accès",
     "hero.note": "Sans engagement · Réponse en moins de 24h",
     "rupture.line": "Pas une agence. &nbsp;&nbsp;Un réseau privé.",
-    "rupture.sub": "Ola Flight opère là où les plateformes s'arrêtent.",
+    "rupture.sub": "Ola opère là où les plateformes s'arrêtent.",
     "piliers.label": "Ce que vous ne saviez pas",
     "pos.label": "Qui nous sommes",
     "pos.title": "Pas une agence.<br><em>Un accès.</em>",
@@ -95,7 +95,7 @@ const I18N = {
     "wa.text": "Bonjour, je souhaite organiser un voyage premium.",
     "meta.title": "OLĀ FLIGHT — Private Travel",
     "footer.tagline": "Private Travel · Paris · Worldwide",
-    "pos.intro": "Ola Flight est né d'un constat simple : les meilleures conditions de voyage ne sont jamais publiques.<br><br>Elles circulent dans les bons réseaux. Elles se négocient dans les bonnes conversations. Elles s'obtiennent avec <strong>les bonnes connexions.</strong><br><br><span class=\"pos-clients\">Athlètes. Artistes.<br>Entrepreneurs. Dirigeants.</span><br><br>Ce qu'ils ont en commun : ils ne réservent plus jamais au prix public.",
+    "pos.intro": "Ola est né d'un constat simple : les meilleures conditions de voyage ne sont jamais publiques.<br><br>Elles circulent dans les bons réseaux. Elles se négocient dans les bonnes conversations. Elles s'obtiennent avec <strong>les bonnes connexions.</strong><br><br><span class=\"pos-clients\">Athlètes. Artistes.<br>Entrepreneurs. Dirigeants.</span><br><br>Ce qu'ils ont en commun : ils ne réservent plus jamais au prix public.",
     "pilier.1.tag": "01",
     "pilier.2.tag": "02",
     "pilier.3.tag": "03",
@@ -106,7 +106,7 @@ const I18N = {
     "nav.back.crm": "Pipeline",
     "nav.back.devis": "Devis",
     "nav.back.admin": "Admin vols",
-    "footer.center": "© 2026 Ola Flight · Confidentiel · Tous droits réservés",
+    "footer.center": "© 2026 Ola · Confidentiel · Tous droits réservés",
     "footer.instagram": "@olaflight",
     "chat.choice.accept": "Accepter",
     "chat.choice.negotiate": "Discuter",
@@ -152,7 +152,7 @@ const I18N = {
     "hero.btn": "Request access",
     "hero.note": "No commitment · Reply within 24 hours",
     "rupture.line": "Not an agency. &nbsp;&nbsp;A private network.",
-    "rupture.sub": "Ola Flight operates where platforms stop.",
+    "rupture.sub": "Ola operates where platforms stop.",
     "piliers.label": "What you didn't know",
     "pos.label": "Who we are",
     "pos.title": "Not an agency.<br><em>An access.</em>",
@@ -234,7 +234,7 @@ const I18N = {
     "wa.text": "Hello, I would like to plan a premium trip.",
     "meta.title": "OLĀ FLIGHT — Private Travel",
     "footer.tagline": "Private Travel · Paris · Worldwide",
-    "pos.intro": "Ola Flight was born from a simple observation: the best travel conditions are never public.<br><br>They circulate in the right networks. They're negotiated in the right conversations. They're secured with <strong>the right connections.</strong><br><br><span class=\"pos-clients\">Athletes. Artists.<br>Entrepreneurs. Executives.</span><br><br>What they share: they never book at public price again.",
+    "pos.intro": "Ola was born from a simple observation: the best travel conditions are never public.<br><br>They circulate in the right networks. They're negotiated in the right conversations. They're secured with <strong>the right connections.</strong><br><br><span class=\"pos-clients\">Athletes. Artists.<br>Entrepreneurs. Executives.</span><br><br>What they share: they never book at public price again.",
     "pilier.1.tag": "01",
     "pilier.2.tag": "02",
     "pilier.3.tag": "03",
@@ -245,7 +245,7 @@ const I18N = {
     "nav.back.crm": "Pipeline",
     "nav.back.devis": "Quotes",
     "nav.back.admin": "Flight admin",
-    "footer.center": "© 2026 Ola Flight · Confidential · All rights reserved",
+    "footer.center": "© 2026 Ola · Confidential · All rights reserved",
     "footer.instagram": "@olaflight",
     "chat.choice.accept": "Accept",
     "chat.choice.negotiate": "Discuss",

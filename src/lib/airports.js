@@ -1,4 +1,4 @@
-// Résolution villes / aéroports → codes IATA pour l'agent Ola Flight.
+// Résolution villes / aéroports → codes IATA pour l'agent Ola.
 // Base complète OurAirports (~9 000 codes IATA) — voir data/airports-index.json
 // Régénérer : npm run airports:build
 

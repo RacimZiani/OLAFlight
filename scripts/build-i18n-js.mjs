@@ -45,12 +45,12 @@ const extraFr = {
   "aria.chat.close": "Fermer",
   "aria.chat.send": "Envoyer",
   "aria.dial": "Indicatif pays",
-  "login.title.page": "Ola Flight — Connexion",
+  "login.title.page": "Ola — Connexion",
   "login.brand.mark": "Private Travel",
   "login.brand.name": "Ola <em>Flight</em>",
   "login.brand.tag": "Espace équipe",
   "login.title": "Connexion",
-  "login.sub": "Équipe Ola Flight",
+  "login.sub": "Équipe Ola",
   "login.label.email": "Email",
   "login.label.password": "Mot de passe",
   "login.placeholder.email": "vous@olaflight.com",
@@ -94,12 +94,12 @@ const extraEn = {
   "aria.chat.close": "Close",
   "aria.chat.send": "Send",
   "aria.dial": "Country code",
-  "login.title.page": "Ola Flight — Sign in",
+  "login.title.page": "Ola — Sign in",
   "login.brand.mark": "Private Travel",
   "login.brand.name": "Ola <em>Flight</em>",
   "login.brand.tag": "Team access",
   "login.title": "Sign in",
-  "login.sub": "Ola Flight team",
+  "login.sub": "Ola team",
   "login.label.email": "Email",
   "login.label.password": "Password",
   "login.placeholder.email": "you@olaflight.com",
@@ -115,7 +115,7 @@ const extraEn = {
 Object.assign(I18N.fr, extraFr);
 Object.assign(I18N.en, extraEn);
 
-const out = `/* Ola Flight — i18n FR/EN */
+const out = `/* Ola — i18n FR/EN */
 (function (global) {
 const I18N = ${JSON.stringify(I18N, null, 2)};
 

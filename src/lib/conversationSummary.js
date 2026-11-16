@@ -9,7 +9,7 @@ import { createLogger } from "../logger.js";
 
 const log = createLogger("conv:summary");
 
-const SYSTEM = `Tu es un analyste commercial. Tu reçois la dernière conversation entre un client et l'agent IA Ola Flight (conciergerie de voyages premium). Produis un résumé EN FRANÇAIS, factuel et actionnable, en 4 puces maximum, format Markdown :
+const SYSTEM = `Tu es un analyste commercial. Tu reçois la dernière conversation entre un client et l'agent IA Ola (conciergerie de voyages premium). Produis un résumé EN FRANÇAIS, factuel et actionnable, en 4 puces maximum, format Markdown :
 
 • Où en est-on ? (statut implicite : qualif / devis envoyé / négociation / accepté / perdu)
 • Ce que veut le client (destination, dates, classe, contraintes, points sensibles)

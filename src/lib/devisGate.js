@@ -42,7 +42,7 @@ function hasDates(lead, context) {
 export function getRouteBlockReason(from, to) {
   const hit = getRouteBlockReasonPolicy(from, to);
   if (!hit) return null;
-  return `Destination ${hit.label || hit.iata} : vols commerciaux non disponibles via Ola Flight (zone ${hit.code || hit.place || "restreinte"}).`;
+  return `Destination ${hit.label || hit.iata} : vols commerciaux non disponibles via Ola (zone ${hit.code || hit.place || "restreinte"}).`;
 }
 
 export function resolveRouteForLead(lead, context = {}) {

@@ -1,4 +1,4 @@
-/* Ola Flight — auth status pour pages publiques (landing).
+/* Ola — auth status pour pages publiques (landing).
  * Affiche / masque les liens .ola-back-link selon le rôle, et bascule
  *   .ola-login-link  ↔  .ola-logout-link
  * Aucune redirection : la page reste accessible aux visiteurs anonymes.

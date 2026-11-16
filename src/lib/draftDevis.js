@@ -90,7 +90,7 @@ export async function createDraftDevisForLead(lead, ctx = {}) {
     prix_marche: 0,
     ...(isSupabase ? {} : { marge: 0, closer_commission: 0, apporteur_commission: 0 }),
     apporteur_name: lead?.apporteur_name || null,
-    services_inclus: ["Suivi personnalisé Ola Flight", "Assistance avant et pendant le voyage"],
+    services_inclus: ["Suivi personnalisé Ola", "Assistance avant et pendant le voyage"],
     options,
     pricing_status: "pending_admin",
     pdf_url: null,

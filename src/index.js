@@ -28,7 +28,7 @@ async function main() {
   const app = createApp();
   const onListen = () => {
     const bind = config.listenHost ? `${config.listenHost}:${config.port}` : `:${config.port}`;
-    logger.info(`Ola Flight listening on ${bind}`);
+    logger.info(`Ola listening on ${bind}`);
     logger.info(`PUBLIC_URL (liens PDF, cookies, etc.) → ${config.publicUrl}`);
     logger.info(`storage: ${config.storage.driver} · env: ${config.env}`);
   };

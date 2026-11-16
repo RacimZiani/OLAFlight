@@ -36,15 +36,15 @@ function thankYouHtml(lang, action) {
   };
   const bodies = {
     accept: fr
-      ? "Un conseiller Ola Flight finalise votre réservation."
-      : "An Ola Flight advisor will finalise your booking.",
+      ? "Un conseiller Ola finalise votre réservation."
+      : "An Ola advisor will finalise your booking.",
     refuse: fr ? "Nous restons disponibles pour un prochain voyage." : "We remain available for a future trip.",
     negotiate: fr
       ? "Votre conseiller prépare une réponse adaptée sous 24 h."
       : "Your advisor will respond within 24 hours.",
   };
   return `<!DOCTYPE html><html lang="${fr ? "fr" : "en"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ola Flight</title>
+  <title>Ola</title>
   <style>body{margin:0;background:#0a0a0a;color:#f8f5f0;font-family:Georgia,serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
   .box{max-width:480px;text-align:center;border:1px solid #333;padding:48px 32px;background:#111}
   p{color:#aaa;font-size:15px;line-height:1.7;font-family:Arial,sans-serif}</style></head>

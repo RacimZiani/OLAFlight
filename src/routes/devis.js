@@ -541,7 +541,7 @@ router.post(
       let sent = null;
       if (sendTo && lead?.client_contact && lead?.canal) {
         const captionLines = [
-          `Voici votre proposition Ola Flight (${devis.id}).`,
+          `Voici votre proposition Ola (${devis.id}).`,
           devis.compagnie ? `Compagnie : ${devis.compagnie}` : null,
           `Tarif valable 24 h.`,
         ].filter(Boolean);

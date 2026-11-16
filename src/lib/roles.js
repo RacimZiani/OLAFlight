@@ -1,4 +1,4 @@
-// Rôles Ola Flight — source de vérité (admin / prospecteur / closer / concierge).
+// Rôles Ola — source de vérité (admin / prospecteur / closer / concierge).
 // Concierge : fait tout de A à Z (prospection, devis, closing) sur SES clients.
 // Ses leads portent son email dans closer_name.
 

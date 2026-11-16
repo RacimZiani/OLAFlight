@@ -199,7 +199,7 @@ export async function fetchBlockedDestinations() {
         name: code,
         level: 4,
         source: "ola_extra",
-        advisoryTitle: "Ola Flight policy",
+        advisoryTitle: "Ola policy",
       });
     }
   }

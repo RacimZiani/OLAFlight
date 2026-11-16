@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// Règles métier Ola Flight — calcul marge & commissions.
+// Règles métier Ola — calcul marge & commissions.
 // Source de vérité unique : aussi utilisée par le PDF, le CRM, l'agent IA.
 // Si tu changes une formule ici, elle change PARTOUT — c'est volontaire.
 // ─────────────────────────────────────────────────────────────

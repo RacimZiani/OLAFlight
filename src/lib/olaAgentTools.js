@@ -240,7 +240,7 @@ export const OLA_AGENT_TOOLS = [
   {
     name: "create_devis_from_offer",
     description:
-      "Crée un devis Ola Flight UNIQUEMENT si scrape_flights a renvoyé scrape_ok:true avec des offres, le lead est complet, et la route n'est pas bloquée. Fournir `options` (max 3) avec prix_public = coût brut scrape (le serveur calcule prix_vente + PDF). Retourne client_quote_fr/en (prix alignés PDF) — le serveur les envoie au client tel quel. Aéroports injectés automatiquement.",
+      "Crée un devis Ola UNIQUEMENT si scrape_flights a renvoyé scrape_ok:true avec des offres, le lead est complet, et la route n'est pas bloquée. Fournir `options` (max 3) avec prix_public = coût brut scrape (le serveur calcule prix_vente + PDF). Retourne client_quote_fr/en (prix alignés PDF) — le serveur les envoie au client tel quel. Aéroports injectés automatiquement.",
     input_schema: {
       type: "object",
       properties: {
@@ -352,7 +352,7 @@ async function doScrapeFlights(input, { context } = {}) {
       },
       price_hints: null,
       instruction:
-        "Route non éligible au devis automatique. NE PAS appeler create_devis_from_offer. Expliquez au client que l'équipe Ola Flight étudie la demande manuellement (upsert_lead status devis_pending).",
+        "Route non éligible au devis automatique. NE PAS appeler create_devis_from_offer. Expliquez au client que l'équipe Ola étudie la demande manuellement (upsert_lead status devis_pending).",
       debug: { route_used: { from, to }, route_blocked: true },
     };
   }
