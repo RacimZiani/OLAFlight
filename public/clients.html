@@ -106,10 +106,12 @@ details summary::-webkit-details-marker{display:none;}
     <div class="search">
       <input id="q" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Nom, numéro ou @instagram" enterkeyhint="search">
       <div class="hint" id="hint">Tapez au moins 2 caractères. Le numéro peut être partiel, avec ou sans indicatif.</div>
+      <button class="btn small" type="button" id="new-btn" style="margin-top:10px">+ Nouveau prospect</button>
     </div>
     <div id="results"></div>
     <div id="create" class="panel" style="display:none">
-      <div class="ptitle">Nouveau client</div>
+      <div class="ptitle" style="margin-bottom:4px">Nouveau prospect</div>
+      <div class="hint" style="margin:0 0 12px">Une relance est programmée pour aujourd'hui, elle apparaîtra dans Relances.</div>
       <div class="f"><label class="label" for="n-name">Nom</label><input id="n-name"></div>
       <div class="row2">
         <div class="f"><label class="label" for="n-phone">Téléphone</label><input id="n-phone" type="tel" inputmode="tel"></div>
@@ -542,8 +544,19 @@ details summary::-webkit-details-marker{display:none;}
     me = { email: e.detail.email, role: String(e.detail.role || '').toLowerCase() };
     const p = new URLSearchParams(location.search);
     if (p.get('id')) loadFiche(p.get('id'));
+    else if (p.get('new')) openCreate();
     else { if (p.get('q')) { $('q').value = p.get('q'); runSearch(); } $('q').focus(); }
   });
+
+  // Formulaire « Nouveau prospect » ouvert directement (bouton, ou /clients?new=1 depuis le CRM).
+  function openCreate() {
+    $('create').style.display = 'block';
+    ['n-name', 'n-phone', 'n-insta', 'n-need'].forEach((id) => { $(id).value = ''; });
+    $('n-msg').textContent = '';
+    $('create').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('n-name').focus();
+  }
+  $('new-btn').addEventListener('click', openCreate);
 })();
 </script>
 </body>

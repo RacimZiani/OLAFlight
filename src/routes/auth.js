@@ -33,9 +33,20 @@ function publicUser(u) {
 }
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email(),
   password: z.string().min(1),
 });
+
+/**
+ * Mot de passe saisi tel quel, puis sans espaces aux extrémités : un copier-coller
+ * depuis WhatsApp ou un mail emporte souvent un espace ou un retour à la ligne
+ * invisible (« identifiants incorrects » alors que le mot de passe est bon).
+ */
+async function passwordMatches(plain, hash) {
+  if (await verifyPassword(plain, hash)) return true;
+  const trimmed = String(plain || "").trim();
+  return trimmed !== plain && trimmed.length > 0 && verifyPassword(trimmed, hash);
+}
 
 router.post("/login", validate({ body: loginSchema }), async (req, res, next) => {
   try {
@@ -44,7 +55,7 @@ router.post("/login", validate({ body: loginSchema }), async (req, res, next) =>
     if (!user || !user.active) {
       throw new HttpError(401, "Identifiants incorrects");
     }
-    const ok = await verifyPassword(req.body.password, user.password_hash);
+    const ok = await passwordMatches(req.body.password, user.password_hash);
     if (!ok) {
       // Délai pour ralentir le brute-force (très basique).
       await new Promise((r) => setTimeout(r, 250));
@@ -83,7 +94,7 @@ router.get("/me", async (req, res) => {
 // ─── Admin only : gestion des comptes ────────────────────────────────────
 const userCreateSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8, "8 caractères minimum"),
+  password: z.string().trim().min(8, "8 caractères minimum"),
   role: z.enum(["admin", "prospecteur", "closer", "concierge", "dalsim", "closeuse", "agent"]),
   display_name: z.string().min(1).optional(),
   whatsapp: z.string().optional(),
@@ -143,7 +154,7 @@ const userPatchSchema = z.object({
   display_name: z.string().optional(),
   whatsapp: z.string().nullable().optional(),
   active: z.boolean().optional(),
-  password: z.string().min(8).optional(),
+  password: z.string().trim().min(8).optional(),
   commission_rate: z.coerce.number().min(0).max(100).nullable().optional(),
   monthly_goal: z.coerce.number().min(0).nullable().optional(),
 });
@@ -172,7 +183,7 @@ router.patch("/users/:id", validate({ body: userPatchSchema }), async (req, res,
 
 const mePasswordSchema = z.object({
   current_password: z.string().min(1),
-  new_password: z.string().min(8, "8 caractères minimum"),
+  new_password: z.string().trim().min(8, "8 caractères minimum"),
 });
 
 router.post("/me/password", validate({ body: mePasswordSchema }), async (req, res, next) => {
@@ -182,7 +193,7 @@ router.post("/me/password", validate({ body: mePasswordSchema }), async (req, re
     const store = await getStore();
     const user = await store.users.findById(req.user.id);
     if (!user || !user.active) throw new HttpError(401, "Compte introuvable ou inactif");
-    const ok = await verifyPassword(req.body.current_password, user.password_hash);
+    const ok = await passwordMatches(req.body.current_password, user.password_hash);
     if (!ok) {
       await new Promise((r) => setTimeout(r, 250));
       throw new HttpError(403, "Mot de passe actuel incorrect");

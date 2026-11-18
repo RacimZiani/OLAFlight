@@ -1782,6 +1782,9 @@ async function submitPasswordChange() {
 
 // ─── NEW LEAD ───
 function openNewLead() {
+  // Concierge : le formulaire ci-dessous est pensé pour les vols (destination, dates,
+  // classe…). Elle crée ses prospects depuis la fiche client, plus simple.
+  if (isConcierge()) { location.href = '/clients?new=1'; return; }
   // Peupler les sélecteurs closer/prospecteur (admin seulement)
   const closerSel = document.getElementById('nl-closer');
   const apporteurSel = document.getElementById('nl-apporteur');
